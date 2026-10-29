@@ -42,6 +42,7 @@ async function nintendo(region,q,cursor,onlyDeals){
  return {items,next:result.page+1<result.nbPages?result.page+1:null,total:result.nbHits};
 }
 async function external(platform,region,q,page,sort){
+ if(q) return searchEneba(platform,region,q,page);
  const url=new URL('https://www.eneba.com/latam/store/'+({xbox:'xbox-games',ps:'psn-games',switch:'nintendo-games'}[platform]));url.searchParams.set('currency',currencies[region]);url.searchParams.set('page',String(page||1));if(q)url.searchParams.set('text',q);
  if(sort==='priceAsc'||sort==='priceDesc')url.searchParams.set('sortBy',sort==='priceAsc'?'PRICE_ASC':'PRICE_DESC');
  const r=await fetch(url,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('HTTP '+r.status);
@@ -51,6 +52,25 @@ async function external(platform,region,q,page,sort){
  const connection=response?.results;
  const items=enebaData(data,platform,region);
  return {items,next:connection?.edges?.length && (page||1)*20<connection.totalCount?(page||1)+1:null,total:connection?.totalCount,url:url.href};
+}
+async function searchEneba(platform,region,q,page=1){
+ const regionCodes={MX:['global','latam','mexico'],US:['global','north_america','united_states'],ES:['global','europe','spain'],GB:['global','europe','united_kingdom'],BR:['global','latam','brazil'],JP:['global','japan']}[region];
+ const drm={xbox:'xbox',ps:'psn',switch:'nintendo'}[platform];
+ const data=await request('https://ihjzq5lw2r-dsn.algolia.net/1/indexes/*/queries',{requests:[{indexName:'products_'+region.toLowerCase(),query:q,page:(page||1)-1,hitsPerPage:60,filters:`drmName:${drm} AND productType:game AND (${regionCodes.map(c=>'productRegions:'+c).join(' OR ')})`}]},{'x-algolia-api-key':'53864095e814940ffed0f69a897331f1','x-algolia-application-id':'IHJZQ5LW2R'});
+ const result=data.results?.[0];if(!Array.isArray(result?.hits))throw Error('Búsqueda de Eneba no disponible');
+ const items=result.hits.flatMap(p=>{
+  const title=p.translations?.es?.name||p.translations?.en_US?.name||'';
+  if(!p.stockAvailable||p.productType!=='game'||/random|try to get|account|cuenta/i.test(title))return [];
+  const works=p.worksOn||[];
+  if(platform==='xbox'&&!works.some(w=>/XBOX_ONE|XBOX_SERIES/.test(w)))return [];
+  if(platform==='ps'&&!works.some(w=>/PS[345]|PLAYSTATION/.test(w)))return [];
+  if(platform==='switch'&&!works.some(w=>/SWITCH|NINTENDO/.test(w)))return [];
+  const amount=p.lowestPrice?.[currencies[region]],regular=p.msrp?.[currencies[region]];
+  if(!Number.isFinite(amount))return [];
+  const divisor=['JPY'].includes(currencies[region])?1:100;
+  return [{id:p.slug,title,price:amount/divisor,regular:Number.isFinite(regular)?regular/divisor:null,discount:regular>amount?Math.round((1-amount/regular)*100):0,currency:currencies[region],edition:works.join(' / ')+' · '+p.productRegions.join(', '),store:'Eneba',kind:'external',image:p.images?.cover300?.src,url:'https://www.eneba.com/'+p.slug}];
+ });
+ return {items,next:result.page+1<result.nbPages?result.page+2:null,total:result.nbHits};
 }
 async function catalog(platform,region,q='',options={}){
  const {cursor={},onlyDeals=false,sort='relevance',source='all'}=options;

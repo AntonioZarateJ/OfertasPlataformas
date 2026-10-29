@@ -103,6 +103,10 @@ function renderConsoleCatalog() {
         const card = document.createElement('article');
         card.className = 'steam-card console-card';
         card.innerHTML = `<img loading="lazy" src="${escapeHTML(safeURL(item.image))}" alt="${escapeHTML(item.title)}"><div class="console-card-body"><p class="console-store">${escapeHTML(item.store)} · ${item.kind === 'official' ? 'Oficial' : 'Mercado externo'}</p><h3>${escapeHTML(item.title)}</h3><p>${escapeHTML(item.edition)}</p><p>${Number.isFinite(item.rating) ? '★ ' + escapeHTML(item.rating) + '/5 · ' + escapeHTML(item.ratingCount || 0) + ' reseñas' : 'Sin valoración publicada por esta fuente'}</p>${item.seller ? `<p>Vendedor: ${escapeHTML(item.seller)}</p>` : ''}<div class="console-price">${item.regular > item.price ? `<del>${escapeHTML(format(item.regular))}</del><span>-${item.discount}%</span>` : '<small>Sin descuento comprobado</small>'}<strong>${escapeHTML(format(item.price))} ${escapeHTML(item.currency)}</strong></div><a class="console-buy" href="${escapeHTML(safeURL(item.url))}" target="_blank" rel="noopener noreferrer">Ver esta edición en la tienda ↗</a></div>`;
+        const compare=document.createElement('button');
+        compare.type='button';compare.className='console-compare';compare.textContent='Comparar tiendas y precios';
+        compare.addEventListener('click',()=>openConsoleComparison(item));
+        card.querySelector('.console-card-body').appendChild(compare);
         prepareImages(card); fragment.appendChild(card);
     });
     gamesGrid.appendChild(fragment);

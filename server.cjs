@@ -2,6 +2,7 @@ const http = require('node:http');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { consoleCatalog } = require('./console-sources.cjs');
+const { rememberCatalog, compareGame } = require('./console-comparison.cjs');
 
 const root = __dirname;
 const upstreams = {
@@ -25,6 +26,14 @@ function createServer({ fetchImpl = fetch } = {}) {
         if (!['GET', 'HEAD'].includes(req.method)) { res.setHeader('Allow', 'GET, HEAD'); reply(res, 405, { error: 'Método no permitido' }); return; }
         try {
             const url = new URL(req.url, 'http://localhost');
+            if (url.pathname === '/api/console-comparison') {
+                const platform=url.searchParams.get('platform'), region=url.searchParams.get('region'), title=(url.searchParams.get('title')||'').trim();
+                if(!['xbox','ps','switch'].includes(platform)||!['MX','US','ES','GB','BR','JP'].includes(region)||!title||title.length>200){reply(res,400,{error:'Juego inválido'});return;}
+                const key='compare:'+url.searchParams.toString();
+                if(cache.get(key)?.expires>Date.now()){reply(res,200,cache.get(key).data);return;}
+                if(!pending.has(key))pending.set(key,compareGame(platform,region,title,url.searchParams.get('id'),url.searchParams.get('store')));
+                try{const data=await pending.get(key);if(cache.size>=200)cache.delete(cache.keys().next().value);cache.set(key,{data,expires:Date.now()+60000});reply(res,200,data);}finally{pending.delete(key);}return;
+            }
             if (url.pathname === '/api/console-catalog') {
                 const platform = url.searchParams.get('platform');
                 const region = url.searchParams.get('region');
@@ -40,10 +49,11 @@ function createServer({ fetchImpl = fetch } = {}) {
                   (cursor.official === undefined || cursor.official === false || typeof cursor.official === 'string' && /^[A-Za-z0-9+/=]+$/.test(cursor.official) || Number.isInteger(cursor.official) && cursor.official >= 0 && cursor.official <= 1000 || typeof cursor.official === 'object' && cursor.official !== null && Number.isInteger(cursor.official.offset) && cursor.official.offset >= 0 && cursor.official.offset <= 100000 && typeof cursor.official.token === 'string' && cursor.official.token.length < 4000);
                 if (!validCursor || !['all','official','external'].includes(source) || !['relevance','rating','priceAsc','priceDesc','discountAsc','discountDesc'].includes(sort)) { reply(res,400,{error:'Filtros inválidos'});return; }
                 const key = `console:${platform}:${region}:${query}:${sort}:${source}:${onlyDeals}:${JSON.stringify(cursor)}`;
-                if (cache.get(key)?.expires > Date.now()) { reply(res,200,cache.get(key).data); return; }
+                if (cache.get(key)?.expires > Date.now()) { rememberCatalog(cache.get(key).data); reply(res,200,cache.get(key).data); return; }
                 if (!pending.has(key)) pending.set(key,consoleCatalog(platform,region,query,{cursor,sort,source,onlyDeals}));
                 try {
                     const data = await pending.get(key);
+                    rememberCatalog(data);
                     if (cache.size >= 200) cache.delete(cache.keys().next().value);
                     if (data.sources.some(s => s.status === 'ok')) cache.set(key,{data,expires:Date.now()+60000});
                     reply(res,200,data);

@@ -19,7 +19,7 @@
 <body class="min-h-screen flex flex-col selection:bg-steam-blue selection:text-steam-bg">
 
     <!-- 1. TOP STATUS BAR -->
-    <div class="bg-[#070a11] border-b border-white/5 text-xs py-1.5 px-4">
+    <div id="statusStrip" class="bg-[#070a11] border-b border-white/5 text-xs py-1.5 px-4">
         <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
             <div class="flex items-center gap-3">
                 <span class="flex items-center gap-1.5 text-gray-400">
@@ -27,10 +27,7 @@
                     Motor Conectado: <strong class="text-gray-200">Steam + Epic + Keys + Cloud Sync</strong>
                 </span>
                 <span class="hidden md:inline text-gray-700">|</span>
-                <button type="button" onclick="openCloudConfigModal()" class="text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 transition">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <span id="cloudStatusLabel">Accede y guarda tu wishlist</span>
-                </button>
+                <span id="cloudStatusLabel" class="text-sky-400">Accede y guarda tu wishlist</span>
             </div>
             <div class="flex items-center gap-3">
                 <span id="triggeredAlertsTopBadge" onclick="openWishlistDrawer()" class="hidden-el cursor-pointer bg-amber-500/20 border border-amber-400/50 text-amber-300 px-2.5 py-0.5 rounded-full font-bold animate-pulse">
@@ -48,11 +45,11 @@
     </div>
 
     <!-- 2. NAVBAR PRINCIPAL (LOGO + BUSCADOR PREDICTIVO + WISHLIST + MONEDA) -->
-    <header class="bg-[#0e1525]/95 backdrop-blur-md border-b border-white/10 sticky top-0 z-40 shadow-2xl">
-        <div class="max-w-7xl mx-auto px-4 py-3.5 flex flex-col xl:grid xl:grid-cols-[auto_1fr_auto] items-center justify-between gap-4">
+    <header id="siteHeader" class="bg-[#0e1525]/95 backdrop-blur-md border-b border-white/10 sticky top-0 z-40 shadow-2xl">
+        <div class="main-nav max-w-7xl mx-auto px-4 py-3.5 flex flex-col xl:grid xl:grid-cols-[auto_1fr_auto] items-center justify-between gap-4">
             
             <!-- Marca -->
-            <div class="flex flex-wrap items-center justify-between gap-3 w-full lg:w-auto">
+            <div class="nav-brand flex flex-wrap items-center justify-between gap-3 w-full lg:w-auto">
                 <a href="#" onclick="selectSmartChip('top'); return false;" class="flex items-center gap-3 group">
                     <div class="w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-sky-400 to-blue-700 flex items-center justify-center shadow-lg shadow-sky-500/20 group-hover:scale-105 transition">
                         <i class="fa-brands fa-steam text-white text-2xl"></i>
@@ -65,34 +62,22 @@
                         <p class="text-[11px] text-gray-400">Comparador Oficial + Keys, Consolas, Wishlist & Alertas</p>
                     </div>
                 </a>
-
-                <!-- Acceso rápido móvil -->
-                <div class="flex items-center gap-2 xl:hidden">
-                    <button onclick="openWishlistDrawer()" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 px-3 py-1.5 rounded-lg border border-rose-500/40 text-xs font-bold flex items-center gap-1.5">
-                        <i class="fa-solid fa-heart text-rose-400"></i>
-                        <span id="mobileWishlistCount">0</span>
-                    </button>
-                    <button onclick="selectSmartChip('free')" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 px-3 py-1.5 rounded-lg border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5">
-                        <i class="fa-solid fa-gift"></i>
-                        <span>Gratis</span>
-                    </button>
-                </div>
             </div>
 
             <!-- Selector Global de Plataforma / Ecosistema (Fase 2) -->
-            <div class="grid grid-cols-2 sm:flex items-center bg-[#090d16] p-1 rounded-xl border border-white/10 w-full lg:w-auto justify-between sm:justify-center gap-1">
+            <div class="nav-platforms grid grid-cols-2 sm:flex items-center bg-[#090d16] p-1 rounded-xl border border-white/10 w-full lg:w-auto justify-between sm:justify-center gap-1">
                 <button type="button" data-ecosystem="pc" onclick="selectEcosystem('pc')"
                     class="plat-pill active-pc flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-extrabold border border-transparent flex items-center justify-center gap-1.5">
                     <i class="fa-brands fa-steam"></i>
-                    <span>PC (Steam/Epic)</span>
+                    <span class="desktop-label">PC (Steam/Epic)</span><span class="mobile-label">PC</span>
                 </button>
                 <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="xbox" onclick="selectEcosystem('xbox')"><i class="fa-brands fa-xbox"></i> Xbox</button>
                 <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="ps" onclick="selectEcosystem('ps')"><i class="fa-brands fa-playstation"></i> PlayStation</button>
-                <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="switch" onclick="selectEcosystem('switch')">Nintendo Switch</button>
+                <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="switch" onclick="selectEcosystem('switch')"><span class="desktop-label">Nintendo Switch</span><span class="mobile-label">Switch</span></button>
             </div>
 
             <!-- Buscador Predictivo en Vivo (Cualquier juego con o sin oferta) -->
-            <div class="relative w-full xl:col-span-3 xl:row-start-2">
+            <div class="nav-search relative w-full xl:col-span-3 xl:row-start-2">
                 <form onsubmit="handleSearchSubmit(event)" class="relative">
                     <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
                     <input type="text" id="predictiveSearchInput" autocomplete="off"
@@ -109,12 +94,12 @@
             </div>
 
             <!-- Selector de Divisa + Botones Cloud / Wishlist (Fase 3) -->
-            <div class="flex items-center gap-2.5 w-full xl:w-auto justify-end xl:col-start-3 xl:row-start-1">
+            <div class="nav-actions flex items-center gap-2.5 w-full xl:w-auto justify-end xl:col-start-3 xl:row-start-1">
                 
                 <!-- Botón Wishlist & Alertas -->
                 <button type="button" onclick="openWishlistDrawer()"
                     class="bg-[#162032] hover:bg-[#1e2c44] text-white border border-rose-500/40 rounded-xl py-2 px-3.5 text-xs font-bold transition flex items-center gap-2 shadow-lg flex-shrink-0"
-                    title="Ver mi Wishlist y Alertas de Precio">
+                    id="wishlistButton" aria-label="Mis favoritos y alertas" title="Mis favoritos y alertas">
                     <div class="relative">
                         <i class="fa-solid fa-heart text-rose-400 text-sm"></i>
                         <span id="alertBellDot" class="hidden-el absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
@@ -127,7 +112,7 @@
                 <button type="button" onclick="openCloudConfigModal()"
                     id="userAccountBtn"
                     class="bg-[#162032] hover:bg-[#1e2c44] text-sky-300 border border-sky-500/40 rounded-xl py-2 px-3 text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
-                    title="Configurar Cuenta Cloud / Firebase & Despliegue">
+                    aria-label="Acceder a mi cuenta" title="Mi cuenta">
                     <i class="fa-solid fa-user-astronaut text-sm"></i>
                     <span id="userAccountLabel" class="hidden xl:inline">Iniciar sesión</span>
                 </button>
@@ -153,6 +138,7 @@
         </div>
     </header>
 
+    <details id="mobileFilterPanel"><summary>Filtros y región <span id="mobileRegionLabel">México</span><i class="fa-solid fa-sliders"></i></summary><div id="mobileFilterContent"></div></details>
     <p id="platformPriceNotice" class="hidden-el text-center text-xs text-amber-300 px-4 py-2">Los precios del catálogo corresponden a PC. Los enlaces de consola buscan keys; confirma el precio y la plataforma en la tienda.</p>
 
     <!-- 3. BARRA HORIZONTAL DE PÍLDORAS INTELIGENTES (REEMPLAZA A LA BARRA LATERAL CONFUSA) -->
@@ -171,7 +157,7 @@
                     <button type="button" data-chip="free" onclick="selectSmartChip('free')"
                         class="smart-chip px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50 flex items-center gap-2">
                         <i class="fa-solid fa-gift text-emerald-400 animate-bounce"></i>
-                        <span>100% Gratis (Epic / Steam / GOG)</span>
+                        <span class="desktop-label">100% Gratis (Epic / Steam / GOG)</span><span class="mobile-label">Gratis</span>
                         <span class="bg-emerald-500 text-gray-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">HOT</span>
                     </button>
 
@@ -628,6 +614,7 @@
       </section>
     </div>
 
+    <dialog id="consoleComparison" aria-labelledby="consoleComparisonTitle" class="comparison-dialog"><div class="comparison-heading"><div><p>COMPARAR OPCIONES DE COMPRA</p><h2 id="consoleComparisonTitle"></h2></div><button type="button" aria-label="Cerrar comparación" onclick="closeConsoleComparison()">×</button></div><div id="consoleComparisonBody"></div></dialog>
     <!-- TOAST DE NOTIFICACIONES FLOTANTE -->
     <div id="toastNotification" class="hidden-el fixed bottom-5 right-5 z-50 bg-[#111c2d] border border-sky-400/50 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs font-bold">
         <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
@@ -651,6 +638,7 @@
     <script src="assets/js/wishlist-storage.js"></script>
     <script src="assets/js/currency.js"></script>
     <script src="assets/js/console-catalog.js"></script>
+    <script src="assets/js/console-comparison.js"></script>
     <script src="assets/js/navigation.js"></script>
     <script src="assets/js/filters.js"></script>
     <script src="assets/js/giveaways.js"></script>
@@ -658,5 +646,6 @@
     <script src="assets/js/search.js"></script>
     <script src="assets/js/comparator.js"></script>
     <script src="assets/js/wishlist-cloud.js"></script>
+    <script src="assets/js/responsive-layout.js"></script>
 </body>
 </html>

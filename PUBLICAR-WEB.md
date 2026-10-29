@@ -55,3 +55,9 @@ La caché del servidor se vacía cuando reinicia. La wishlist del invitado depen
 - Blueprint: https://render.com/docs/blueprint-spec
 
 Este archivo prepara el despliegue. No se ha creado un servicio de Render ni se ha publicado una URL desde esta sesión.
+
+## Publicar los cambios siguientes
+
+Guarda los cambios, crea un commit y haz push a la rama vinculada a Render. Si el servicio está conectado mediante el proveedor GitHub y Auto-Deploy está en On Commit, Render recompila y publica tras cada push. Con After CI Checks Pass espera a que pasen los checks; con Off debes usar Manual Deploy → Deploy latest commit. Si creaste el servicio mediante Public Git Repository sin conectar GitHub, usa el despliegue manual. Comprueba Deploys/Events y el commit mostrado antes de probar la URL. Guardar archivos sólo en tu PC no modifica el sitio publicado.
+
+Documentación: https://render.com/docs/deploys#automatic-deploys

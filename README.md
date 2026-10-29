@@ -130,3 +130,15 @@ Filtros: tienda, sólo ofertas, orden por precio ascendente/descendente, descuen
 La cobertura depende de la región, stock, formato y límites públicos de cada proveedor. Xbox puede devolver sólo sus primeras coincidencias en búsqueda, y algunos proveedores limitan la profundidad paginable. La interfaz no afirma haber recuperado todo el catálogo si la fuente no permite hacerlo. Las claves públicas de búsqueda de Nintendo son las del escaparate para lectura, no credenciales administrativas. Si las tiendas cambian estos servicios, se deberá actualizar el adaptador; un fallo se informa sin inventar precios.
 
 Las pruebas nuevas cubren 60/120 resultados, ausencia de duplicados, búsqueda sin ofertas, orden por precio, presupuesto, aislamiento entre plataformas y recuperación del catálogo PC.
+
+## Comparación de consola y registro observado
+
+Las tarjetas de Xbox, PlayStation y Nintendo incluyen Comparar tiendas y precios. El comparador consulta de nuevo la tienda oficial y la búsqueda pública de Eneba, con juegos sin descuento incluidos. Se corrige así el caso en que Eneba no aparecía al usar su nueva búsqueda por título. Se muestran primero las tiendas oficiales; las coincidencias estrictas se separan de otras ediciones y variantes. No se comparan cuentas ni claves aleatorias como si fueran el juego completo.
+
+G2A respondió HTTP 403 durante la comprobación. G2A, Kinguin e Instant Gaming se ofrecen como búsquedas externas sin precios verificados. No se afirma que una tienda no venda un juego sólo porque la consulta no entregue coincidencias. El comparador indica las fuentes realmente consultadas. No existe una búsqueda garantizada de todas las tiendas de internet.
+
+El mínimo y máximo son del registro propio desde sus primeras observaciones, por producto, tienda, moneda, plataforma y región. Se conservan hasta 90 días con datos, con límite de 3000 series. Hasta contar con más de un día se muestra Historial insuficiente. No se inventa un mínimo histórico absoluto. El archivo predeterminado es `.data/price-history.json`, excluido de Git y del servidor de archivos públicos.
+
+En Render Free ese archivo no es persistente entre reinicios o despliegues. Para conservar el registro hay que migrarlo a una base de datos o configurar `PRICE_HISTORY_PATH` en un disco persistente del alojamiento, por ejemplo `/var/data/price-history.json` sólo después de montar ese disco. No se añadió ningún servicio pagado ni un disco desde el código.
+
+En móvil se usa un solo acceso a favoritos, uno a cuenta, una cabecera compacta y un panel Filtros y región. Los mismos controles del escritorio se reubican conservando sus eventos, filtros y valores.
