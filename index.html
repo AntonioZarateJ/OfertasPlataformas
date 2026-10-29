@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="es" class="dark" data-platform="pc">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -201,7 +201,7 @@
                 <div class="filter-field"><label for="drawerDiscountMode">Descuento</label><select id="drawerDiscountMode" onchange="updateDrawerLabels()"><option value="any">Cualquier porcentaje</option><option value="exact">Un porcentaje exacto</option><option value="range">Un rango de porcentajes</option></select><div class="discount-values"><label id="drawerValueLabel">Porcentaje <input type="number" id="drawerDiscountSlider" min="0" max="100" step="1" value="10"></label><label id="drawerEndLabel">Hasta <input type="number" id="drawerDiscountEnd" min="0" max="100" step="1" value="50"></label></div><p id="drawerDiscountLabel"></p></div>
                 <div class="filter-field"><label for="drawerRatingSlider">Reseñas positivas de Steam</label><input type="range" id="drawerRatingSlider" min="0" max="100" step="10" value="0"><p id="drawerRatingLabel">Sin mínimo de reseñas</p><small>Valoración de Steam, no de otras plataformas.</small></div>
               </div>
-              <div class="filter-panel-footer"><p>El porcentaje se aplica al descuento publicado por la fuente, redondeado como en la tarjeta.</p><button type="button" onclick="applyCustomDrawerFilters()">Aplicar filtros <i class="fa-solid fa-arrow-right"></i></button></div>
+              <div class="filter-panel-footer"><p>PC: el porcentaje filtra la referencia de CheapShark en USD. El descuento regional de Steam puede variar.</p><button type="button" onclick="applyCustomDrawerFilters()">Aplicar filtros <i class="fa-solid fa-arrow-right"></i></button></div>
             </div>
 
             <!-- SUB-BARRA ESPECIAL PARA JUEGOS 100% GRATIS -->
@@ -260,8 +260,8 @@
             <div class="w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center justify-center mx-auto mb-3 text-2xl">
                 <i class="fa-solid fa-gamepad"></i>
             </div>
-            <h3 class="text-base font-bold text-white mb-1">No se encontraron juegos con estos criterios</h3>
-            <p class="text-xs text-gray-400 max-w-md mx-auto mb-4">Prueba seleccionando otra Píldora Inteligente arriba o restableciendo los filtros.</p>
+            <h3 class="text-base font-bold text-white mb-1">Sin coincidencias en las fuentes consultadas</h3>
+            <p class="text-xs text-gray-400 max-w-md mx-auto mb-4">Prueba otro porcentaje, cambia entre Solo ofertas y Catálogo completo o restablece los filtros.</p>
             <button type="button" onclick="selectSmartChip('top')" class="bg-sky-500 hover:bg-sky-400 text-gray-950 font-extrabold text-xs px-4 py-2.5 rounded-xl transition">
                 Volver a Ofertas Top
             </button>
@@ -359,11 +359,11 @@
                                 </div>
                                 <div>
                                     <h4 class="text-xs sm:text-sm font-extrabold text-white flex items-center gap-2">
-                                        <span>Alerta de Precio Inteligente ("Avísame cuando baje")</span>
+                                        <span>Guardar un precio objetivo</span>
                                         <span id="modalAlertStatusBadge" class="hidden-el text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full">Activa</span>
                                     </h4>
                                     <p class="text-[11px] text-gray-400 mt-0.5">
-                                        Define tu precio meta en <strong class="modal-currency-label text-sky-400">MXN</strong>. Guardaremos el juego en tu Wishlist y te avisaremos cuando alcance tu presupuesto.
+                                        Elige cuánto quieres pagar en <strong class="modal-currency-label text-sky-400">MXN</strong>. Verás si se alcanza al consultar tu Wishlist. Los avisos por correo aún no están activos.
                                     </p>
                                 </div>
                             </div>
@@ -375,7 +375,7 @@
                                 <button type="button" onclick="saveModalPriceAlert()"
                                     class="bg-amber-400 hover:bg-amber-300 text-gray-950 font-black text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-lg flex-shrink-0">
                                     <i class="fa-solid fa-bell-concierge"></i>
-                                    <span>Crear Alerta</span>
+                                    <span>Guardar meta</span>
                                 </button>
                             </div>
                         </div>
@@ -555,6 +555,7 @@
     <script src="assets/js/bootstrap.js"></script>
     <script src="assets/js/wishlist-storage.js"></script>
     <script src="assets/js/currency.js"></script>
+    <script src="assets/js/console-wishlist.js"></script>
     <script src="assets/js/console-catalog.js"></script>
     <script src="assets/js/console-comparison.js"></script>
     <script src="assets/js/navigation.js"></script>

@@ -59,6 +59,7 @@ async function showSteamRegionalPrice(element, id) {
     if (!element.isConnected) return;
     const box = element.parentElement.querySelector('.price-box');
     if (box && quote) {
+        box.querySelector('span.uppercase')?.replaceChildren(document.createTextNode('Steam '+purchaseRegions[region][0]));
         box.dataset.regionalAmount = quote.amount;
         box.dataset.regionalCurrency = quote.currency;
         box.querySelector('.normal-val').textContent = new Intl.NumberFormat('es-MX', { style: 'currency', currency: quote.currency }).format(quote.initial);

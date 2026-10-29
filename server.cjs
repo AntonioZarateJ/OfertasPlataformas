@@ -4,6 +4,7 @@ const path = require('node:path');
 const { consoleCatalog } = require('./console-sources.cjs');
 const { rememberCatalog, compareGame } = require('./console-comparison.cjs');
 
+const { discountPosition } = require('./discount-position.cjs');
 const root = __dirname;
 const upstreams = {
     '/api/steam-prices': ['https://store.steampowered.com/api/appdetails?cc=mx&filters=price_overview', 60000],
@@ -26,6 +27,13 @@ function createServer({ fetchImpl = fetch } = {}) {
         if (!['GET', 'HEAD'].includes(req.method)) { res.setHeader('Allow', 'GET, HEAD'); reply(res, 405, { error: 'Método no permitido' }); return; }
         try {
             const url = new URL(req.url, 'http://localhost');
+            if (url.pathname === '/api/deals-position') {
+                if(!/^\d{1,3}$/.test(url.searchParams.get('discount')||'')||Number(url.searchParams.get('discount'))>100||[...url.searchParams].some(([k,v])=>!['discount','desc','title','onSale','steamRating','AAA'].includes(k)||v.length>250)){reply(res,400,{error:'Filtros inválidos'});return;}
+                const key='position:'+url.searchParams.toString();
+                if(cache.get(key)?.expires>Date.now()){reply(res,200,cache.get(key).data);return;}
+                if(!pending.has(key))pending.set(key,discountPosition(url.searchParams,fetchImpl));
+                try{const data=await pending.get(key);if(cache.size>=200)cache.delete(cache.keys().next().value);cache.set(key,{data,expires:Date.now()+60000});reply(res,200,data);}finally{pending.delete(key);}return;
+            }
             if (url.pathname === '/api/console-comparison') {
                 const platform=url.searchParams.get('platform'), region=url.searchParams.get('region'), title=(url.searchParams.get('title')||'').trim();
                 if(!['xbox','ps','switch'].includes(platform)||!['MX','US','ES','GB','BR','JP'].includes(region)||!title||title.length>200){reply(res,400,{error:'Juego inválido'});return;}
@@ -42,15 +50,21 @@ function createServer({ fetchImpl = fetch } = {}) {
                 const sort = url.searchParams.get('sort') || 'relevance';
                 const source = url.searchParams.get('source') || 'all';
                 const onlyDeals = url.searchParams.get('deals') === '1';
+                let discount=null;
+                if(url.searchParams.has('discountMin')||url.searchParams.has('discountMax')){
+                    const min=Number(url.searchParams.get('discountMin')),max=Number(url.searchParams.get('discountMax'));
+                    if(!url.searchParams.has('discountMin')||!url.searchParams.has('discountMax')||!Number.isInteger(min)||!Number.isInteger(max)||min<0||max>100||min>max){reply(res,400,{error:'Porcentaje inválido'});return;}
+                    discount={min,max};
+                }
                 let cursor;
                 try { cursor = JSON.parse(url.searchParams.get('cursor') || '{}'); } catch { reply(res,400,{error:'Paginación inválida'});return; }
                 const validCursor = cursor && typeof cursor === 'object' && !Array.isArray(cursor) && JSON.stringify(cursor).length < 6000 &&
                   (cursor.external === undefined || cursor.external === false || Number.isInteger(cursor.external) && cursor.external >= 1 && cursor.external <= 500) &&
                   (cursor.official === undefined || cursor.official === false || typeof cursor.official === 'string' && /^[A-Za-z0-9+/=]+$/.test(cursor.official) || Number.isInteger(cursor.official) && cursor.official >= 0 && cursor.official <= 1000 || typeof cursor.official === 'object' && cursor.official !== null && Number.isInteger(cursor.official.offset) && cursor.official.offset >= 0 && cursor.official.offset <= 100000 && typeof cursor.official.token === 'string' && cursor.official.token.length < 4000);
                 if (!validCursor || !['all','official','external'].includes(source) || !['relevance','rating','priceAsc','priceDesc','discountAsc','discountDesc'].includes(sort)) { reply(res,400,{error:'Filtros inválidos'});return; }
-                const key = `console:${platform}:${region}:${query}:${sort}:${source}:${onlyDeals}:${JSON.stringify(cursor)}`;
+                const key = `console:${platform}:${region}:${query}:${sort}:${source}:${onlyDeals}:${JSON.stringify(discount)}:${JSON.stringify(cursor)}`;
                 if (cache.get(key)?.expires > Date.now()) { rememberCatalog(cache.get(key).data); reply(res,200,cache.get(key).data); return; }
-                if (!pending.has(key)) pending.set(key,consoleCatalog(platform,region,query,{cursor,sort,source,onlyDeals}));
+                if (!pending.has(key)) pending.set(key,consoleCatalog(platform,region,query,{cursor,sort,source,onlyDeals,discount}));
                 try {
                     const data = await pending.get(key);
                     rememberCatalog(data);
@@ -67,7 +81,7 @@ function createServer({ fetchImpl = fetch } = {}) {
                 const [base, ttl] = upstreams[url.pathname];
                 const target = new URL(base);
                 if (['/api/deals', '/api/games'].includes(url.pathname)) {
-                    const allowed = new Set(['pageSize', 'pageNumber', 'sortBy', 'storeID', 'title', 'onSale', 'steamRating', 'upperPrice', 'AAA', 'id', 'limit']);
+                    const allowed = new Set(['desc', 'pageSize', 'pageNumber', 'sortBy', 'storeID', 'title', 'onSale', 'steamRating', 'upperPrice', 'AAA', 'id', 'limit']);
                     for (const [key, value] of url.searchParams) {
                         if (!allowed.has(key) || value.length > 250) { reply(res, 400, { error: 'Parámetro inválido' }); return; }
                         target.searchParams.set(key, value);
@@ -120,7 +134,7 @@ function createServer({ fetchImpl = fetch } = {}) {
             res.setHeader('Content-Type', mime[path.extname(file)]);
             res.end(req.method === 'HEAD' ? undefined : await fs.readFile(file));
         } catch (error) {
-            const status = error.code === 'ENOENT' ? 404 : error.name === 'TimeoutError' ? 504 : 502;
+            const status = error.upstreamStatus===429?429:error.code === 'ENOENT' ? 404 : error.name === 'TimeoutError' ? 504 : 502;
             reply(res, status, { error: status === 404 ? 'Recurso no encontrado' : 'No se pudo consultar el proveedor. Inténtalo de nuevo.' });
         }
     });

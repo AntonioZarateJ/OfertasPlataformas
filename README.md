@@ -117,7 +117,7 @@ Fuentes comprobadas: catálogo público regional de Xbox, ofertas de PlayStation
 
 La búsqueda en consolas consulta ahora los servicios de búsqueda de cada proveedor; consulta los límites en la sección de paginación. El filtro de ofertas sólo admite un precio menor al precio regular publicado. Las keys sin precio regular comprobable aparecen al desactivar el filtro. Eneba se filtra por plataforma y región declarada, pero la activación y los cargos finales se confirman en destino. No se mezclan monedas para decidir una mejor compra. La edición y la plataforma específica (incluido Switch 2) se muestran en cada tarjeta.
 
-Los filtros de PC basados en reseñas Steam y AAA no se aplican a consolas. No se incorporaron productos de consola a las alertas USD antiguas. Las instrucciones de cuentas y alertas se conservan en `CUENTAS-Y-ALERTAS.md`.
+Los filtros de PC basados en reseñas Steam y AAA no se aplican a consolas. Los productos de consola usan metas en su moneda original, separadas de las alertas USD de PC. Las instrucciones de cuentas y alertas se conservan en `CUENTAS-Y-ALERTAS.md`.
 
 ## Búsqueda y paginación de consolas
 
@@ -125,7 +125,7 @@ La nueva integración usa la búsqueda de catálogo de Xbox, búsqueda y categor
 
 Cada carga muestra hasta 60 resultados y el botón Cargar más añade hasta otros 60. La aplicación reúne páginas de distinto tamaño del proveedor, descarta duplicados y cancela respuestas de consultas anteriores. Si hay pocos resultados que cumplan los filtros puede mostrar menos de 60 y permitir seguir consultando páginas. No descarga todo el catálogo de golpe.
 
-Filtros: tienda, sólo ofertas, orden por precio ascendente/descendente, descuento ascendente/descendente, reseñas disponibles de Xbox y presupuesto máximo desplegable. El orden y presupuesto se aplican a los resultados cargados; no garantizan el orden global de todo el catálogo remoto. Las fuentes sin valoraciones no reciben puntuaciones inventadas.
+Filtros: tienda, alcance Solo ofertas/Catálogo completo, porcentaje exacto/rango, orden por precio ascendente/descendente, descuento ascendente/descendente y reseñas disponibles de Xbox. El orden se aplica a los resultados cargados; no garantizan el orden global de todo el catálogo remoto. Las fuentes sin valoraciones no reciben puntuaciones inventadas.
 
 La cobertura depende de la región, stock, formato y límites públicos de cada proveedor. Xbox puede devolver sólo sus primeras coincidencias en búsqueda, y algunos proveedores limitan la profundidad paginable. La interfaz no afirma haber recuperado todo el catálogo si la fuente no permite hacerlo. Las claves públicas de búsqueda de Nintendo son las del escaparate para lectura, no credenciales administrativas. Si las tiendas cambian estos servicios, se deberá actualizar el adaptador; un fallo se informa sin inventar precios.
 
@@ -156,3 +156,16 @@ Estos filtros se aplican a páginas consultadas: si la fuente no permite ese fil
 Consolas estrenan tarjetas con portada, etiquetas de plataforma/fuente/descuento, precio destacado y accesos a comparar y comprar. El comparador incorpora un resumen de mejor oficial consultado, mejor externo consultado y registro observado. Su diseño conserva la separación entre ediciones, monedas y alcance de la cobertura; no transforma registros insuficientes en mínimos históricos absolutos.
 
 Se añadieron pruebas de porcentaje exacto, límites inclusivos, 0% con catálogo completo y conservación de filtros al cambiar alcance en PC y consola. Se comprobó el diseño en anchos de 320, 390, 768 y 1440 píxeles.
+
+
+## Cobertura de descuentos, identidad y favoritos de consola
+
+El filtro de PC ya consulta todas las tiendas oficiales cubiertas por CheapShark, sin limitar el catálogo a Steam. Para porcentajes exactos o rangos localiza primero el tramo de Savings mediante búsqueda binaria sobre las páginas del proveedor y después reúne coincidencias, con hasta 60 juegos por carga. Se conserva el excedente para la siguiente carga y el orden elegido se aplica a las coincidencias recuperadas. Si falla la localización se recorre el catálogo; una consulta incompleta no se presenta como inexistencia de ofertas.
+
+El porcentaje de PC corresponde a la referencia de CheapShark en USD, que puede diferir del descuento regional de Steam. La consulta regional de Steam sigue mostrándose aparte y no sustituye la referencia de otras tiendas. El enlace de compra ahora corresponde a la tienda que publicó ese precio. Esto amplía la cobertura de la fuente; no convierte CheapShark en un inventario regional completo ni incluye automáticamente todos los mercados de claves de internet.
+
+En consola el filtro recorre páginas posteriores hasta reunir coincidencias o agotar la paginación disponible. Nintendo recibe además el rango numérico en su consulta para reducir descargas. Se informa si una fuente falla o quedan páginas; las limitaciones de búsqueda de Xbox y la cobertura de Eneba siguen vigentes. El límite de seguridad por consulta es de 400 lotes; cuando hay continuación se permite seguir cargando.
+
+Las cuatro plataformas tienen un acento visual propio. Las tarjetas y el comparador de consola incluyen favoritos y precio objetivo por producto, tienda, plataforma, región y moneda original. Estas metas se almacenan separadas de las alertas USD de PC y se revisan al abrir la Wishlist. Los precios no se intercambian entre regiones ni monedas. No hay tareas periódicas ni avisos por correo activados. Las instrucciones de configuración de cuentas y notificaciones en CUENTAS-Y-ALERTAS.md se mantienen.
+
+Las pruebas de regresión cubren coincidencias posteriores a las primeras páginas, localización de límites del descuento, cargas de 60, favoritos de las tres consolas, persistencia, metas en moneda nativa y diseño del comparador en móvil.

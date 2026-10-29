@@ -1,3 +1,5 @@
+let pendingPCDeals = [];
+let pcSourceHasMore = true;
         // Catálogo: cada vista es dueña de su petición; las respuestas antiguas se descartan.
         async function executeCatalogFetch(resetGrid = true) {
             if (activeEcosystem !== 'pc') return loadConsoleCatalog(resetGrid);
@@ -10,6 +12,7 @@
             document.getElementById('catalogError').classList.add('hidden-el');
             if (resetGrid) {
                 currentPage = 0;
+                pendingPCDeals=[];pcSourceHasMore=true;
                 currentDeals = [];
                 loadedCountBadge.textContent = '0';
                 gamesGrid.replaceChildren();
@@ -18,25 +21,42 @@
                 showLoader('Cargando ofertas...');
             }
             try {
-                const pagesToScan = config.minDiscount >= 80 ? 2 : 1;
-                let fetchedBatch = [];
+                const restricted = config.discountFilter && config.discountFilter.mode !== 'any';
+                const pagesToScan = restricted ? 400 : 1;
+                const ascending=restricted&&config.discountFilter.max<=50;
+                if(restricted && currentPage===0){
+                    const seek=new URLSearchParams({discount:String(ascending?config.discountFilter.min:config.discountFilter.max),desc:ascending?'1':'0'});
+                    if(query)seek.set('title',query);
+                    if(config.onSale==='1'||config.discountFilter.min>0)seek.set('onSale','1');
+                    if(config.steamRating>0)seek.set('steamRating',String(config.steamRating));
+                    if(config.onlyAAA)seek.set('AAA','1');
+                    loadingText.textContent='Localizando el porcentaje en el catálogo de las tiendas…';
+                    try{const position=await requestJSON('/api/deals-position?'+seek,{signal:controller.signal,timeout:45000});if(generation!==catalogGeneration)return;if(Number.isInteger(position.page)&&position.page>=0)currentPage=position.page;}catch(error){if(controller.signal.aborted)throw error;}
+                }
+                let fetchedBatch = pendingPCDeals.splice(0);
                 let pagesRead = 0;
-                let hasMore = true;
-                for (let i = 0; i < pagesToScan; i++) {
-                    const params = new URLSearchParams({ pageSize: '60', pageNumber: String(currentPage + i), sortBy: config.sortBy });
+                let scanFailure=false;
+                let hasMore = pcSourceHasMore;
+                for (let i = 0; i < pagesToScan && hasMore && new Set(fetchedBatch.map(d=>d.gameID||d.dealID)).size < 60; i++) {
+                    const params = new URLSearchParams({ pageSize: '60', pageNumber: String(currentPage + i), sortBy: restricted ? 'Savings' : config.sortBy });
                     if (query) params.set('title', query);
-                    else params.set('storeID', '1');
-                    if (config.onSale === '1') params.set('onSale', '1');
+                    // Consultar todas las tiendas cubiertas por CheapShark, no sólo Steam.
+                    if (restricted) params.set('desc',ascending?'1':'0');
+                    if (config.onSale === '1'||restricted&&config.discountFilter.min>0) params.set('onSale', '1');
                     if (config.steamRating > 0) params.set('steamRating', String(config.steamRating));
 
                     if (config.onlyAAA) params.set('AAA', '1');
-                    const data = await requestJSON(`${DEALS_API}?${params}`, { signal: controller.signal });
+                    let data;
+                    try{data=await requestJSON(`${DEALS_API}?${params}`,{signal:controller.signal});}
+                    catch(error){if(controller.signal.aborted||!pagesRead&&!fetchedBatch.length)throw error;scanFailure=true;break;}
                     if (generation !== catalogGeneration) return;
                     if (!Array.isArray(data)) throw new Error('Respuesta de catálogo inválida');
                     pagesRead++;
                     hasMore = data.length === 60;
                     fetchedBatch.push(...data.filter(d => matchesDiscount(d.savings || 0, config.discountFilter)));
-                    if (!hasMore) break;
+                    loadingText.textContent = `Buscando coincidencias en las tiendas… ${pagesRead} página(s) revisadas, ${new Set(fetchedBatch.map(d=>d.gameID||d.dealID)).size} juegos encontrados.`;
+                    if(restricted && data.length && data.every(d=>ascending?Math.round(Number(d.savings||0))>config.discountFilter.max:Math.round(Number(d.savings||0))<config.discountFilter.min))hasMore=false;
+                    if (!hasMore || new Set(fetchedBatch.map(d=>d.gameID||d.dealID)).size >= 60) break;
                 }
                 if (generation !== catalogGeneration) return;
                 currentPage += pagesRead;
@@ -47,14 +67,23 @@
                     seen.add(key);
                     return true;
                 });
+                pcSourceHasMore=hasMore;
+                pendingPCDeals=uniqueNew.splice(60);
+                hasMore=hasMore||pendingPCDeals.length>0;
                 currentDeals.push(...uniqueNew);
                 updateSavedPrices(uniqueNew);
                 loadedCountBadge.textContent = currentDeals.length;
                 hideLoader();
-                emptyState.classList.toggle('hidden-el', currentDeals.length > 0);
-                renderStandardGameCards(uniqueNew);
+                emptyState.classList.toggle('hidden-el', currentDeals.length > 0 || hasMore);
+                if(restricted){
+                    const sorts={Price:(a,b)=>Number(a.salePrice)-Number(b.salePrice),Savings:(a,b)=>Number(b.savings)-Number(a.savings),Reviews:(a,b)=>Number(b.steamRatingPercent)-Number(a.steamRatingPercent),Metacritic:(a,b)=>Number(b.metacriticScore)-Number(a.metacriticScore),Release:(a,b)=>Number(b.releaseDate)-Number(a.releaseDate),'Deal Rating':(a,b)=>Number(b.dealRating)-Number(a.dealRating),DealRating:(a,b)=>Number(b.dealRating)-Number(a.dealRating)};
+                    currentDeals.sort(sorts[config.sortBy]||sorts.DealRating);gamesGrid.replaceChildren();renderStandardGameCards(currentDeals);
+                }else renderStandardGameCards(uniqueNew);
                 loadMoreContainer.classList.toggle('hidden-el', !hasMore);
-                paginationInfo.textContent = `Mostrando ${currentDeals.length} juegos en pantalla`;
+                paginationInfo.textContent = `Mostrando ${currentDeals.length} juegos · ${pagesRead} página(s) consultadas${hasMore ? ' · hay más catálogo disponible' : ' · páginas disponibles revisadas'}`;
+                if(restricted)paginationInfo.textContent+=' · orden sobre las coincidencias cargadas';
+                if(scanFailure)showCatalogError('La tienda limitó o interrumpió la consulta. Conservamos los resultados recuperados; puedes continuar con Cargar más.');
+                else if (!currentDeals.length && hasMore) showCatalogError('La búsqueda sigue teniendo páginas pendientes; aún no podemos concluir que no haya ofertas. Continúa la búsqueda.');
             } catch (error) {
                 if (generation !== catalogGeneration || controller.signal.aborted) return;
                 hideLoader();
@@ -83,7 +112,7 @@
 
                 // Si el usuario eligió consola (Xbox/PS/Switch), el botón rápido apunta al buscador de Keys de esa consola; en PC va a Steam
                 const directStoreUrl = activeEcosystem === 'pc'
-                    ? (steamId ? `${STEAM_APP_URL}${steamId}` : dealRedirectURL(game.dealID))
+                    ? (game.dealID ? dealRedirectURL(game.dealID) : `${STEAM_APP_URL}${steamId}`)
                     : KEY_MARKETS_CATALOG[0].buildUrl(game.title, activeEcosystem);
 
                 const directBtnLabel = activeEcosystem === 'pc' ? 'Tienda' : `Key ${ecoMeta.shortBadge.split(' ')[0]}`;
@@ -91,7 +120,7 @@
                 const ratingPct = parseInt(game.steamRatingPercent || 0);
                 const metacritic = parseInt(game.metacriticScore || 0);
                 const storeName = activeEcosystem === 'pc'
-                    ? (storesMap[game.storeID]?.name || 'Steam')
+                    ? (storesMap[game.storeID]?.name || (String(game.storeID)==='1'?'Steam':'Tienda oficial'))
                     : ecoMeta.shortBadge;
 
                 const card = document.createElement('div');
@@ -205,7 +234,8 @@
                 const regional = document.createElement('p');
                 regional.className = 'text-xs text-emerald-300 px-4 pb-3';
                 card.appendChild(regional);
-                if (steamId) void showSteamRegionalPrice(regional, steamId);
+                if (steamId && String(game.storeID)==='1') void showSteamRegionalPrice(regional, steamId);
+                else regional.textContent='Referencia de esta tienda en USD convertida; confirma el precio regional al comprar.';
                 prepareImages(card);
                 fragment.appendChild(card);
             });

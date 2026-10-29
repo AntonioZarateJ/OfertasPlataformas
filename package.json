@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build:css": "tailwindcss -c tailwind.config.cjs -i assets/css/tailwind.input.css -o assets/css/tailwind.css --minify",
-    "test": "node --test tests/server.cjs tests/consoles.cjs tests/comparison.cjs tests/filters.cjs tests/browser.cjs",
+    "test": "node --test tests/server.cjs tests/consoles.cjs tests/comparison.cjs tests/filters.cjs tests/discount-pagination.cjs tests/browser.cjs",
     "start": "node server.cjs",
     "test:server": "node --test tests/server.cjs",
     "test:browser": "node tests/browser.cjs"

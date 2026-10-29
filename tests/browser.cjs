@@ -185,7 +185,7 @@ const server = http.createServer((req, res) => {
             await expect(page.locator('[data-ecosystem]')).toHaveCount(4);
             await page.locator('[data-chip="top"]').click();
             await expect(cards).toHaveCount(60);
-            await expect(cards.first().locator('a')).toHaveAttribute('href', /steampowered/);
+            await expect(cards.first().locator('a')).toHaveAttribute('href', /cheapshark.*redirect/);
         });
         await test('Filtros personalizados y caché de consultas', async () => {
             await reset();

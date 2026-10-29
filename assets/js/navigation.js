@@ -3,6 +3,7 @@
             if (!ECOSYSTEM_META[ecoKey]) return;
             document.getElementById('platformPriceNotice').classList.toggle('hidden-el', ecoKey === 'pc');
             activeEcosystem = ecoKey;
+            document.documentElement.dataset.platform = ecoKey;
             modalKeyPlatform = ecoKey;
 
             // Actualizar botones superiores
@@ -129,7 +130,7 @@
                 purple: 'bg-purple-500/15 border-purple-500/30 text-purple-400'
             };
             modeIconBox.className = `w-11 h-11 rounded-xl border flex items-center justify-center text-xl ${colors[colorKey] || colors.sky}`;
-            modeIconBox.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+            modeIconBox.innerHTML = `<i class="${ECOSYSTEM_META[activeEcosystem].icon}"></i>`;
         }
 
         sortSelect.addEventListener('change', () => {

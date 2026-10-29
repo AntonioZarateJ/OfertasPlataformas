@@ -55,6 +55,7 @@
             renderWishlistDrawerItems();
             document.getElementById('wishlistDrawerModal').classList.remove('hidden-el');
             void refreshWishlistPrices();
+            void refreshConsoleWishlistPrices();
         }
 
         function closeWishlistDrawer() {
@@ -82,6 +83,7 @@
             }
 
             list.forEach(item => {
+                if(item.native){container.appendChild(renderConsoleWishCard(item));return;}
                 const saleUsd = parseFloat(item.salePrice || 0);
                 const targetUsd = item.targetPriceUsd ? parseFloat(item.targetPriceUsd) : null;
                 const alertMet = targetUsd !== null && saleUsd <= targetUsd;

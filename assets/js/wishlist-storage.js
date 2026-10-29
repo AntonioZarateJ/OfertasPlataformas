@@ -35,6 +35,8 @@
                 if (['__proto__', 'constructor', 'prototype'].includes(key)) return;
                 if (!item || typeof item !== 'object' || typeof item.title !== 'string') return;
                 if (!Number.isFinite(Number(item.salePrice)) || Number(item.salePrice) < 0) return;
+                if(item.native && (!['xbox','ps','switch'].includes(item.platform)||!purchaseRegions[item.region]||!/^[A-Z]{3}$/.test(item.currency)||!Number.isFinite(Number(item.price))||Number(item.price)<0))return;
+                if(item.native) item={...item,price:Number(item.price),targetPrice:Number(item.targetPrice)>0?Number(item.targetPrice):null};
                 result[key] = { ...item, gameID: key, savings: Number(item.savings) || 0, targetPriceUsd: Number(item.targetPriceUsd) > 0 ? Number(item.targetPriceUsd).toFixed(2) : null };
             });
             return result;
@@ -102,6 +104,7 @@
         }
 
         function refreshWishlistHeartButtonsOnGrid() {
+            refreshConsoleHearts();
             document.querySelectorAll('.wishlist-card-btn').forEach(btn => {
                 const gId = btn.getAttribute('data-game-id');
                 const inWish = isGameInWishlist(gId);
@@ -127,7 +130,7 @@
             if (drawerTotal) drawerTotal.textContent = total;
 
             // Evaluar cuántas alertas de precio ya se cumplieron
-            const triggered = list.filter(item => item.targetPriceUsd && Number.isFinite(Number(item.salePrice)) && parseFloat(item.salePrice) <= parseFloat(item.targetPriceUsd));
+            const triggered = list.filter(item => item.native ? item.targetPrice>0 && Number.isFinite(item.price) && item.price<=item.targetPrice : item.targetPriceUsd && Number.isFinite(Number(item.salePrice)) && parseFloat(item.salePrice) <= parseFloat(item.targetPriceUsd));
             const topAlertBadge = document.getElementById('triggeredAlertsTopBadge');
             const topAlertCount = document.getElementById('triggeredAlertsCount');
             const bellDot = document.getElementById('alertBellDot');

@@ -1,19 +1,21 @@
 let comparisonController;
 let comparisonSelection;
 function closeConsoleComparison(){comparisonController?.abort();document.getElementById('consoleComparison').close();}
-async function openConsoleComparison(item){
+async function openConsoleComparison(item,platform=activeEcosystem,region=currentRegion){
  comparisonController?.abort();
  comparisonSelection=item;
  const controller=new AbortController();comparisonController=controller;
  const modal=document.getElementById('consoleComparison');
  const content=document.getElementById('consoleComparisonBody');
+ modal.dataset.platform=platform;
+ document.querySelector('.comparison-heading>div>p').innerHTML=`<i class="${ECOSYSTEM_META[platform].icon}"></i> ${escapeHTML(ECOSYSTEM_META[platform].name)} · COMPARAR PRECIOS`;
  document.getElementById('consoleComparisonTitle').textContent=item.title;
  document.querySelector('.comparison-poster')?.remove();
  if(safeURL(item.image)){const poster=document.createElement('img');poster.className='comparison-poster';poster.src=safeURL(item.image);poster.alt='';document.querySelector('.comparison-heading').prepend(poster);}
  if(!modal.open)modal.showModal();
  content.innerHTML='<p class="comparison-state" role="status">Consultando opciones para esta edición y región…</p>';
  try{
-  const params=new URLSearchParams({platform:activeEcosystem,region:currentRegion,title:item.title,id:item.id,store:item.store});
+  const params=new URLSearchParams({platform,region,title:item.title,id:item.id,store:item.store});
   const data=await requestJSON('/api/console-comparison?'+params,{signal:controller.signal,timeout:18000});
   if(controller.signal.aborted)return;
   const format=q=>new Intl.NumberFormat('es-MX',{style:'currency',currency:q.currency}).format(q.price)+' '+q.currency;
@@ -38,6 +40,8 @@ async function openConsoleComparison(item){
   html+='<details><summary>Consultar más tiendas</summary><p class="comparison-note">Enlaces de búsqueda sin precio verificado. Comprueba que sea un juego completo, una clave y la región correcta; evita cuentas y claves aleatorias.</p><div class="comparison-links">'+data.searchLinks.map(link=>`<a href="${escapeHTML(safeURL(link.url))}" target="_blank" rel="noopener noreferrer">${escapeHTML(link.name)} ↗</a>`).join('')+'</div></details>';
   html+='<p class="comparison-note">'+escapeHTML(data.coverage)+'</p><div class="comparison-sources">'+data.sources.map(s=>`<span>${escapeHTML(s.name)}: ${s.status==='ok'?'consulta completada':s.status==='skipped'?'no consultada':'no se pudo consultar'}</span>`).join('')+'</div>';
   content.innerHTML=html;
- }catch(error){if(!controller.signal.aborted){content.innerHTML='<p class="comparison-state">No se pudo completar la comparación.</p><button class="console-compare" type="button" id="retryComparison">Reintentar</button>';document.getElementById('retryComparison').onclick=()=>openConsoleComparison(item);}}
+  const fresh=data.offers.find(q=>String(q.id)===String(item.id)&&q.store===item.store&&q.currency===item.currency);
+  addConsoleSaveControls(content,{...item,...fresh,checkedAt:fresh?data.checkedAt:item.checkedAt},platform,region);
+ }catch(error){if(!controller.signal.aborted){content.innerHTML='<p class="comparison-state">No se pudo completar la comparación.</p><button class="console-compare" type="button" id="retryComparison">Reintentar</button>';document.getElementById('retryComparison').onclick=()=>openConsoleComparison(item,platform,region);}}
 }
 document.getElementById('consoleComparison').addEventListener('cancel',()=>comparisonController?.abort());

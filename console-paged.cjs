@@ -30,9 +30,11 @@ async function ps(region,q,cursor,onlyDeals){
  const last=result.pageInfo?.isLast ?? products.length<24;
  return {items,next:last?null:{offset:offset+24,token:result.next||''},total:result.pageInfo?.totalCount};
 }
-async function nintendo(region,q,cursor,onlyDeals){
+async function nintendo(region,q,cursor,onlyDeals,sort,discount){
  // Clave pública de búsqueda usada por el propio escaparate; no es una clave administrativa.
- const params=new URLSearchParams({query:q,hitsPerPage:'60',page:String(cursor||0),filters:onlyDeals?'price.discounted=1':''});
+ const filters=onlyDeals?['price.discounted=1']:[];
+ if(discount)filters.push(`price.percentOff>=${discount.min-.5} AND price.percentOff<${discount.max+.5}`);
+ const params=new URLSearchParams({query:q,hitsPerPage:'60',page:String(cursor||0),filters:filters.join(' AND ')});
  const data=await request('https://u3b6gr4ua3-dsn.algolia.net/1/indexes/*/queries',{requests:[{indexName:'store_game_'+locales[region].replace('-','_').toLowerCase(),params:params.toString()}]},{'x-algolia-api-key':'a29c6927638bfd8cee23993e51e721c9','x-algolia-application-id':'U3B6GR4UA3'});
  const result=data.results?.[0];if(!Array.isArray(result?.hits))throw Error('Catálogo no disponible para esta región');
  const items=result.hits.flatMap(p=>{
@@ -73,8 +75,8 @@ async function searchEneba(platform,region,q,page=1){
  return {items,next:result.page+1<result.nbPages?result.page+2:null,total:result.nbHits};
 }
 async function catalog(platform,region,q='',options={}){
- const {cursor={},onlyDeals=false,sort='relevance',source='all'}=options;
- const jobs=[source==='external'||cursor.official===false?null:({xbox,ps,switch:nintendo}[platform])(region,q,cursor.official,onlyDeals,sort),source==='official'||cursor.external===false?null:external(platform,region,q,cursor.external,sort)];
+ const {cursor={},onlyDeals=false,sort='relevance',source='all',discount=null}=options;
+ const jobs=[source==='external'||cursor.official===false?null:({xbox,ps,switch:nintendo}[platform])(region,q,cursor.official,onlyDeals,sort,discount),source==='official'||cursor.external===false?null:external(platform,region,q,cursor.external,sort)];
  const result=await Promise.allSettled(jobs);
  const names=[{xbox:'Xbox Store',ps:'PlayStation Store',switch:'Nintendo eShop'}[platform],'Eneba'];
  const items=result.flatMap(r=>r.status==='fulfilled'&&r.value?r.value.items:[]);
