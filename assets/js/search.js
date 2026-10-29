@@ -94,7 +94,7 @@
             activeChip = 'search';
             currentSearchQuery = expandGameAlias(q);
             if (activeEcosystem !== 'pc') {
-                document.getElementById('consoleOnlyDeals').checked = false;
+                queryConfig.onSale='0';updateScopeNote();
                 sortContainer.classList.add('hidden-el');
                 void loadConsoleCatalog();
                 return;
@@ -105,8 +105,8 @@
             sortContainer.classList.remove('hidden-el');
 
             queryConfig.onSale = '0';
+            updateScopeNote();
             queryConfig.minDiscount = 0;
-            queryConfig.steamRating = 0;
             queryConfig.maxPriceUsd = 50;
             queryConfig.onlyAAA = false;
 

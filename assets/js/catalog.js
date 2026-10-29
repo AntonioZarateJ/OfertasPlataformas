@@ -28,14 +28,14 @@
                     else params.set('storeID', '1');
                     if (config.onSale === '1') params.set('onSale', '1');
                     if (config.steamRating > 0) params.set('steamRating', String(config.steamRating));
-                    if (config.maxPriceUsd < 50) params.set('upperPrice', String(config.maxPriceUsd));
+
                     if (config.onlyAAA) params.set('AAA', '1');
                     const data = await requestJSON(`${DEALS_API}?${params}`, { signal: controller.signal });
                     if (generation !== catalogGeneration) return;
                     if (!Array.isArray(data)) throw new Error('Respuesta de catálogo inválida');
                     pagesRead++;
                     hasMore = data.length === 60;
-                    fetchedBatch.push(...data.filter(d => Math.round(parseFloat(d.savings || 0)) >= config.minDiscount));
+                    fetchedBatch.push(...data.filter(d => matchesDiscount(d.savings || 0, config.discountFilter)));
                     if (!hasMore) break;
                 }
                 if (generation !== catalogGeneration) return;

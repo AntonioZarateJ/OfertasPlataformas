@@ -40,12 +40,14 @@
             cancelSuggestions();
             document.getElementById('catalogError').classList.add('hidden-el');
             activeChip = chipKey;
-            currentSearchQuery = '';
+            if (['free','wishlist'].includes(chipKey)) currentSearchQuery = '';
+            if (['top','all'].includes(chipKey)) queryConfig.onSale=chipKey==='top'?'1':'0';
+            updateScopeNote();
             if (activeEcosystem !== 'pc') {
                 document.querySelectorAll('[data-chip]').forEach(button => button.classList.toggle('active', button.dataset.chip === chipKey));
                 freeGamesSubBar.classList.add('hidden-el');
                 sortContainer.classList.add('hidden-el');
-                document.getElementById('consoleOnlyDeals').checked = chipKey !== 'all';
+                queryConfig.onSale = chipKey === 'all' ? '0' : '1';
                 void loadConsoleCatalog();
                 return;
             }
@@ -78,24 +80,12 @@
 
             // Configurar presets automáticos según la píldora elegida
             if (chipKey === 'top') {
-                queryConfig = { onSale: '1', minDiscount: 0, steamRating: 0, maxPriceUsd: 50, onlyAAA: false, sortBy: 'Deal Rating' };
-                sortSelect.value = 'Deal Rating';
-                setHeaderInfo('🔥 Ofertas Top Destacadas', 'Juegos con la mejor relación descuento/calidad en este momento.', 'fa-fire', 'sky');
-            } else if (chipKey === 'gems') {
-                queryConfig = { onSale: '1', minDiscount: 70, steamRating: 80, maxPriceUsd: 50, onlyAAA: false, sortBy: 'Reviews' };
-                sortSelect.value = 'Reviews';
-                setHeaderInfo('💎 Joyas Ocultas Aclamadas', 'Filtro inteligente activo: Rebaja mínima del 70% + Reseñas Muy Positivas (>=80%) en Steam.', 'fa-gem', 'cyan');
-            } else if (chipKey === 'aaa') {
-                queryConfig = { onSale: '1', minDiscount: 20, steamRating: 0, maxPriceUsd: 50, onlyAAA: true, sortBy: 'Savings' };
-                sortSelect.value = 'Savings';
-                setHeaderInfo('👑 Grandes Producciones (AAA)', 'Títulos de alto presupuesto (Precio normal >= $29.99 USD) actualmente en oferta.', 'fa-crown', 'amber');
-            } else if (chipKey === 'deep') {
-                queryConfig = { onSale: '1', minDiscount: 85, steamRating: 0, maxPriceUsd: 50, onlyAAA: false, sortBy: 'Savings' };
-                sortSelect.value = 'Savings';
-                setHeaderInfo('📉 Descuentos Extremos (-85% a -95%)', 'Juegos a precio de remate con al menos 85% de rebaja verificada.', 'fa-arrow-trend-down', 'emerald');
+                queryConfig = { ...queryConfig, onSale: '1', minDiscount: 0, maxPriceUsd: 50, onlyAAA: false };
+                sortSelect.value = queryConfig.sortBy;
+                setHeaderInfo('🔥 Ofertas de PC', 'Juegos con descuento según las fuentes consultadas.', 'fa-fire', 'sky');
             } else if (chipKey === 'all') {
-                queryConfig = { onSale: '0', minDiscount: 0, steamRating: 0, maxPriceUsd: 50, onlyAAA: false, sortBy: 'Deal Rating' };
-                sortSelect.value = 'Deal Rating';
+                queryConfig = { ...queryConfig, onSale: '0', minDiscount: 0, maxPriceUsd: 50, onlyAAA: false };
+                sortSelect.value = queryConfig.sortBy;
                 setHeaderInfo('🌐 Explorador de Todo el Catálogo', 'Mostrando juegos con y sin oferta para comparar precios en todas las tiendas.', 'fa-earth-americas', 'purple');
             } else if (chipKey === 'wishlist') {
                 sortContainer.classList.add('hidden-el');
@@ -106,7 +96,7 @@
                 return;
             }
 
-            activeCustomFiltersDot.classList.add('hidden-el');
+            activeCustomFiltersDot.classList.toggle('hidden-el',(queryConfig.discountFilter?.mode||'any')==='any'&&!queryConfig.steamRating);
             syncSlidersWithConfig();
             executeCatalogFetch(true);
         }

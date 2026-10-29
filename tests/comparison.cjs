@@ -41,7 +41,7 @@ test('Comparador y móvil conservan accesos únicos y controles operativos',asyn
  await expect(page.locator('#consoleComparison')).toBeVisible();
  await expect(page.locator('#consoleComparisonBody')).toContainText('455.29');
  await expect(page.locator('#consoleComparisonBody')).toContainText('Historial insuficiente');
- assert.equal(await page.locator('.comparison-row strong').first().textContent(),'Xbox Store');
+ assert.equal(await page.locator('.comparison-row strong').first().textContent(),' Xbox Store');
  await page.keyboard.press('Escape');await expect(page.locator('#consoleComparison')).not.toBeVisible();
  await page.setViewportSize({width:1440,height:1000});await expect(page.locator('#regionSelect')).toBeVisible();
  assert.deepEqual(errors,[]);

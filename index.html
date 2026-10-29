@@ -141,6 +141,7 @@
     <details id="mobileFilterPanel"><summary>Filtros y región <span id="mobileRegionLabel">México</span><i class="fa-solid fa-sliders"></i></summary><div id="mobileFilterContent"></div></details>
     <p id="platformPriceNotice" class="hidden-el text-center text-xs text-amber-300 px-4 py-2">Los precios del catálogo corresponden a PC. Los enlaces de consola buscan keys; confirma el precio y la plataforma en la tienda.</p>
 
+    <p id="catalogScopeNote" class="catalog-scope-note">Solo ofertas: juegos con descuento. Puedes elegir un porcentaje exacto o un rango en Filtros.</p>
     <!-- 3. BARRA HORIZONTAL DE PÍLDORAS INTELIGENTES (REEMPLAZA A LA BARRA LATERAL CONFUSA) -->
     <section class="bg-[#101726]/90 border-b border-white/10 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 py-3">
@@ -151,7 +152,7 @@
                 <div class="flex items-center gap-2 overflow-x-auto pb-1 xl:pb-0 no-scrollbar">
                     <button type="button" data-chip="top" onclick="selectSmartChip('top')"
                         class="smart-chip active px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-white/10 bg-steam-base text-gray-200 flex items-center gap-2">
-                        <span>🔥 Ofertas Top</span>
+                        <span>🔥 Solo ofertas</span>
                     </button>
 
                     <button type="button" data-chip="free" onclick="selectSmartChip('free')"
@@ -161,39 +162,14 @@
                         <span class="bg-emerald-500 text-gray-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">HOT</span>
                     </button>
 
-                    <button type="button" data-chip="gems" onclick="selectSmartChip('gems')"
-                        class="smart-chip px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-white/10 bg-steam-base text-gray-200 hover:bg-steam-light flex items-center gap-2"
-                        title="Descuento >= 70% y Reseñas Muy Positivas (>= 80%)">
-                        <span>💎 Joyas Ocultas</span>
-                    </button>
-
-                    <button type="button" data-chip="aaa" onclick="selectSmartChip('aaa')"
-                        class="smart-chip px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-white/10 bg-steam-base text-gray-200 hover:bg-steam-light flex items-center gap-2"
-                        title="Juegos de gran presupuesto (Precio base >= $29.99 USD)">
-                        <span>👑 Grandes AAA</span>
-                    </button>
-
-                    <button type="button" data-chip="deep" onclick="selectSmartChip('deep')"
-                        class="smart-chip px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-white/10 bg-steam-base text-gray-200 hover:bg-steam-light flex items-center gap-2"
-                        title="Rebajas extremas del 85% al 95%">
-                        <span>📉 Mínimos (-85%+)</span>
-                    </button>
-
                     <button type="button" data-chip="all" onclick="selectSmartChip('all')"
                         class="smart-chip px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-white/10 bg-steam-base text-gray-200 hover:bg-steam-light flex items-center gap-2"
                         title="Explorar todos los juegos con o sin descuento">
-                        <span>🌐 Todo el Catálogo</span>
-                    </button>
-
-                    <button type="button" data-chip="wishlist" onclick="selectSmartChip('wishlist')"
-                        class="smart-chip px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-rose-500/40 bg-rose-950/30 text-rose-300 hover:bg-rose-900/40 flex items-center gap-2"
-                        title="Filtrar mis juegos guardados y alertas activas">
-                        <i class="fa-solid fa-heart text-rose-400"></i>
-                        <span>Mi Wishlist</span>
+                        <span>🌐 Catálogo completo</span>
                     </button>
                 </div>
 
-                <!-- Controles derechos: Ordenar + Botón Ajustes Finos Ocultos -->
+                <!-- Controles derechos: Ordenar + Botón Filtros Ocultos -->
                 <div class="flex items-center justify-between sm:justify-end gap-2.5 pt-1 xl:pt-0 border-t border-white/5 xl:border-none">
                     <div class="flex items-center gap-2 min-w-0" id="sortContainer">
                         <label for="sortSelect" class="text-xs text-gray-400 font-medium hidden sm:inline">Ordenar:</label>
@@ -211,7 +187,7 @@
                     <button type="button" id="toggleFineTuneBtn"
                         class="bg-steam-base hover:bg-steam-light text-sky-400 border border-sky-500/30 rounded-xl py-2 px-3.5 text-xs font-bold transition flex items-center gap-2">
                         <i class="fa-solid fa-sliders"></i>
-                        <span>Ajustes Finos</span>
+                        <span>Filtros</span>
                         <span id="activeCustomFiltersDot" class="hidden-el w-2 h-2 rounded-full bg-amber-400"></span>
                     </button>
                 </div>
@@ -219,76 +195,13 @@
             </div>
 
             <!-- CAJÓN DESPLEGABLE OCULTO: "AJUSTES FINOS" (SOLO SE VE SI EL USUARIO LO ABRE) -->
-            <div id="fineTuneDrawer" class="hidden-el mt-3 pt-4 pb-2 border-t border-white/10">
-                <div class="bg-[#0b101b] border border-sky-500/30 rounded-2xl p-4 shadow-2xl">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-wand-magic-sparkles text-sky-400 text-sm"></i>
-                            <h3 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Calibración Manual de Filtros</h3>
-                            <span class="text-[11px] text-gray-400 hidden sm:inline">— Personaliza los parámetros si buscas algo muy específico</span>
-                        </div>
-                        <button type="button" onclick="resetFineTuneFilters()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1">
-                            <i class="fa-solid fa-rotate-left"></i>
-                            <span>Restablecer</span>
-                        </button>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                        <!-- Control 1: % Descuento -->
-                        <div class="bg-steam-base/60 p-3 rounded-xl border border-white/5">
-                            <div class="flex justify-between text-xs mb-2">
-                                <span class="text-gray-300 font-semibold">Descuento Mínimo</span>
-                                <span id="drawerDiscountLabel" class="text-emerald-400 font-extrabold">0% (Todos)</span>
-                            </div>
-                            <input type="range" id="drawerDiscountSlider" min="0" max="90" step="5" value="0" class="w-full">
-                            <div class="flex justify-between text-[10px] text-gray-500 mt-1">
-                                <span>0%</span>
-                                <span>50%</span>
-                                <span>90%</span>
-                            </div>
-                        </div>
-
-                        <!-- Control 2: Reseñas Steam (Antibasura) -->
-                        <div class="bg-steam-base/60 p-3 rounded-xl border border-white/5">
-                            <div class="flex justify-between text-xs mb-2">
-                                <span class="text-gray-300 font-semibold">Calidad Reseñas Steam</span>
-                                <span id="drawerRatingLabel" class="text-sky-400 font-extrabold">Todas</span>
-                            </div>
-                            <input type="range" id="drawerRatingSlider" min="0" max="90" step="10" value="0" class="w-full">
-                            <div class="flex justify-between text-[10px] text-gray-500 mt-1">
-                                <span>Todas</span>
-                                <span>70% Positivas</span>
-                                <span>80%+ Joyas</span>
-                            </div>
-                        </div>
-
-                        <!-- Control 3: Precio Máximo en Moneda Local -->
-                        <div class="bg-steam-base/60 p-3 rounded-xl border border-white/5">
-                            <div class="flex justify-between text-xs mb-2">
-                                <span class="text-gray-300 font-semibold">Presupuesto Máximo</span>
-                                <span id="drawerPriceLabel" class="text-amber-400 font-extrabold">Sin límite</span>
-                            </div>
-                            <input type="range" id="drawerPriceSlider" min="5" max="50" step="5" value="50" class="w-full">
-                            <div class="flex justify-between text-[10px] text-gray-500 mt-1">
-                                <span id="drawerMinPriceHint">$5</span>
-                                <span id="drawerMidPriceHint">$25</span>
-                                <span>Sin tope</span>
-                            </div>
-                        </div>
-
-                        <!-- Control 4: Opciones adicionales y Aplicar -->
-                        <div class="bg-steam-base/60 p-3 rounded-xl border border-white/5 flex flex-col justify-between">
-                            <label class="flex items-center justify-between cursor-pointer text-xs text-gray-300 font-semibold mb-2">
-                                <span>Solo juegos en oferta</span>
-                                <input type="checkbox" id="drawerOnSaleToggle" checked class="accent-sky-400 w-4 h-4 rounded cursor-pointer">
-                            </label>
-                            <button type="button" onclick="applyCustomDrawerFilters()"
-                                class="w-full bg-sky-500 hover:bg-sky-400 text-gray-950 font-extrabold py-2 px-3 rounded-xl text-xs transition shadow-lg">
-                                Aplicar Ajustes Finos
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            <div id="fineTuneDrawer" class="hidden-el refined-filters">
+              <div class="filter-panel-heading"><div><span>AFINA LOS RESULTADOS</span><h3>Elige qué quieres encontrar</h3></div><button type="button" onclick="resetFineTuneFilters()">Restablecer filtros</button></div>
+              <div class="refined-filter-grid">
+                <div class="filter-field"><label for="drawerDiscountMode">Descuento</label><select id="drawerDiscountMode" onchange="updateDrawerLabels()"><option value="any">Cualquier porcentaje</option><option value="exact">Un porcentaje exacto</option><option value="range">Un rango de porcentajes</option></select><div class="discount-values"><label id="drawerValueLabel">Porcentaje <input type="number" id="drawerDiscountSlider" min="0" max="100" step="1" value="10"></label><label id="drawerEndLabel">Hasta <input type="number" id="drawerDiscountEnd" min="0" max="100" step="1" value="50"></label></div><p id="drawerDiscountLabel"></p></div>
+                <div class="filter-field"><label for="drawerRatingSlider">Reseñas positivas de Steam</label><input type="range" id="drawerRatingSlider" min="0" max="100" step="10" value="0"><p id="drawerRatingLabel">Sin mínimo de reseñas</p><small>Valoración de Steam, no de otras plataformas.</small></div>
+              </div>
+              <div class="filter-panel-footer"><p>El porcentaje se aplica al descuento publicado por la fuente, redondeado como en la tarjeta.</p><button type="button" onclick="applyCustomDrawerFilters()">Aplicar filtros <i class="fa-solid fa-arrow-right"></i></button></div>
             </div>
 
             <!-- SUB-BARRA ESPECIAL PARA JUEGOS 100% GRATIS -->
@@ -322,7 +235,7 @@
                 </div>
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <h1 id="catalogHeaderTitle" class="text-lg sm:text-xl font-black text-white font-display">🔥 Ofertas Top Destacadas</h1>
+                        <h1 id="catalogHeaderTitle" class="text-lg sm:text-xl font-black text-white font-display">🔥 Solo ofertas Destacadas</h1>
                         <span id="activeEcosystemBadge" class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border bg-sky-500/20 text-sky-300 border-sky-500/40">
                             <i class="fa-brands fa-steam mr-1"></i>Modo: PC (Steam / Epic)
                         </span>
@@ -359,9 +272,14 @@
             <button type="button" onclick="activeChip === 'free' ? loadFreeGamesMode() : executeCatalogFetch(true)" class="bg-steam-base rounded-lg px-4 py-2 text-white">Reintentar</button>
         </div>
 
-        <section id="consoleTools" class="hidden-el console-tools">
-          <div class="console-filters"><label>Mostrar <select id="consoleSource" onchange="loadConsoleCatalog()"><option value="all">Todas las tiendas</option><option value="official">Tiendas oficiales</option><option value="external">Mercados externos</option></select></label><label>Ordenar <select id="consoleOrder" onchange="loadConsoleCatalog()"><option value="relevance">Relevancia</option><option value="rating">Mejores reseñas disponibles</option><option value="priceAsc">Menor precio</option><option value="priceDesc">Mayor precio</option><option value="discountDesc">Mayor descuento</option><option value="discountAsc">Menor descuento</option></select></label><label><input id="consoleOnlyDeals" type="checkbox" checked onchange="loadConsoleCatalog()"> Sólo descuentos comprobados</label></div>
-          <details class="console-extra"><summary>Ajustar presupuesto</summary><label>Precio máximo en la moneda de la región <input id="consoleMaxPrice" type="number" min="0" step="0.01" placeholder="Sin límite" oninput="renderConsoleCatalog()"></label><p>El presupuesto y el orden se aplican a los resultados cargados.</p></details><div id="consoleSources"></div><p id="consoleScope"></p>
+        <section id="consoleTools" class="hidden-el console-tools refined-filters">
+          <div class="filter-panel-heading"><div><span>ENCUENTRA TU PRÓXIMO JUEGO</span><h3>Tu plataforma, tus preferencias</h3></div><button type="button" onclick="resetConsoleFilters()">Restablecer filtros</button></div>
+          <div class="console-filters refined-filter-grid">
+            <div class="filter-field"><label for="consoleSource"><i class="fa-solid fa-store"></i> Tiendas</label><select id="consoleSource" onchange="loadConsoleCatalog()"><option value="all">Oficiales y externas</option><option value="official">Sólo tiendas oficiales</option><option value="external">Sólo mercados externos</option></select><small>Siempre distinguimos la fuente de cada precio.</small></div>
+            <div class="filter-field"><label for="consoleOrder"><i class="fa-solid fa-arrow-down-wide-short"></i> Ordenar resultados</label><select id="consoleOrder" onchange="loadConsoleCatalog()"><option value="relevance">Relevancia</option><option value="rating">Mejores reseñas disponibles</option><option value="priceAsc">Menor precio</option><option value="priceDesc">Mayor precio</option><option value="discountDesc">Mayor descuento</option><option value="discountAsc">Menor descuento</option></select><small>Sobre las coincidencias cargadas.</small></div>
+            <div class="filter-field"><label for="consoleDiscountMode"><i class="fa-solid fa-percent"></i> Descuento</label><select id="consoleDiscountMode" onchange="applyConsoleDiscount()"><option value="any">Cualquier porcentaje</option><option value="exact">Un porcentaje exacto</option><option value="range">Un rango de porcentajes</option></select><div class="discount-values"><label id="consoleValueLabel">Porcentaje<input id="consoleDiscountValue" type="number" min="0" max="100" step="1" value="10" onchange="applyConsoleDiscount()"></label><label id="consoleEndLabel">Hasta<input id="consoleDiscountEnd" type="number" min="0" max="100" step="1" value="50" onchange="applyConsoleDiscount()"></label></div><p id="consoleDiscountLabel">Sin restricción de porcentaje.</p></div>
+          </div>
+          <details class="source-details"><summary>Fuentes consultadas y alcance de la búsqueda</summary><div id="consoleSources"></div><p id="consoleScope"></p></details>
         </section>
         <!-- Grid de Tarjetas -->
         <div id="gamesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>

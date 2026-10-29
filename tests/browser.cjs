@@ -107,15 +107,15 @@ const server = http.createServer((req, res) => {
             await sleep(700);
             await expect(page.locator('#searchDropdown')).toBeHidden();
         });
-        await test('Cambiar a wishlist durante una consulta no restaura el catálogo', async () => {
+        await test('Cambiar a juegos gratis durante una consulta no restaura el catálogo', async () => {
             await reset();
             await page.locator('#predictiveSearchInput').fill('lento');
             await page.locator('#predictiveSearchInput').press('Enter');
-            await page.locator('[data-chip="wishlist"]').click();
+            await page.locator('[data-chip="free"]').click();
             await sleep(700);
             await expect(cards).toHaveCount(0);
             await expect(page.locator('#loadingState')).toBeHidden();
-            await expect(page.locator('#emptyState')).toBeVisible();
+            await expect(page.locator('#gamesGrid .free-card')).toHaveCount(4);
         });
         await test('Wishlist persiste al recargar y el corazón no abre el modal', async () => {
             await reset();
@@ -157,7 +157,7 @@ const server = http.createServer((req, res) => {
         });
         await test('Errores del catálogo ofrecen reintento y se recuperan', async () => {
             mode.catalogFailure = true;
-            await page.evaluate(() => { responseCache.clear(); selectSmartChip('aaa'); });
+            await page.evaluate(() => { responseCache.clear(); selectSmartChip('top'); });
             await expect(page.locator('#catalogError')).toBeVisible();
             await expect(page.locator('#loadingState')).toBeHidden();
             mode.catalogFailure = false;
@@ -193,6 +193,7 @@ const server = http.createServer((req, res) => {
             await page.evaluate(() => executeCatalogFetch(true));
             assert.equal(calls.filter(c => c.url.includes('/deals?')).length, before);
             await page.locator('#toggleFineTuneBtn').click();
+            await page.locator('#drawerDiscountMode').selectOption('exact');
             await page.locator('#drawerDiscountSlider').fill('90');
             await page.evaluate(() => applyCustomDrawerFilters());
             await expect(cards).toHaveCount(0);

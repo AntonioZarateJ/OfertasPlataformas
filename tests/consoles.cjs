@@ -41,7 +41,7 @@ test('Cambiar consola reemplaza el catálogo; filtros y región usan datos propi
  await expect(page.locator('#gamesGrid')).not.toContainText('exclusivo PC');
  await page.locator('#consoleSource').selectOption('external');
  await expect(page.locator('.console-card')).toHaveCount(0);
- await page.locator('#consoleOnlyDeals').uncheck();
+ await page.locator('[data-chip="all"]').click();
  await expect(page.locator('.console-card')).toHaveCount(1);
  await page.locator('#consoleSource').selectOption('official');
  await page.locator('#regionSelect').selectOption('US');
@@ -84,14 +84,11 @@ test('Carga 60 en 60, busca sin oferta y ordena sin duplicar resultados', async 
  await p.locator('#consoleOrder').selectOption('priceDesc');
  await expect(p.locator('.console-card')).toHaveCount(60);
  await expect(p.locator('.console-price strong').first()).toContainText('60.00');
- await p.locator('.console-extra summary').click();
- await p.locator('#consoleMaxPrice').fill('10');
- await expect(p.locator('.console-card')).toHaveCount(10);
- await p.locator('#consoleMaxPrice').fill('');
+ await expect(p.locator('#consoleMaxPrice')).toHaveCount(0);
  await p.locator('#predictiveSearchInput').fill('Halo');
  await p.locator('#predictiveSearchInput').press('Enter');
  await expect(p.locator('.console-card h3').first()).toContainText('Halo');
- await expect(p.locator('#consoleOnlyDeals')).not.toBeChecked();
+ assert.equal(await p.evaluate(()=>queryConfig.onSale),'0');
  assert.equal(searchDeals,'0');
  await expect(p.locator('.console-card')).toHaveCount(60);
  } finally {await browser.close();await new Promise(r=>server.close(r));}

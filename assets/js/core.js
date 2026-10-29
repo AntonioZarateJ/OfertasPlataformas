@@ -227,11 +227,6 @@
         const drawerDiscountLabel = document.getElementById('drawerDiscountLabel');
         const drawerRatingSlider = document.getElementById('drawerRatingSlider');
         const drawerRatingLabel = document.getElementById('drawerRatingLabel');
-        const drawerPriceSlider = document.getElementById('drawerPriceSlider');
-        const drawerPriceLabel = document.getElementById('drawerPriceLabel');
-        const drawerMinPriceHint = document.getElementById('drawerMinPriceHint');
-        const drawerMidPriceHint = document.getElementById('drawerMidPriceHint');
-        const drawerOnSaleToggle = document.getElementById('drawerOnSaleToggle');
 
         // Sub-barra Juegos Gratis
         const freeGamesSubBar = document.getElementById('freeGamesSubBar');

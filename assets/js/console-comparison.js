@@ -8,6 +8,8 @@ async function openConsoleComparison(item){
  const modal=document.getElementById('consoleComparison');
  const content=document.getElementById('consoleComparisonBody');
  document.getElementById('consoleComparisonTitle').textContent=item.title;
+ document.querySelector('.comparison-poster')?.remove();
+ if(safeURL(item.image)){const poster=document.createElement('img');poster.className='comparison-poster';poster.src=safeURL(item.image);poster.alt='';document.querySelector('.comparison-heading').prepend(poster);}
  if(!modal.open)modal.showModal();
  content.innerHTML='<p class="comparison-state" role="status">Consultando opciones para esta edición y región…</p>';
  try{
@@ -15,11 +17,15 @@ async function openConsoleComparison(item){
   const data=await requestJSON('/api/console-comparison?'+params,{signal:controller.signal,timeout:18000});
   if(controller.signal.aborted)return;
   const format=q=>new Intl.NumberFormat('es-MX',{style:'currency',currency:q.currency}).format(q.price)+' '+q.currency;
-  const row=q=>`<article class="comparison-row ${q.kind==='official'?'comparison-official':''}"><div><strong>${escapeHTML(q.store)}</strong><span>${q.kind==='official'?'Tienda oficial':'Mercado externo · revisar cargos finales'}</span><p>${escapeHTML(q.title)}</p><small>${escapeHTML(q.edition||'')}</small></div><div class="comparison-cost"><strong>${escapeHTML(format(q))}</strong><a href="${escapeHTML(safeURL(q.url))}" target="_blank" rel="noopener noreferrer">Ir a la tienda ↗</a></div></article>`;
+  const row=q=>`<article class="comparison-row ${q.kind==='official'?'comparison-official':''}"><div><strong><i class="fa-solid ${q.kind==='official'?'fa-store':'fa-key'}"></i> ${escapeHTML(q.store)}</strong><span>${q.kind==='official'?'Tienda oficial':'Mercado externo · revisar cargos finales'}</span><p>${escapeHTML(q.title)}</p><small>${escapeHTML(q.edition||'')}</small></div><div class="comparison-cost"><strong>${escapeHTML(format(q))}</strong><a href="${escapeHTML(safeURL(q.url))}" target="_blank" rel="noopener noreferrer">Ir a la tienda ↗</a></div></article>`;
   const official=data.offers.filter(q=>q.kind==='official');
   const external=data.offers.filter(q=>q.kind==='external');
   let html=`<p class="comparison-context">${escapeHTML(ECOSYSTEM_META[data.platform].name)} · Región ${escapeHTML(purchaseRegions[data.region][0])} · Consulta ${escapeHTML(new Date(data.checkedAt).toLocaleTimeString('es-MX'))}</p>`;
-  html+='<h3>Esta edición · tiendas oficiales primero</h3>';
+  const bestOfficial=[...official].sort((a,b)=>a.price-b.price)[0];
+  const bestExternal=[...external].sort((a,b)=>a.price-b.price)[0];
+  const observations=data.offers.filter(q=>q.history?.days>1);
+  html+=`<div class="comparison-metrics"><div class="metric-official"><span><i class="fa-solid fa-store"></i> Mejor oficial consultado</span><strong>${bestOfficial?escapeHTML(format(bestOfficial)):'No confirmado'}</strong><small>Esta edición y región</small></div><div class="metric-external"><span><i class="fa-solid fa-key"></i> Mejor externo consultado</span><strong>${bestExternal?escapeHTML(format(bestExternal)):'Sin coincidencias'}</strong><small>Antes de posibles cargos</small></div><div class="metric-history"><span><i class="fa-solid fa-clock-rotate-left"></i> Registro observado</span><strong>${observations.length?escapeHTML(format({...observations[0],price:Math.min(...observations.filter(q=>q.currency===observations[0].currency).map(q=>q.history.min))})):'En construcción'}</strong><small>${observations.length?'Mínimo del registro propio':'Aún no hay suficientes días'}</small></div></div>`;
+  html+='<h3><i class="fa-solid fa-scale-balanced"></i> Opciones para esta edición</h3>';
   html+=official.length?official.map(row).join(''):'<p class="comparison-state">No pudimos confirmar una oferta oficial de esta edición en esta consulta.</p>';
   html+=external.length?external.map(row).join(''):'<p class="comparison-state">No encontramos otras ofertas verificadas de esta edición en las fuentes consultadas. Esto no significa que no exista en otras tiendas.</p>';
   html+='<h3>Registro de precios de esta web</h3><div class="comparison-history">';

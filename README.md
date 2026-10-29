@@ -142,3 +142,17 @@ El mínimo y máximo son del registro propio desde sus primeras observaciones, p
 En Render Free ese archivo no es persistente entre reinicios o despliegues. Para conservar el registro hay que migrarlo a una base de datos o configurar `PRICE_HISTORY_PATH` en un disco persistente del alojamiento, por ejemplo `/var/data/price-history.json` sólo después de montar ese disco. No se añadió ningún servicio pagado ni un disco desde el código.
 
 En móvil se usa un solo acceso a favoritos, uno a cuenta, una cabecera compacta y un panel Filtros y región. Los mismos controles del escritorio se reubican conservando sus eventos, filtros y valores.
+
+## Filtros simplificados y diseño unificado
+
+La navegación principal ahora tiene Solo ofertas, Catálogo completo y Gratis en PC. Se retiraron los presets AAA, Joyas y Descuentos extremos para evitar condiciones implícitas, así como la categoría duplicada de favoritos (se conserva su acceso en la cabecera). No hay una segunda casilla Solo ofertas ni controles de presupuesto máximo.
+
+Solo ofertas solicita productos rebajados; Catálogo completo incluye también precios normales. Cambiar entre ambos conserva el porcentaje y la calidad seleccionados. Las búsquedas abren el catálogo completo para poder localizar juegos sin descuento.
+
+El descuento funciona igual en PC y consolas: Cualquier porcentaje, Porcentaje exacto (10 sólo admite 10), o Rango inclusivo (10–30 admite 10, 20 y 30). Se valida de 0 a 100 en enteros y se compara con el descuento de la fuente redondeado tal como se presenta. Los rangos invertidos no se aplican. En PC se puede añadir un mínimo de reseñas positivas de Steam; esas reseñas no se asignan a consolas. Un filtro exacto de 0% necesita Catálogo completo para encontrar precios sin rebaja.
+
+Estos filtros se aplican a páginas consultadas: si la fuente no permite ese filtro en su API, puede ser necesario cargar más resultados para encontrar coincidencias. El orden de consola sigue limitado a las coincidencias cargadas.
+
+Consolas estrenan tarjetas con portada, etiquetas de plataforma/fuente/descuento, precio destacado y accesos a comparar y comprar. El comparador incorpora un resumen de mejor oficial consultado, mejor externo consultado y registro observado. Su diseño conserva la separación entre ediciones, monedas y alcance de la cobertura; no transforma registros insuficientes en mínimos históricos absolutos.
+
+Se añadieron pruebas de porcentaje exacto, límites inclusivos, 0% con catálogo completo y conservación de filtros al cambiar alcance en PC y consola. Se comprobó el diseño en anchos de 320, 390, 768 y 1440 píxeles.
