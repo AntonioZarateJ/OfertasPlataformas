@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SteamPulse Pro — Fase 3: Cloud Wishlist, Alertas de Precio, Keys & Multiplataforma</title>
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="assets/css/tailwind.css">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap" rel="stylesheet">
+    
+
+    <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body class="min-h-screen flex flex-col selection:bg-steam-blue selection:text-steam-bg">
+
+    <!-- 1. TOP STATUS BAR -->
+    <div class="bg-[#070a11] border-b border-white/5 text-xs py-1.5 px-4">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center gap-3">
+                <span class="flex items-center gap-1.5 text-gray-400">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Motor Conectado: <strong class="text-gray-200">Steam + Epic + Keys + Cloud Sync</strong>
+                </span>
+                <span class="hidden md:inline text-gray-700">|</span>
+                <button type="button" onclick="openCloudConfigModal()" class="text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 transition">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span id="cloudStatusLabel">Accede y guarda tu wishlist</span>
+                </button>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="triggeredAlertsTopBadge" onclick="openWishlistDrawer()" class="hidden-el cursor-pointer bg-amber-500/20 border border-amber-400/50 text-amber-300 px-2.5 py-0.5 rounded-full font-bold animate-pulse">
+                    <i class="fa-solid fa-bell mr-1"></i>¡<span id="triggeredAlertsCount">0</span> Alerta(s) Cumplida(s)!
+                </span>
+                <span id="liveCurrencyNotice" class="hidden-el text-emerald-400 font-semibold">
+                    <i class="fa-solid fa-bolt mr-1"></i>Precios actualizados a <span id="noticeCurrencyCode">MXN</span>
+                </span>
+                <div class="bg-steam-base/90 px-2.5 py-0.5 rounded border border-steam-light/60 text-gray-300">
+                    <i class="fa-solid fa-coins text-steam-blue mr-1"></i>
+                    <span id="exchangeRateBadge">Sincronizando divisas...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. NAVBAR PRINCIPAL (LOGO + BUSCADOR PREDICTIVO + WISHLIST + MONEDA) -->
+    <header class="bg-[#0e1525]/95 backdrop-blur-md border-b border-white/10 sticky top-0 z-40 shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 py-3.5 flex flex-col xl:grid xl:grid-cols-[auto_1fr_auto] items-center justify-between gap-4">
+            
+            <!-- Marca -->
+            <div class="flex flex-wrap items-center justify-between gap-3 w-full lg:w-auto">
+                <a href="#" onclick="selectSmartChip('top'); return false;" class="flex items-center gap-3 group">
+                    <div class="w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-sky-400 to-blue-700 flex items-center justify-center shadow-lg shadow-sky-500/20 group-hover:scale-105 transition">
+                        <i class="fa-brands fa-steam text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl font-black tracking-tight text-white font-display">STEAMPULSE</span>
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">FASE 3 CLOUD</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400">Comparador Oficial + Keys, Consolas, Wishlist & Alertas</p>
+                    </div>
+                </a>
+
+                <!-- Acceso rápido móvil -->
+                <div class="flex items-center gap-2 xl:hidden">
+                    <button onclick="openWishlistDrawer()" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 px-3 py-1.5 rounded-lg border border-rose-500/40 text-xs font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-heart text-rose-400"></i>
+                        <span id="mobileWishlistCount">0</span>
+                    </button>
+                    <button onclick="selectSmartChip('free')" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 px-3 py-1.5 rounded-lg border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-gift"></i>
+                        <span>Gratis</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selector Global de Plataforma / Ecosistema (Fase 2) -->
+            <div class="grid grid-cols-2 sm:flex items-center bg-[#090d16] p-1 rounded-xl border border-white/10 w-full lg:w-auto justify-between sm:justify-center gap-1">
+                <button type="button" data-ecosystem="pc" onclick="selectEcosystem('pc')"
+                    class="plat-pill active-pc flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-extrabold border border-transparent flex items-center justify-center gap-1.5">
+                    <i class="fa-brands fa-steam"></i>
+                    <span>PC (Steam/Epic)</span>
+                </button>
+                <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="xbox" onclick="selectEcosystem('xbox')"><i class="fa-brands fa-xbox"></i> Xbox</button>
+                <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="ps" onclick="selectEcosystem('ps')"><i class="fa-brands fa-playstation"></i> PlayStation</button>
+                <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="switch" onclick="selectEcosystem('switch')">Nintendo Switch</button>
+            </div>
+
+            <!-- Buscador Predictivo en Vivo (Cualquier juego con o sin oferta) -->
+            <div class="relative w-full xl:col-span-3 xl:row-start-2">
+                <form onsubmit="handleSearchSubmit(event)" class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input type="text" id="predictiveSearchInput" autocomplete="off"
+                        placeholder="Buscar juego (en oferta o precio normal)..."
+                        class="w-full bg-[#090d16] text-white text-xs rounded-xl pl-9 pr-8 py-2.5 border border-white/15 focus:outline-none focus:border-sky-400 transition">
+                    <button type="button" id="clearSearchBtn" class="hidden-el absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-xs">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                    </button>
+                </form>
+                <!-- Dropdown Predictivo -->
+                <div id="searchDropdown" class="hidden-el absolute left-0 right-0 mt-1.5 bg-[#0f172a] border border-sky-500/40 rounded-xl shadow-2xl overflow-hidden z-50 divide-y divide-white/5">
+                    <div id="searchDropdownContent"></div>
+                </div>
+            </div>
+
+            <!-- Selector de Divisa + Botones Cloud / Wishlist (Fase 3) -->
+            <div class="flex items-center gap-2.5 w-full xl:w-auto justify-end xl:col-start-3 xl:row-start-1">
+                
+                <!-- Botón Wishlist & Alertas -->
+                <button type="button" onclick="openWishlistDrawer()"
+                    class="bg-[#162032] hover:bg-[#1e2c44] text-white border border-rose-500/40 rounded-xl py-2 px-3.5 text-xs font-bold transition flex items-center gap-2 shadow-lg flex-shrink-0"
+                    title="Ver mi Wishlist y Alertas de Precio">
+                    <div class="relative">
+                        <i class="fa-solid fa-heart text-rose-400 text-sm"></i>
+                        <span id="alertBellDot" class="hidden-el absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                    </div>
+                    <span class="hidden sm:inline">Wishlist</span>
+                    <span id="navWishlistCount" class="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span>
+                </button>
+
+                <!-- Botón Cuenta / Cloud -->
+                <button type="button" onclick="openCloudConfigModal()"
+                    id="userAccountBtn"
+                    class="bg-[#162032] hover:bg-[#1e2c44] text-sky-300 border border-sky-500/40 rounded-xl py-2 px-3 text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
+                    title="Configurar Cuenta Cloud / Firebase & Despliegue">
+                    <i class="fa-solid fa-user-astronaut text-sm"></i>
+                    <span id="userAccountLabel" class="hidden xl:inline">Iniciar sesión</span>
+                </button>
+
+                <label class="region-control">Región de compra<select id="regionSelect" aria-label="Región de compra"><option value="MX">México</option><option value="US">Estados Unidos</option><option value="ES">España</option><option value="GB">Reino Unido</option><option value="BR">Brasil</option><option value="JP">Japón</option></select></label>
+                <!-- Selector de Divisa -->
+                <div class="w-full sm:w-auto">
+                    <select id="currencySelect" aria-label="Seleccionar divisa"
+                        class="w-full bg-[#162032] hover:bg-[#1e2c44] text-white border border-sky-500/40 rounded-xl py-2 px-3 text-xs font-semibold focus:outline-none focus:border-sky-400 cursor-pointer transition">
+                        <option value="MXN" selected>🇲🇽 MXN (Peso Mex)</option>
+                        <option value="USD">🇺🇸 USD (Dólar)</option>
+                        <option value="EUR">🇪🇺 EUR (Euro)</option>
+                        <option value="GBP">🇬🇧 GBP (Libra)</option>
+                        <option value="ARS">🇦🇷 ARS (Peso Arg)</option>
+                        <option value="COP">🇨🇴 COP (Peso Col)</option>
+                        <option value="CLP">🇨🇱 CLP (Peso Chi)</option>
+                        <option value="BRL">🇧🇷 BRL (Real)</option>
+                        <option value="JPY">🇯🇵 JPY (Yen)</option>
+                    </select>
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+    <p id="platformPriceNotice" class="hidden-el text-center text-xs text-amber-300 px-4 py-2">Los precios del catálogo corresponden a PC. Los enlaces de consola buscan keys; confirma el precio y la plataforma en la tienda.</p>
+
+    <!-- 3. BARRA HORIZONTAL DE PÍLDORAS INTELIGENTES (REEMPLAZA A LA BARRA LATERAL CONFUSA) -->
+    <section class="bg-[#101726]/90 border-b border-white/10 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            
+            <div class="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
+                
+                <!-- Fila de Píldoras de 1 Clic -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 xl:pb-0 no-scrollbar">
+                    <button type="button" data-chip="top" onclick="selectSmartChip('top')"
+                        class="smart-chip active px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-white/10 bg-steam-base text-gray-200 flex items-center gap-2">
+                        <span>🔥 Ofertas Top</span>
+                    </button>
+
+                    <button type="button" data-chip="free" onclick="selectSmartChip('free')"
+                        class="smart-chip px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50 flex items-center gap-2">
+                        <i class="fa-solid fa-gift text-emerald-400 animate-bounce"></i>
+                        <span>100% Gratis (Epic / Steam / GOG)</span>
+                        <span class="bg-emerald-500 text-gray-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">HOT</span>
+                    </button>
+
+                    <button type="button" data-chip="gems" onclick="selectSmartChip('gems')"
+                        class="smart-chip px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-white/10 bg-steam-base text-gray-200 hover:bg-steam-light flex items-center gap-2"
+                        title="Descuento >= 70% y Reseñas Muy Positivas (>= 80%)">
+                        <span>💎 Joyas Ocultas</span>
+                    </button>
+
+                    <button type="button" data-chip="aaa" onclick="selectSmartChip('aaa')"
+                        class="smart-chip px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-white/10 bg-steam-base text-gray-200 hover:bg-steam-light flex items-center gap-2"
+                        title="Juegos de gran presupuesto (Precio base >= $29.99 USD)">
+                        <span>👑 Grandes AAA</span>
+                    </button>
+
+                    <button type="button" data-chip="deep" onclick="selectSmartChip('deep')"
+                        class="smart-chip px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-white/10 bg-steam-base text-gray-200 hover:bg-steam-light flex items-center gap-2"
+                        title="Rebajas extremas del 85% al 95%">
+                        <span>📉 Mínimos (-85%+)</span>
+                    </button>
+
+                    <button type="button" data-chip="all" onclick="selectSmartChip('all')"
+                        class="smart-chip px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-white/10 bg-steam-base text-gray-200 hover:bg-steam-light flex items-center gap-2"
+                        title="Explorar todos los juegos con o sin descuento">
+                        <span>🌐 Todo el Catálogo</span>
+                    </button>
+
+                    <button type="button" data-chip="wishlist" onclick="selectSmartChip('wishlist')"
+                        class="smart-chip px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-rose-500/40 bg-rose-950/30 text-rose-300 hover:bg-rose-900/40 flex items-center gap-2"
+                        title="Filtrar mis juegos guardados y alertas activas">
+                        <i class="fa-solid fa-heart text-rose-400"></i>
+                        <span>Mi Wishlist</span>
+                    </button>
+                </div>
+
+                <!-- Controles derechos: Ordenar + Botón Ajustes Finos Ocultos -->
+                <div class="flex items-center justify-between sm:justify-end gap-2.5 pt-1 xl:pt-0 border-t border-white/5 xl:border-none">
+                    <div class="flex items-center gap-2 min-w-0" id="sortContainer">
+                        <label for="sortSelect" class="text-xs text-gray-400 font-medium hidden sm:inline">Ordenar:</label>
+                        <select id="sortSelect" 
+                            class="min-w-0 max-w-full bg-steam-base hover:bg-steam-light text-white border border-white/15 rounded-xl py-2 px-3 text-xs font-semibold focus:outline-none focus:border-sky-400 cursor-pointer transition">
+                            <option value="Deal Rating" selected>⭐ Mejor Calificación Oferta</option>
+                            <option value="Savings">🔥 Mayor % Descuento</option>
+                            <option value="Price">💰 Menor Precio Primero</option>
+                            <option value="Reviews">👍 Mejores Reseñas Steam</option>
+                            <option value="Metacritic">🏆 Mayor Puntaje Metacritic</option>
+                            <option value="Release">📅 Más Recientes</option>
+                        </select>
+                    </div>
+
+                    <button type="button" id="toggleFineTuneBtn"
+                        class="bg-steam-base hover:bg-steam-light text-sky-400 border border-sky-500/30 rounded-xl py-2 px-3.5 text-xs font-bold transition flex items-center gap-2">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span>Ajustes Finos</span>
+                        <span id="activeCustomFiltersDot" class="hidden-el w-2 h-2 rounded-full bg-amber-400"></span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- CAJÓN DESPLEGABLE OCULTO: "AJUSTES FINOS" (SOLO SE VE SI EL USUARIO LO ABRE) -->
+            <div id="fineTuneDrawer" class="hidden-el mt-3 pt-4 pb-2 border-t border-white/10">
+                <div class="bg-[#0b101b] border border-sky-500/30 rounded-2xl p-4 shadow-2xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles text-sky-400 text-sm"></i>
+                            <h3 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Calibración Manual de Filtros</h3>
+                            <span class="text-[11px] text-gray-400 hidden sm:inline">— Personaliza los parámetros si buscas algo muy específico</span>
+                        </div>
+                        <button type="button" onclick="resetFineTuneFilters()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>Restablecer</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        <!-- Control 1: % Descuento -->
+                        <div class="bg-steam-base/60 p-3 rounded-xl border border-white/5">
+                            <div class="flex justify-between text-xs mb-2">
+                                <span class="text-gray-300 font-semibold">Descuento Mínimo</span>
+                                <span id="drawerDiscountLabel" class="text-emerald-400 font-extrabold">0% (Todos)</span>
+                            </div>
+                            <input type="range" id="drawerDiscountSlider" min="0" max="90" step="5" value="0" class="w-full">
+                            <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>90%</span>
+                            </div>
+                        </div>
+
+                        <!-- Control 2: Reseñas Steam (Antibasura) -->
+                        <div class="bg-steam-base/60 p-3 rounded-xl border border-white/5">
+                            <div class="flex justify-between text-xs mb-2">
+                                <span class="text-gray-300 font-semibold">Calidad Reseñas Steam</span>
+                                <span id="drawerRatingLabel" class="text-sky-400 font-extrabold">Todas</span>
+                            </div>
+                            <input type="range" id="drawerRatingSlider" min="0" max="90" step="10" value="0" class="w-full">
+                            <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                                <span>Todas</span>
+                                <span>70% Positivas</span>
+                                <span>80%+ Joyas</span>
+                            </div>
+                        </div>
+
+                        <!-- Control 3: Precio Máximo en Moneda Local -->
+                        <div class="bg-steam-base/60 p-3 rounded-xl border border-white/5">
+                            <div class="flex justify-between text-xs mb-2">
+                                <span class="text-gray-300 font-semibold">Presupuesto Máximo</span>
+                                <span id="drawerPriceLabel" class="text-amber-400 font-extrabold">Sin límite</span>
+                            </div>
+                            <input type="range" id="drawerPriceSlider" min="5" max="50" step="5" value="50" class="w-full">
+                            <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                                <span id="drawerMinPriceHint">$5</span>
+                                <span id="drawerMidPriceHint">$25</span>
+                                <span>Sin tope</span>
+                            </div>
+                        </div>
+
+                        <!-- Control 4: Opciones adicionales y Aplicar -->
+                        <div class="bg-steam-base/60 p-3 rounded-xl border border-white/5 flex flex-col justify-between">
+                            <label class="flex items-center justify-between cursor-pointer text-xs text-gray-300 font-semibold mb-2">
+                                <span>Solo juegos en oferta</span>
+                                <input type="checkbox" id="drawerOnSaleToggle" checked class="accent-sky-400 w-4 h-4 rounded cursor-pointer">
+                            </label>
+                            <button type="button" onclick="applyCustomDrawerFilters()"
+                                class="w-full bg-sky-500 hover:bg-sky-400 text-gray-950 font-extrabold py-2 px-3 rounded-xl text-xs transition shadow-lg">
+                                Aplicar Ajustes Finos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-BARRA ESPECIAL PARA JUEGOS 100% GRATIS -->
+            <div id="freeGamesSubBar" class="hidden-el mt-3 pt-3 border-t border-emerald-500/20 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-xs font-bold text-emerald-400 mr-1"><i class="fa-solid fa-filter mr-1"></i>Filtrar Regalos:</span>
+                    <button type="button" data-free-plat="all" onclick="filterFreeGamesByPlatform('all')" class="free-plat-btn bg-emerald-500 text-gray-950 font-extrabold text-xs px-3 py-1 rounded-lg transition">Todos</button>
+                    <button type="button" data-free-plat="epic" onclick="filterFreeGamesByPlatform('epic')" class="free-plat-btn bg-steam-base hover:bg-steam-light text-gray-300 text-xs px-3 py-1 rounded-lg border border-white/10 transition">Epic Games</button>
+                    <button type="button" data-free-plat="steam" onclick="filterFreeGamesByPlatform('steam')" class="free-plat-btn bg-steam-base hover:bg-steam-light text-gray-300 text-xs px-3 py-1 rounded-lg border border-white/10 transition">Steam</button>
+                    <button type="button" data-free-plat="gog" onclick="filterFreeGamesByPlatform('gog')" class="free-plat-btn bg-steam-base hover:bg-steam-light text-gray-300 text-xs px-3 py-1 rounded-lg border border-white/10 transition">GOG / PC</button>
+                    <button type="button" data-free-plat="console" onclick="filterFreeGamesByPlatform('console')" class="free-plat-btn bg-steam-base hover:bg-steam-light text-gray-300 text-xs px-3 py-1 rounded-lg border border-white/10 transition">Consolas</button>
+                </div>
+                <div class="flex items-center gap-2 text-[11px]">
+                    <a href="https://store.epicgames.com/es-MX/free-games" target="_blank" rel="noopener noreferrer" class="text-emerald-300 hover:underline flex items-center gap-1 font-semibold">
+                        <span>Epic Gratis Oficial</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 4. CONTENEDOR PRINCIPAL DEL CATÁLOGO -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+        <!-- Encabezado Dinámico del Catálogo -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-[#11192a]/90 border border-white/10 rounded-2xl p-4 shadow-lg">
+            <div class="flex items-center gap-3.5">
+                <div id="modeIconBox" class="w-11 h-11 rounded-xl border flex items-center justify-center text-xl bg-sky-500/15 border-sky-500/30 text-sky-400">
+                    <i class="fa-solid fa-fire"></i>
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h1 id="catalogHeaderTitle" class="text-lg sm:text-xl font-black text-white font-display">🔥 Ofertas Top Destacadas</h1>
+                        <span id="activeEcosystemBadge" class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border bg-sky-500/20 text-sky-300 border-sky-500/40">
+                            <i class="fa-brands fa-steam mr-1"></i>Modo: PC (Steam / Epic)
+                        </span>
+                    </div>
+                    <p id="resultsSummary" class="text-xs text-gray-400 mt-0.5">Juegos con la mejor relación descuento/calidad en este momento.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 self-start sm:self-center bg-[#0b101b] px-3.5 py-2 rounded-xl border border-white/10">
+                <span class="text-xs text-gray-400">Juegos listados:</span>
+                <span id="loadedCountBadge" class="text-sm font-black text-sky-400">0</span>
+            </div>
+        </div>
+
+        <!-- Estado de Carga -->
+        <div id="loadingState" class="hidden-el flex flex-col items-center justify-center py-20">
+            <div class="loader mb-4"></div>
+            <p id="loadingText" class="text-sm text-sky-400 font-semibold animate-pulse">Sincronizando catálogo...</p>
+        </div>
+
+        <!-- Estado Vacío -->
+        <div id="emptyState" class="hidden-el text-center py-16 bg-[#11192a]/60 border border-white/10 rounded-2xl p-6">
+            <div class="w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center justify-center mx-auto mb-3 text-2xl">
+                <i class="fa-solid fa-gamepad"></i>
+            </div>
+            <h3 class="text-base font-bold text-white mb-1">No se encontraron juegos con estos criterios</h3>
+            <p class="text-xs text-gray-400 max-w-md mx-auto mb-4">Prueba seleccionando otra Píldora Inteligente arriba o restableciendo los filtros.</p>
+            <button type="button" onclick="selectSmartChip('top')" class="bg-sky-500 hover:bg-sky-400 text-gray-950 font-extrabold text-xs px-4 py-2.5 rounded-xl transition">
+                Volver a Ofertas Top
+            </button>
+        </div>
+
+        <div id="catalogError" role="alert" class="hidden-el text-center p-6 mb-5 rounded-xl border border-rose-400/40 text-rose-300">
+            <p class="mb-3"></p>
+            <button type="button" onclick="activeChip === 'free' ? loadFreeGamesMode() : executeCatalogFetch(true)" class="bg-steam-base rounded-lg px-4 py-2 text-white">Reintentar</button>
+        </div>
+
+        <section id="consoleTools" class="hidden-el console-tools">
+          <div class="console-filters"><label>Mostrar <select id="consoleSource" onchange="loadConsoleCatalog()"><option value="all">Todas las tiendas</option><option value="official">Tiendas oficiales</option><option value="external">Mercados externos</option></select></label><label>Ordenar <select id="consoleOrder" onchange="loadConsoleCatalog()"><option value="relevance">Relevancia</option><option value="rating">Mejores reseñas disponibles</option><option value="priceAsc">Menor precio</option><option value="priceDesc">Mayor precio</option><option value="discountDesc">Mayor descuento</option><option value="discountAsc">Menor descuento</option></select></label><label><input id="consoleOnlyDeals" type="checkbox" checked onchange="loadConsoleCatalog()"> Sólo descuentos comprobados</label></div>
+          <details class="console-extra"><summary>Ajustar presupuesto</summary><label>Precio máximo en la moneda de la región <input id="consoleMaxPrice" type="number" min="0" step="0.01" placeholder="Sin límite" oninput="renderConsoleCatalog()"></label><p>El presupuesto y el orden se aplican a los resultados cargados.</p></details><div id="consoleSources"></div><p id="consoleScope"></p>
+        </section>
+        <!-- Grid de Tarjetas -->
+        <div id="gamesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+
+        <!-- Paginación / Cargar Más -->
+        <div id="loadMoreContainer" class="hidden-el mt-8 flex flex-col items-center gap-2">
+            <p id="paginationInfo" class="text-xs text-gray-400"></p>
+            <button type="button" id="loadMoreBtn"
+                class="bg-steam-base hover:bg-sky-500 hover:text-gray-950 text-sky-400 font-extrabold py-3 px-6 rounded-xl text-xs border border-sky-500/40 transition flex items-center gap-2 shadow-lg">
+                <i class="fa-solid fa-plus"></i>
+                <span>Cargar Más Juegos</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- 5. MODAL ANALÍTICO: DETECTOR DE MÍNIMO HISTÓRICO + COMPARADOR MULTITIENDA + ALERTAS (FASE 3) -->
+    <div id="analyticsModal" class="hidden-el fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto">
+        <div class="bg-[#101826] border border-sky-500/40 rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl my-auto max-h-[92vh] flex flex-col">
+            
+            <!-- Banner superior del Modal -->
+            <div class="relative h-44 sm:h-52 bg-steam-dark flex-shrink-0 overflow-hidden">
+                <img id="modalHeaderImg" src="" alt="Game Banner" class="w-full h-full object-cover opacity-40 blur-[2px] scale-105">
+                <div class="absolute inset-0 bg-gradient-to-t from-[#101826] via-[#101826]/60 to-transparent"></div>
+                
+                <button id="closeAnalyticsModalBtn" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 hover:bg-rose-600 text-white flex items-center justify-center transition z-10">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+
+                <div class="absolute bottom-4 left-5 right-5 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                    <div class="flex items-end gap-4">
+                        <img id="modalCoverImg" alt="Portada" class="w-28 sm:w-36 rounded-xl shadow-2xl border border-white/15 hidden sm:block">
+                        <div>
+                            <div id="modalBadgesRow" class="flex flex-wrap gap-1.5 mb-1.5"></div>
+                            <h2 id="modalGameTitle" class="text-xl sm:text-2xl font-black text-white leading-tight font-display">Cargando...</h2>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 self-start sm:self-end flex-shrink-0">
+                        <button type="button" id="modalWishlistToggleBtn" onclick="toggleModalGameWishlist()"
+                            class="bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white text-xs font-bold px-3 py-2 rounded-xl border border-rose-400/40 transition flex items-center gap-1.5">
+                            <i class="fa-regular fa-heart" id="modalWishlistIcon"></i>
+                            <span id="modalWishlistBtnText">Guardar</span>
+                        </button>
+                        <a id="modalProtonDbBtn" href="#" target="_blank" rel="noopener noreferrer"
+                            class="bg-[#1b2838]/90 hover:bg-purple-500 hover:text-white text-purple-300 text-xs font-bold px-3 py-2 rounded-xl border border-purple-400/40 transition flex items-center gap-1.5"
+                            title="Verificar compatibilidad con Steam Deck y Linux en ProtonDB">
+                            <i class="fa-solid fa-microchip"></i>
+                            <span>Steam Deck</span>
+                        </a>
+                        <a id="modalSteamDirectBtn" href="#" target="_blank" rel="noopener noreferrer"
+                            class="bg-[#1b2838] hover:bg-sky-400 hover:text-gray-950 text-white text-xs font-bold px-3.5 py-2 rounded-xl border border-sky-400/40 transition flex items-center gap-2">
+                            <i class="fa-brands fa-steam text-base"></i>
+                            <span>Steam</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cuerpo del Modal -->
+            <div class="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
+                
+                <div id="modalLoading" class="flex flex-col items-center justify-center py-12">
+                    <div class="loader mb-3"></div>
+                    <p class="text-xs text-sky-400 animate-pulse">Consultando historial de precios y comparando tiendas...</p>
+                </div>
+
+                <div id="modalDataContent" class="hidden-el space-y-5">
+                    
+                    <!-- Detector de Mínimo Histórico -->
+                    <div id="historicalLowBanner" class="rounded-xl p-4 border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"></div>
+
+                    <!-- CONFIGURADOR DE ALERTA DE PRECIO (FASE 3: "AVÍSAME CUANDO BAJE") -->
+                    <div class="bg-gradient-to-r from-[#131d31] via-[#17223b] to-[#131d31] border border-sky-500/30 rounded-xl p-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex items-start gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-amber-400/15 border border-amber-400/40 text-amber-300 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <i class="fa-solid fa-bell"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs sm:text-sm font-extrabold text-white flex items-center gap-2">
+                                        <span>Alerta de Precio Inteligente ("Avísame cuando baje")</span>
+                                        <span id="modalAlertStatusBadge" class="hidden-el text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full">Activa</span>
+                                    </h4>
+                                    <p class="text-[11px] text-gray-400 mt-0.5">
+                                        Define tu precio meta en <strong class="modal-currency-label text-sky-400">MXN</strong>. Guardaremos el juego en tu Wishlist y te avisaremos cuando alcance tu presupuesto.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 sm:self-center">
+                                <div class="relative">
+                                    <input type="number" id="modalTargetPriceInput" step="any" min="1" placeholder="Ej. 150"
+                                        class="w-28 sm:w-32 bg-[#090d16] text-white text-xs font-bold rounded-xl px-3 py-2 border border-sky-500/40 focus:outline-none focus:border-amber-400">
+                                </div>
+                                <button type="button" onclick="saveModalPriceAlert()"
+                                    class="bg-amber-400 hover:bg-amber-300 text-gray-950 font-black text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-lg flex-shrink-0">
+                                    <i class="fa-solid fa-bell-concierge"></i>
+                                    <span>Crear Alerta</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Barras Comparativas de Precio -->
+                    <div class="bg-[#0b0f19] border border-white/10 rounded-xl p-4">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-column text-sky-400"></i>
+                            <span>Comparativa Histórica en <span class="modal-currency-label text-sky-400">MXN</span></span>
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="priceComparisonBars"></div>
+                    </div>
+
+                    <!-- SELECTOR DE PESTAÑAS DEL COMPARADOR (FASE 2: TIENDAS OFICIALES VS MERCADOS DE KEYS) -->
+                    <div>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[#0b0f19] p-1.5 rounded-xl border border-white/10 mb-4">
+                            <button type="button" id="tabOfficialBtn" onclick="switchModalComparatorTab('official')"
+                                class="flex-1 py-2.5 px-4 rounded-lg text-xs font-extrabold transition flex items-center justify-center gap-2 bg-sky-500 text-gray-950 shadow">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span>1. Tiendas Oficiales Autorizadas</span>
+                                <span id="modalStoresCount" class="bg-gray-950/25 text-gray-950 px-2 py-0.5 rounded-full text-[10px]">0</span>
+                            </button>
+                            <button type="button" id="tabKeysBtn" onclick="switchModalComparatorTab('keys')"
+                                class="flex-1 py-2.5 px-4 rounded-lg text-xs font-extrabold transition flex items-center justify-center gap-2 text-amber-300 hover:bg-white/5">
+                                <i class="fa-solid fa-key"></i>
+                                <span>2. Mercados de Keys (Eneba / CDKeys / G2A)</span>
+                                <span class="bg-amber-400/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full text-[10px]">PC & Consolas</span>
+                            </button>
+                        </div>
+
+                        <!-- PESTAÑA 1: TIENDAS OFICIALES -->
+                        <div id="officialStoresPanel">
+                            <p class="text-[11px] text-gray-400 mb-3 flex items-center gap-1.5">
+                                <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                                <span>Distribuidores 100% oficiales con claves directas de los editores (Steam, Epic Games, GOG, Humble, Fanatical).</span>
+                            </p>
+                            <div id="multiStoreList" class="space-y-2"></div>
+                        </div>
+
+                        <!-- PESTAÑA 2: MERCADOS DE KEYS + ESCUDO ANTI-ESTAFAS (FASE 2) -->
+                        <div id="keyMarketsPanel" class="hidden-el space-y-4">
+                            
+                            <!-- Escudo de Confianza Anti-Estafas -->
+                            <div class="bg-gradient-to-r from-amber-950/60 via-amber-900/25 to-emerald-950/40 border border-amber-500/40 rounded-xl p-3.5">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-9 h-9 rounded-lg bg-amber-400/20 border border-amber-400/40 text-amber-300 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <i class="fa-solid fa-shield-virus text-lg"></i>
+                                    </div>
+                                    <div class="text-xs space-y-1">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="font-black text-amber-300 uppercase tracking-wider">🛡️ Escudo de Confianza Anti-Estafas Activo</span>
+                                            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded font-bold">Región sugerida: GLOBAL / LATAM / MÉXICO</span>
+                                        </div>
+                                        <p class="text-gray-300 leading-relaxed">
+                                            Los mercados secundarios ofrecen ahorros adicionales en códigos de <strong>PC, Xbox, PlayStation y Switch</strong>. Antes de comprar:
+                                        </p>
+                                        <ul class="grid grid-cols-1 sm:grid-cols-3 gap-1.5 pt-1 text-[11px] text-gray-300">
+                                            <li class="flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-400"></i> Vendedor con <strong>&gt;99% calificación</strong></li>
+                                            <li class="flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-400"></i> Comprar <strong>Código (Key)</strong>, nunca "Cuentas"</li>
+                                            <li class="flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-400"></i> Verificar activación en <strong>México/Global</strong></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Selector rápido de plataforma dentro del comparador de Keys -->
+                            <div class="flex flex-wrap items-center justify-between gap-2 bg-[#0b0f19] px-3.5 py-2.5 rounded-xl border border-white/10">
+                                <span class="text-xs font-bold text-gray-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-gamepad text-sky-400"></i>
+                                    <span>Buscar Key para plataforma:</span>
+                                </span>
+                                <div class="flex flex-wrap gap-1.5" id="modalKeyPlatformSelector">
+                                    <button type="button" onclick="changeModalKeyPlatform('pc')" data-modal-plat="pc" class="modal-plat-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-500 text-gray-950">PC (Steam/Epic)</button>
+                                </div>
+                            </div>
+
+                            <!-- Lista de Mercados de Keys Confiables -->
+                            <div id="keyStoresList" class="space-y-2.5"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 6. CAJÓN LATERAL (DRAWER) DE WISHLIST Y ALERTAS DE PRECIO (FASE 3) -->
+    <div id="wishlistDrawerModal" class="hidden-el fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-sm">
+        <div class="bg-[#0e1626] border-l border-white/10 w-full max-w-md h-full flex flex-col shadow-2xl">
+            <div class="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between bg-[#090e19]">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center">
+                        <i class="fa-solid fa-heart"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black text-white font-display">Mi Wishlist & Alertas Cloud</h3>
+                        <p class="text-[11px] text-gray-400" id="wishlistSyncStatusText">Sincronizado en almacenamiento híbrido</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeWishlistDrawer()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-500 text-gray-300 hover:text-white flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Barra de acciones rápidas de Wishlist -->
+            <div class="px-4 py-2.5 bg-[#121c30] border-b border-white/5 flex items-center justify-between text-xs">
+                <span class="text-gray-300"><strong id="drawerWishlistTotal">0</strong> juegos guardados</span>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="exportWishlistJson()" class="text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1" title="Exportar respaldo JSON">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Exportar JSON</span>
+                    </button>
+                    <span class="text-gray-600">|</span>
+                    <button type="button" onclick="clearEntireWishlist()" class="text-rose-400 hover:text-rose-300 font-semibold">
+                        Vaciar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista de juegos en Wishlist -->
+            <div id="wishlistItemsContainer" class="p-4 overflow-y-auto flex-1 space-y-3"></div>
+
+            <div class="p-4 border-t border-white/10 bg-[#090e19] flex flex-col gap-2">
+                <button type="button" onclick="openCloudConfigModal()"
+                    class="w-full bg-steam-base hover:bg-steam-light text-sky-300 font-bold py-2.5 px-4 rounded-xl text-xs border border-sky-500/30 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-cloud"></i>
+                    <span>Configurar Sincronización Firebase / Cloud</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. MODAL DE ARQUITECTURA CLOUD, FIREBASE & DESPLIEGUE (FASE 3) -->
+    <div id="cloudConfigModal" role="dialog" aria-modal="true" aria-labelledby="authTitle" class="hidden-el auth-overlay">
+      <section class="auth-card">
+        <button type="button" class="auth-close" aria-label="Cerrar acceso" onclick="closeCloudConfigModal()">×</button>
+        <div class="auth-mark"><i class="fa-brands fa-steam"></i></div>
+        <p class="auth-eyebrow">TU BIBLIOTECA, CONTIGO</p>
+        <h2 id="authTitle">Bienvenido de nuevo</h2>
+        <p class="auth-subtitle">Guarda tus favoritos y encuentra el momento de comprar.</p>
+        <div id="authTabs" class="auth-tabs"><button type="button" onclick="setAuthMode('login')" id="loginTab">Iniciar sesión</button><button type="button" onclick="setAuthMode('register')" id="registerTab">Crear cuenta</button></div>
+        <form id="authForm" onsubmit="submitAccount(event)">
+          <label id="authNameLabel" class="hidden-el">Nombre<input id="authName" autocomplete="nickname" maxlength="60" placeholder="¿Cómo te llamas?"></label>
+          <label>Correo electrónico<input id="authEmail" type="email" autocomplete="email" required placeholder="tu@correo.com"></label>
+          <label id="authPasswordLabel">Contraseña<div class="auth-password"><input id="authPassword" type="password" autocomplete="current-password" minlength="8" required placeholder="Tu contraseña"><button type="button" aria-label="Mostrar contraseña" onclick="toggleAccountPassword()"><i class="fa-regular fa-eye"></i></button></div></label>
+          <button type="button" class="auth-forgot" onclick="setAuthMode('reset')">¿Olvidaste tu contraseña?</button>
+          <p id="authMessage" role="status" aria-live="polite"></p>
+          <button id="authSubmit" class="auth-submit" type="submit">Entrar a mi cuenta <span>→</span></button>
+        </form>
+        <div id="accountPanel" class="hidden-el"><p id="accountEmail"></p><p id="accountVerification"></p><button type="button" class="auth-submit" onclick="sendAccountVerification()">Verificar correo</button><button type="button" class="auth-forgot" onclick="logoutAccount()">Cerrar sesión</button></div>
+        <p class="auth-footnote">Tus favoritos locales siguen disponibles mientras navegas como invitado.</p>
+      </section>
+    </div>
+
+    <!-- TOAST DE NOTIFICACIONES FLOTANTE -->
+    <div id="toastNotification" class="hidden-el fixed bottom-5 right-5 z-50 bg-[#111c2d] border border-sky-400/50 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs font-bold">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toastMessage">Acción completada</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-[#070a11] border-t border-white/5 py-6 text-center text-xs text-gray-500 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p><strong class="text-gray-300">SteamPulse Pro (Fase 3 Completa)</strong> — Comparador Oficial + Keys, Consolas, Wishlist Cloud & Alertas de Precio.</p>
+            <p>Conectado a CheapShark, GamerPower & Open Exchange Rates API.</p>
+        </div>
+    </footer>
+
+    <!-- LÓGICA JAVASCRIPT -->
+    <script src="assets/js/core.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/regional-prices.js"></script>
+    <script src="assets/js/accounts.js"></script>
+    <script src="assets/js/bootstrap.js"></script>
+    <script src="assets/js/wishlist-storage.js"></script>
+    <script src="assets/js/currency.js"></script>
+    <script src="assets/js/console-catalog.js"></script>
+    <script src="assets/js/navigation.js"></script>
+    <script src="assets/js/filters.js"></script>
+    <script src="assets/js/giveaways.js"></script>
+    <script src="assets/js/catalog.js"></script>
+    <script src="assets/js/search.js"></script>
+    <script src="assets/js/comparator.js"></script>
+    <script src="assets/js/wishlist-cloud.js"></script>
+</body>
+</html>

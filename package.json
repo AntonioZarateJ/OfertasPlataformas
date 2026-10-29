@@ -1,0 +1,19 @@
+{
+  "name": "steampulse-pro",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -c tailwind.config.cjs -i assets/css/tailwind.input.css -o assets/css/tailwind.css --minify",
+    "test": "node --test tests/server.cjs tests/consoles.cjs tests/browser.cjs",
+    "start": "node server.cjs",
+    "test:server": "node --test tests/server.cjs",
+    "test:browser": "node tests/browser.cjs"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.19",
+    "@playwright/test": "1.58.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
