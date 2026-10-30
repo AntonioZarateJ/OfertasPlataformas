@@ -47,11 +47,11 @@ async function loadConsoleCatalog(reset = true) {
     sortContainer.classList.add('hidden-el');
     setHeaderInfo(`${ECOSYSTEM_META[platform].name} · ${purchaseRegions[region][0]}${query ? ' · ' + query : ''}`, 'Busca juegos con o sin oferta. Mostramos hasta 60 resultados por carga.', 'fa-gamepad', 'sky');
     try {
-        let scans = 0;
-        while (consoleNext !== null && filteredConsoleItems().length < consoleVisible && scans++ < (discountFilter.mode==='any'?4:400)) {
+        let scans = 0;const scanStarted=Date.now();
+        while (consoleNext !== null && filteredConsoleItems().length < consoleVisible && scans++ < 3 && Date.now()-scanStarted<12000) {
             const params = new URLSearchParams({ platform, region, q: query, source, sort, deals: onlyDeals ? '1' : '0', cursor: JSON.stringify(consoleNext) });
             if(discountFilter.mode!=='any'){params.set('discountMin',String(discountFilter.min));params.set('discountMax',String(discountFilter.max));}
-            const result = await requestJSON(`/api/console-catalog?${params}`, { signal: controller.signal, timeout: 16000 });
+            const result = await requestJSON(`/api/console-catalog?${params}`, { signal: controller.signal, timeout: Math.max(1,12000-(Date.now()-scanStarted)) });
             if (generation !== catalogGeneration || platform !== activeEcosystem || region !== currentRegion) return;
             if (!Array.isArray(result.items)) throw Error('Respuesta inválida');
             if (!consoleResult) consoleResult = { ...result, items: [] };

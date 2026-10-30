@@ -11,6 +11,7 @@ async function openConsoleComparison(item,platform=activeEcosystem,region=curren
  document.querySelector('.comparison-heading>div>p').innerHTML=`<i class="${ECOSYSTEM_META[platform].icon}"></i> ${escapeHTML(ECOSYSTEM_META[platform].name)} · COMPARAR PRECIOS`;
  document.getElementById('consoleComparisonTitle').textContent=item.title;
  document.querySelector('.comparison-poster')?.remove();
+ document.querySelector('.edition-jump')?.remove();
  if(safeURL(item.image)){const poster=document.createElement('img');poster.className='comparison-poster';poster.src=safeURL(item.image);poster.alt='';document.querySelector('.comparison-heading').prepend(poster);}
  if(!modal.open)modal.showModal();
  content.innerHTML='<p class="comparison-state" role="status">Consultando opciones para esta edición y región…</p>';
@@ -30,16 +31,28 @@ async function openConsoleComparison(item,platform=activeEcosystem,region=curren
   html+='<h3><i class="fa-solid fa-scale-balanced"></i> Opciones para esta edición</h3>';
   html+=official.length?official.map(row).join(''):'<p class="comparison-state">No pudimos confirmar una oferta oficial de esta edición en esta consulta.</p>';
   html+=external.length?external.map(row).join(''):'<p class="comparison-state">No encontramos otras ofertas verificadas de esta edición en las fuentes consultadas. Esto no significa que no exista en otras tiendas.</p>';
+  const editions=data.editions||[];
+  if(editions.length){
+   html+='<section class="game-editions" id="gameEditions"><h3><i class="fa-solid fa-layer-group"></i> Versiones y ediciones</h3><p class="comparison-note">Elige entre el juego base y sus colecciones. Cada versión conserva su consola, precio y enlace propios.</p><div class="edition-grid">';
+   html+=editions.map(q=>`<article class="edition-card ${q.selected?'edition-selected':''}"><div class="edition-card-label"><span>${q.variantType==='base'?'Juego base':'Edición / colección'}</span>${q.selected?'<b>Seleccionada</b>':''}</div><h4>${escapeHTML(q.title)}</h4><p>${escapeHTML(q.edition)}</p><strong>${escapeHTML(format(q))}</strong><small>${escapeHTML(q.store)}</small><a href="${escapeHTML(safeURL(q.url))}" target="_blank" rel="noopener noreferrer">Ver esta versión ↗</a></article>`).join('');
+   html+='</div></section>';
+  }
+  if(data.editionsStatus==='unavailable')html+='<p class="comparison-note">La ficha oficial no permitió confirmar todas las variantes en esta consulta. Puedes verlas en la tienda; no estimamos sus precios.</p>';
   html+='<h3>Registro de precios de esta web</h3><div class="comparison-history">';
   for(const q of data.offers){
    const h=q.history;
    html+=`<div><strong>${escapeHTML(q.store)}</strong><p>${h?.days>1?'Mínimo observado: '+escapeHTML(format({...q,price:h.min}))+' · Máximo observado: '+escapeHTML(format({...q,price:h.max})):'Historial insuficiente: apenas iniciamos el registro de este producto.'}</p>${h?`<small>Desde ${escapeHTML(h.since)} · ${h.days} día(s) con observaciones. ${h.persistent===false?'Registro temporal en memoria.':''}</small>`:''}</div>`;
   }
   html+='</div><p class="comparison-note">El registro depende de nuestras consultas; no representa el mínimo o máximo histórico absoluto del mercado.</p>';
-  if(data.otherEditions.length)html+=`<details><summary>Otras ediciones y variantes · no se mezclan en la comparación</summary>${data.otherEditions.map(row).join('')}</details>`;
+  if(data.otherEditions.some(q=>q.kind!=='official'))html+=`<details><summary>Otras ediciones y variantes · no se mezclan en la comparación</summary>${data.otherEditions.filter(q=>q.kind!=='official').map(row).join('')}</details>`;
   html+='<details><summary>Consultar más tiendas</summary><p class="comparison-note">Enlaces de búsqueda sin precio verificado. Comprueba que sea un juego completo, una clave y la región correcta; evita cuentas y claves aleatorias.</p><div class="comparison-links">'+data.searchLinks.map(link=>`<a href="${escapeHTML(safeURL(link.url))}" target="_blank" rel="noopener noreferrer">${escapeHTML(link.name)} ↗</a>`).join('')+'</div></details>';
   html+='<p class="comparison-note">'+escapeHTML(data.coverage)+'</p><div class="comparison-sources">'+data.sources.map(s=>`<span>${escapeHTML(s.name)}: ${s.status==='ok'?'consulta completada':s.status==='skipped'?'no consultada':'no se pudo consultar'}</span>`).join('')+'</div>';
   content.innerHTML=html;
+  if(editions.length>1){
+   const jump=document.createElement('button');jump.type='button';jump.className='edition-jump';jump.textContent=`Ver ${editions.length} versiones y precios ↓`;
+   jump.onclick=()=>content.querySelector('.game-editions').scrollIntoView({block:'start'});
+   document.querySelector('.comparison-heading>div').appendChild(jump);
+  }
   const fresh=data.offers.find(q=>String(q.id)===String(item.id)&&q.store===item.store&&q.currency===item.currency);
   addConsoleSaveControls(content,{...item,...fresh,checkedAt:fresh?data.checkedAt:item.checkedAt},platform,region);
  }catch(error){if(!controller.signal.aborted){content.innerHTML='<p class="comparison-state">No se pudo completar la comparación.</p><button class="console-compare" type="button" id="retryComparison">Reintentar</button>';document.getElementById('retryComparison').onclick=()=>openConsoleComparison(item,platform,region);}}

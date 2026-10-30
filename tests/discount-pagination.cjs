@@ -3,10 +3,12 @@ const assert=require('node:assert/strict');
 const {discountPosition}=require('../discount-position.cjs');
 const {createServer}=require('../server.cjs');
 const {chromium,expect}=require('@playwright/test');
+async function locate(params,fetcher){const state={};for(let i=0;i<10;i++){const result=await discountPosition(params,fetcher,state);if(!result.pending)return result;}throw Error('No terminó');}
+
 
 test('Localiza el tramo de descuento sin omitir el límite entre páginas',async()=>{
  let calls=0;
- const position=await discountPosition(new URLSearchParams({discount:'20',onSale:'1'}),async url=>{
+ const position=await locate(new URLSearchParams({discount:'20',onSale:'1'}),async url=>{
   const u=new URL(url),p=Number(u.searchParams.get('pageNumber'));calls++;
   assert.equal(u.searchParams.get('desc'),'0');assert.equal(u.searchParams.get('onSale'),'1');
   const savings=p<800?90:p===800?20:10;
@@ -31,7 +33,7 @@ test('El servidor valida y reutiliza la localización del porcentaje',async()=>{
 });
 
 test('La localización ascendente conserva porcentajes redondeados y el borde inicial',async()=>{
- const position=await discountPosition(new URLSearchParams({discount:'20',desc:'1'}),async url=>{
+ const position=await locate(new URLSearchParams({discount:'20',desc:'1'}),async url=>{
   const u=new URL(url),p=Number(u.searchParams.get('pageNumber'));
   assert.equal(u.searchParams.get('desc'),'1');
   return Response.json([{savings:p<8?'19.4':'19.6'}],{headers:{'X-Total-Page-Count':'50'}});
@@ -66,13 +68,15 @@ test('Encuentra porcentajes en páginas posteriores, añade 60 y guarda metas de
   await page.evaluate(()=>{document.getElementById('drawerDiscountMode').value='exact';document.getElementById('drawerDiscountSlider').value='20';applyCustomDrawerFilters();});
   await expect(page.locator('#gamesGrid .steam-card')).toHaveCount(60);
   await expect(page.locator('#gamesGrid h3').first()).toHaveText('Coincidencia 0');
-  assert(pcQueries.every(p=>!p.has('storeID')));
+  assert(pcQueries.some(p=>p.get('storeID')==='1'));
+  assert(pcQueries.filter(p=>p.has('storeID')).every(p=>p.get('storeID')==='1'));
   await page.locator('#loadMoreBtn').click();
   await expect(page.locator('#gamesGrid .steam-card')).toHaveCount(61);
   for(const platform of ['xbox','ps','switch']){
    await page.locator(`[data-ecosystem="${platform}"]`).click();
    await expect(page.locator('html')).toHaveAttribute('data-platform',platform);
    await page.evaluate(()=>{document.getElementById('consoleDiscountMode').value='exact';document.getElementById('consoleDiscountValue').value='20';applyConsoleDiscount();});
+   await page.locator('#loadMoreBtn').click();
    await expect(page.locator('.console-card')).toHaveCount(1);
    assert(consoleQueries.includes(5));
    await page.locator('.console-card-heart').click();

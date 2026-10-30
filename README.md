@@ -164,8 +164,20 @@ El filtro de PC ya consulta todas las tiendas oficiales cubiertas por CheapShark
 
 El porcentaje de PC corresponde a la referencia de CheapShark en USD, que puede diferir del descuento regional de Steam. La consulta regional de Steam sigue mostrándose aparte y no sustituye la referencia de otras tiendas. El enlace de compra ahora corresponde a la tienda que publicó ese precio. Esto amplía la cobertura de la fuente; no convierte CheapShark en un inventario regional completo ni incluye automáticamente todos los mercados de claves de internet.
 
-En consola el filtro recorre páginas posteriores hasta reunir coincidencias o agotar la paginación disponible. Nintendo recibe además el rango numérico en su consulta para reducir descargas. Se informa si una fuente falla o quedan páginas; las limitaciones de búsqueda de Xbox y la cobertura de Eneba siguen vigentes. El límite de seguridad por consulta es de 400 lotes; cuando hay continuación se permite seguir cargando.
+En consola el filtro recorre páginas posteriores hasta reunir coincidencias o agotar la paginación disponible. Nintendo recibe además el rango numérico en su consulta para reducir descargas. Se informa si una fuente falla o quedan páginas; las limitaciones de búsqueda de Xbox y la cobertura de Eneba siguen vigentes. Se consultan hasta tres páginas por interacción; cuando hay continuación se permite seguir cargando.
 
 Las cuatro plataformas tienen un acento visual propio. Las tarjetas y el comparador de consola incluyen favoritos y precio objetivo por producto, tienda, plataforma, región y moneda original. Estas metas se almacenan separadas de las alertas USD de PC y se revisan al abrir la Wishlist. Los precios no se intercambian entre regiones ni monedas. No hay tareas periódicas ni avisos por correo activados. Las instrucciones de configuración de cuentas y notificaciones en CUENTAS-Y-ALERTAS.md se mantienen.
 
 Las pruebas de regresión cubren coincidencias posteriores a las primeras páginas, localización de límites del descuento, cargas de 60, favoritos de las tres consolas, persistencia, metas en moneda nativa y diseño del comparador en móvil.
+
+
+## Consultas acotadas y variantes oficiales
+
+Se eliminó el barrido automático de cientos de páginas cuando fallaba la localización de un descuento. La búsqueda del tramo de CheapShark guarda su estado durante cinco minutos y avanza en tandas de hasta cuatro peticiones, con presupuesto de ocho segundos por tanda. Si sigue pendiente, se ofrece Continuar búsqueda sin afirmar que no existan ofertas. Una vez localizado, se recuperan hasta tres páginas por interacción y se conservan las coincidencias; el máximo visible añadido sigue siendo de 60 juegos.
+
+Todas las consultas a CheapShark comparten una cola por servidor, con una petición simultánea, separación mínima de 650 ms, caché de páginas de un minuto y deduplicación de peticiones idénticas. Ante HTTP 429 se respeta Retry-After (o 30 segundos si falta), sin reintentos automáticos ni barridos alternativos. Las consolas también consultan como máximo tres páginas y disponen de un presupuesto de doce segundos por carga. Son límites por proceso; varias instancias de alojamiento necesitarían coordinar la cuota externamente.
+
+Para Nintendo se consulta una sola ficha oficial, con caché y deduplicación, y se extraen sus referencias explícitas de variaciones desde initialApolloState. No se toman como variantes todos los productos recomendados o DLC de la página. Las versiones se muestran abiertas en tarjetas con nombre, consola, moneda, precio y enlace propio; el comparador separa Switch y Switch 2 al calcular el mejor precio de la edición seleccionada. Si no se puede consultar la ficha, se avisa y no se estiman los precios de sus variantes.
+
+
+La localización de porcentajes se realiza por tienda, empezando por Steam y continuando con las tiendas recibidas de /api/stores mediante Cargar más. Esto evita el rechazo HTTP 400 Too Many Results que provoca saltar demasiado lejos en el catálogo global. Si una tienda limita el acceso a páginas profundas, se busca dentro del tramo accesible antes de ofrecer pasar a la siguiente tienda; no se repite un salto inválido ni se supone que no hay ofertas.

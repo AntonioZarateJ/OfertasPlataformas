@@ -27,9 +27,9 @@ test('El proxy identifica la aplicación, conserva filtros y reutiliza consultas
 
 test('Los errores de proveedor no se convierten en éxito ni quedan en caché', async () => {
     let calls = 0;
-    await withServer(async () => { calls++; return Response.json({}, { status: 429 }); }, async base => {
-        assert.equal((await fetch(`${base}/api/stores`)).status, 429);
-        assert.equal((await fetch(`${base}/api/stores`)).status, 429);
+    await withServer(async () => { calls++; return Response.json({}, { status: 503 }); }, async base => {
+        assert.equal((await fetch(`${base}/api/stores`)).status, 503);
+        assert.equal((await fetch(`${base}/api/stores`)).status, 503);
         assert.equal(calls, 2);
     });
 });

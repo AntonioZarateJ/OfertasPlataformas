@@ -38,6 +38,7 @@ async function nintendo(region,q,cursor,onlyDeals,sort,discount){
  const data=await request('https://u3b6gr4ua3-dsn.algolia.net/1/indexes/*/queries',{requests:[{indexName:'store_game_'+locales[region].replace('-','_').toLowerCase(),params:params.toString()}]},{'x-algolia-api-key':'a29c6927638bfd8cee23993e51e721c9','x-algolia-application-id':'U3B6GR4UA3'});
  const result=data.results?.[0];if(!Array.isArray(result?.hits))throw Error('Catálogo no disponible para esta región');
  const items=result.hits.flatMap(p=>{
+ if((p.eshopDetails?.isPurchasable===false||p.isSalableQty===false)&&!p.eshopDetails?.isPreorderable)return [];
  if(!/Nintendo Switch/.test(p.platform||'')||!p.eshopDetails||p.eshopDetails.currency!==currencies[region]||!Number.isFinite(p.price?.finalPrice)||p.dlcType)return [];
  return [{id:p.objectID||p.urlKey,title:p.title,price:p.price.finalPrice,regular:p.price.regPrice,currency:p.eshopDetails.currency,discount:p.price.percentOff||0,image:p.productImageSquare||'https://assets.nintendo.com/image/upload/q_auto/f_auto/'+p.productImage,url:new URL(p.url,'https://www.nintendo.com').href,edition:p.platform,store:'Nintendo eShop',kind:'official'}];
  });

@@ -4,6 +4,7 @@ const path = require('node:path');
 const { consoleCatalog } = require('./console-sources.cjs');
 const { rememberCatalog, compareGame } = require('./console-comparison.cjs');
 
+const { createCheapSharkClient } = require('./cheapshark-client.cjs');
 const { discountPosition } = require('./discount-position.cjs');
 const root = __dirname;
 const upstreams = {
@@ -17,8 +18,11 @@ const upstreams = {
 
 function createServer({ fetchImpl = fetch } = {}) {
     const cache = new Map();
+    const positions=new Map();
+    const cheapsharkFetch=createCheapSharkClient(fetchImpl);
     const pending = new Map();
     const reply = (res, status, data) => {
+        if(status===429)res.setHeader('Retry-After',String(data.retryAfter||30));
         res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify(data));
     };
@@ -28,11 +32,16 @@ function createServer({ fetchImpl = fetch } = {}) {
         try {
             const url = new URL(req.url, 'http://localhost');
             if (url.pathname === '/api/deals-position') {
-                if(!/^\d{1,3}$/.test(url.searchParams.get('discount')||'')||Number(url.searchParams.get('discount'))>100||[...url.searchParams].some(([k,v])=>!['discount','desc','title','onSale','steamRating','AAA'].includes(k)||v.length>250)){reply(res,400,{error:'Filtros inválidos'});return;}
+                if(!url.searchParams.has('storeID'))url.searchParams.set('storeID','1');
+                if(!/^\d{1,5}$/.test(url.searchParams.get('storeID')||'')||!/^\d{1,3}$/.test(url.searchParams.get('discount')||'')||Number(url.searchParams.get('discount'))>100||[...url.searchParams].some(([k,v])=>!['discount','desc','storeID','title','onSale','steamRating','AAA'].includes(k)||v.length>250)){reply(res,400,{error:'Filtros inválidos'});return;}
                 const key='position:'+url.searchParams.toString();
                 if(cache.get(key)?.expires>Date.now()){reply(res,200,cache.get(key).data);return;}
-                if(!pending.has(key))pending.set(key,discountPosition(url.searchParams,fetchImpl));
-                try{const data=await pending.get(key);if(cache.size>=200)cache.delete(cache.keys().next().value);cache.set(key,{data,expires:Date.now()+60000});reply(res,200,data);}finally{pending.delete(key);}return;
+                if(!positions.has(key)||positions.get(key).expires<Date.now()){
+                    if(positions.size>=100)positions.delete(positions.keys().next().value);
+                    positions.set(key,{state:{},expires:Date.now()+300000});
+                }
+                if(!pending.has(key))pending.set(key,discountPosition(url.searchParams,cheapsharkFetch,positions.get(key).state));
+                try{const data=await pending.get(key);if(cache.size>=200)cache.delete(cache.keys().next().value);if(!data.pending)cache.set(key,{data,expires:Date.now()+60000});reply(res,200,data);}finally{pending.delete(key);}return;
             }
             if (url.pathname === '/api/console-comparison') {
                 const platform=url.searchParams.get('platform'), region=url.searchParams.get('region'), title=(url.searchParams.get('title')||'').trim();
@@ -100,11 +109,11 @@ function createServer({ fetchImpl = fetch } = {}) {
                 if (cached?.expires > Date.now()) { reply(res, 200, cached.data); return; }
                 if (!pending.has(key)) {
                     const work = (async () => {
-                        const response = await fetchImpl(target.href, {
+                        const response = await (target.hostname==='www.cheapshark.com'?cheapsharkFetch:fetchImpl)(target.href, {
                             headers: { 'User-Agent': 'SteamPulsePro/1.0 (game price comparison application)', Accept: 'application/json' },
                             signal: AbortSignal.timeout(6500)
                         });
-                        if (!response.ok) return { status: response.status, data: { error: `El proveedor respondió HTTP ${response.status}` } };
+                        if (!response.ok) return { status: response.status, data: { error: `El proveedor respondió HTTP ${response.status}`,retryAfter:Number(response.headers.get('Retry-After'))||0 } };
                         const data = await response.json();
                         if (cache.size >= 200) cache.delete(cache.keys().next().value);
                         cache.set(key, { expires: Date.now() + ttl, data });
@@ -135,7 +144,7 @@ function createServer({ fetchImpl = fetch } = {}) {
             res.end(req.method === 'HEAD' ? undefined : await fs.readFile(file));
         } catch (error) {
             const status = error.upstreamStatus===429?429:error.code === 'ENOENT' ? 404 : error.name === 'TimeoutError' ? 504 : 502;
-            reply(res, status, { error: status === 404 ? 'Recurso no encontrado' : 'No se pudo consultar el proveedor. Inténtalo de nuevo.' });
+            reply(res, status, { retryAfter:error.retryAfter||0,error: status === 404 ? 'Recurso no encontrado' : 'No se pudo consultar el proveedor. Inténtalo de nuevo.' });
         }
     });
 }

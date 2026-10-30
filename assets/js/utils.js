@@ -14,7 +14,7 @@ async function requestJSON(url, { signal, ttl = 60000, timeout = 8000, ...option
     const timer = setTimeout(() => controller.abort(new DOMException('Tiempo de espera agotado', 'TimeoutError')), timeout);
     try {
         const response = await fetch(url, { ...options, signal: controller.signal });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok){const error=new Error(`HTTP ${response.status}`);error.status=response.status;error.retryAfter=Number(response.headers.get('Retry-After'))||0;throw error;}
         const data = await response.json();
         if (cacheable && ttl > 0) {
             if (responseCache.size >= 100) responseCache.delete(responseCache.keys().next().value);
@@ -63,6 +63,7 @@ function cancelCatalogRequest() {
     catalogController = null;
     isLoadingMore = false;
     loadMoreBtn.disabled = false;
+    loadMoreBtn.classList.remove('hidden-el');
     loadMoreBtn.innerHTML = '<i class="fa-solid fa-plus"></i><span>Cargar Más Juegos</span>';
 }
 

@@ -34,6 +34,7 @@
                     list.forEach(st => {
                         storesMap[st.storeID] = {
                             name: st.storeName,
+                            active: st.isActive !== 0,
                             icon: st.images?.icon ? `https://www.cheapshark.com${st.images.icon}` : ''
                         };
                     });

@@ -62,6 +62,7 @@ const server = http.createServer((req, res) => {
             if (mode.cloudFailure === request.method()) return json({ error: 'Permission denied' }, 403);
             return json(request.method() === 'GET' ? { items: { '400': { ...game(400), gameID: '400' } } } : {});
         }
+        if (u.pathname === '/api/deals-position') return json({page:0});
         if (u.pathname === '/api/giveaways') return json([]);
         if (request.resourceType() === 'image') return route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="460" height="215"><rect width="460" height="215" fill="#163b55"/><text x="30" y="120" fill="white" font-size="28">Prueba SteamPulse</text></svg>' });
         return route.fulfill({ body: '', contentType: 'text/css' });
