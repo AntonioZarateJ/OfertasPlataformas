@@ -7,7 +7,7 @@
     <!-- Tailwind CSS -->
     <link rel="stylesheet" href="assets/css/tailwind.css">
     <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Google Fonts: Plus Jakarta Sans & Inter -->
@@ -30,7 +30,7 @@
                 <span id="cloudStatusLabel" class="text-sky-400">Accede y guarda tu wishlist</span>
             </div>
             <div class="flex items-center gap-3">
-                <span id="triggeredAlertsTopBadge" onclick="openWishlistDrawer()" class="hidden-el cursor-pointer bg-amber-500/20 border border-amber-400/50 text-amber-300 px-2.5 py-0.5 rounded-full font-bold animate-pulse">
+                <span id="triggeredAlertsTopBadge" data-ui-click="open-wishlist-drawer" class="hidden-el cursor-pointer bg-amber-500/20 border border-amber-400/50 text-amber-300 px-2.5 py-0.5 rounded-full font-bold animate-pulse">
                     <i class="fa-solid fa-bell mr-1"></i>¡<span id="triggeredAlertsCount">0</span> Alerta(s) Cumplida(s)!
                 </span>
                 <span id="liveCurrencyNotice" class="hidden-el text-emerald-400 font-semibold">
@@ -50,7 +50,7 @@
             
             <!-- Marca -->
             <div class="nav-brand flex flex-wrap items-center justify-between gap-3 w-full lg:w-auto">
-                <a href="#" onclick="selectSmartChip('top'); return false;" class="flex items-center gap-3 group">
+                <a href="#" data-ui-click="select-smart-chip-top-link" class="flex items-center gap-3 group">
                     <div class="w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-sky-400 to-blue-700 flex items-center justify-center shadow-lg shadow-sky-500/20 group-hover:scale-105 transition">
                         <i class="fa-brands fa-steam text-white text-2xl"></i>
                     </div>
@@ -66,19 +66,19 @@
 
             <!-- Selector Global de Plataforma / Ecosistema (Fase 2) -->
             <div class="nav-platforms grid grid-cols-2 sm:flex items-center bg-[#090d16] p-1 rounded-xl border border-white/10 w-full lg:w-auto justify-between sm:justify-center gap-1">
-                <button type="button" data-ecosystem="pc" onclick="selectEcosystem('pc')"
+                <button type="button" data-ecosystem="pc" data-ui-click="select-ecosystem-pc"
                     class="plat-pill active-pc flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-extrabold border border-transparent flex items-center justify-center gap-1.5">
                     <i class="fa-brands fa-steam"></i>
                     <span class="desktop-label">PC (Steam/Epic)</span><span class="mobile-label">PC</span>
                 </button>
-                <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="xbox" onclick="selectEcosystem('xbox')"><i class="fa-brands fa-xbox"></i> Xbox</button>
-                <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="ps" onclick="selectEcosystem('ps')"><i class="fa-brands fa-playstation"></i> PlayStation</button>
-                <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="switch" onclick="selectEcosystem('switch')"><span class="desktop-label">Nintendo Switch</span><span class="mobile-label">Switch</span></button>
+                <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="xbox" data-ui-click="select-ecosystem-xbox"><i class="fa-brands fa-xbox"></i> Xbox</button>
+                <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="ps" data-ui-click="select-ecosystem-ps"><i class="fa-brands fa-playstation"></i> PlayStation</button>
+                <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="switch" data-ui-click="select-ecosystem-switch"><span class="desktop-label">Nintendo Switch</span><span class="mobile-label">Switch</span></button>
             </div>
 
             <!-- Buscador Predictivo en Vivo (Cualquier juego con o sin oferta) -->
             <div class="nav-search relative w-full xl:col-span-3 xl:row-start-2">
-                <form onsubmit="handleSearchSubmit(event)" class="relative">
+                <form data-ui-submit="handle-search-submit" class="relative">
                     <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
                     <input type="text" id="predictiveSearchInput" autocomplete="off"
                         placeholder="Buscar juego (en oferta o precio normal)..."
@@ -97,7 +97,7 @@
             <div class="nav-actions flex items-center gap-2.5 w-full xl:w-auto justify-end xl:col-start-3 xl:row-start-1">
                 
                 <!-- Botón Wishlist & Alertas -->
-                <button type="button" onclick="openWishlistDrawer()"
+                <button type="button" data-ui-click="open-wishlist-drawer"
                     class="bg-[#162032] hover:bg-[#1e2c44] text-white border border-rose-500/40 rounded-xl py-2 px-3.5 text-xs font-bold transition flex items-center gap-2 shadow-lg flex-shrink-0"
                     id="wishlistButton" aria-label="Mis favoritos y alertas" title="Mis favoritos y alertas">
                     <div class="relative">
@@ -109,7 +109,7 @@
                 </button>
 
                 <!-- Botón Cuenta / Cloud -->
-                <button type="button" onclick="openCloudConfigModal()"
+                <button type="button" data-ui-click="open-cloud-config-modal"
                     id="userAccountBtn"
                     class="bg-[#162032] hover:bg-[#1e2c44] text-sky-300 border border-sky-500/40 rounded-xl py-2 px-3 text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
                     aria-label="Acceder a mi cuenta" title="Mi cuenta">
@@ -150,19 +150,19 @@
                 
                 <!-- Fila de Píldoras de 1 Clic -->
                 <div class="flex items-center gap-2 overflow-x-auto pb-1 xl:pb-0 no-scrollbar">
-                    <button type="button" data-chip="top" onclick="selectSmartChip('top')"
+                    <button type="button" data-chip="top" data-ui-click="select-smart-chip-top"
                         class="smart-chip active px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-white/10 bg-steam-base text-gray-200 flex items-center gap-2">
                         <span>🔥 Solo ofertas</span>
                     </button>
 
-                    <button type="button" data-chip="free" onclick="selectSmartChip('free')"
+                    <button type="button" data-chip="free" data-ui-click="select-smart-chip-free"
                         class="smart-chip px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50 flex items-center gap-2">
                         <i class="fa-solid fa-gift text-emerald-400 animate-bounce"></i>
                         <span class="desktop-label">100% Gratis (Epic / Steam / GOG)</span><span class="mobile-label">Gratis</span>
                         <span class="bg-emerald-500 text-gray-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">HOT</span>
                     </button>
 
-                    <button type="button" data-chip="all" onclick="selectSmartChip('all')"
+                    <button type="button" data-chip="all" data-ui-click="select-smart-chip-all"
                         class="smart-chip px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-white/10 bg-steam-base text-gray-200 hover:bg-steam-light flex items-center gap-2"
                         title="Explorar todos los juegos con o sin descuento">
                         <span>🌐 Catálogo completo</span>
@@ -172,10 +172,10 @@
                 <!-- Controles derechos: Ordenar + Botón Filtros Ocultos -->
                 <div class="flex items-center justify-between sm:justify-end gap-2.5 pt-1 xl:pt-0 border-t border-white/5 xl:border-none">
                     <div class="flex items-center gap-2 min-w-0" id="sortContainer">
-                        <label for="sortSelect" class="text-xs text-gray-400 font-medium hidden sm:inline">Ordenar:</label>
+                        <label for="sortSelect" class="text-xs text-gray-400 font-medium hidden sm:inline">Ordenar cargados:</label>
                         <select id="sortSelect" 
                             class="min-w-0 max-w-full bg-steam-base hover:bg-steam-light text-white border border-white/15 rounded-xl py-2 px-3 text-xs font-semibold focus:outline-none focus:border-sky-400 cursor-pointer transition">
-                            <option value="Deal Rating" selected>⭐ Mejor Calificación Oferta</option>
+                            <option value="DealRating" selected>⭐ Mejor Calificación Oferta</option>
                             <option value="Savings">🔥 Mayor % Descuento</option>
                             <option value="Price">💰 Menor Precio Primero</option>
                             <option value="Reviews">👍 Mejores Reseñas Steam</option>
@@ -196,23 +196,23 @@
 
             <!-- CAJÓN DESPLEGABLE OCULTO: "AJUSTES FINOS" (SOLO SE VE SI EL USUARIO LO ABRE) -->
             <div id="fineTuneDrawer" class="hidden-el refined-filters">
-              <div class="filter-panel-heading"><div><span>AFINA LOS RESULTADOS</span><h3>Elige qué quieres encontrar</h3></div><button type="button" onclick="resetFineTuneFilters()">Restablecer filtros</button></div>
+              <div class="filter-panel-heading"><div><span>AFINA LOS RESULTADOS</span><h3>Elige qué quieres encontrar</h3></div><button type="button" data-ui-click="reset-fine-tune-filters">Restablecer filtros</button></div>
               <div class="refined-filter-grid">
-                <div class="filter-field"><label for="drawerDiscountMode">Descuento</label><select id="drawerDiscountMode" onchange="updateDrawerLabels()"><option value="any">Cualquier porcentaje</option><option value="exact">Un porcentaje exacto</option><option value="range">Un rango de porcentajes</option></select><div class="discount-values"><label id="drawerValueLabel">Porcentaje <input type="number" id="drawerDiscountSlider" min="0" max="100" step="1" value="10"></label><label id="drawerEndLabel">Hasta <input type="number" id="drawerDiscountEnd" min="0" max="100" step="1" value="50"></label></div><p id="drawerDiscountLabel"></p></div>
+                <div class="filter-field"><label for="drawerDiscountMode">Descuento</label><select id="drawerDiscountMode" data-ui-change="update-drawer-labels"><option value="any">Cualquier porcentaje</option><option value="exact">Un porcentaje exacto</option><option value="range">Un rango de porcentajes</option></select><div class="discount-values"><label id="drawerValueLabel">Porcentaje <input type="number" id="drawerDiscountSlider" min="0" max="100" step="1" value="10"></label><label id="drawerEndLabel">Hasta <input type="number" id="drawerDiscountEnd" min="0" max="100" step="1" value="50"></label></div><p id="drawerDiscountLabel"></p></div>
                 <div class="filter-field"><label for="drawerRatingSlider">Reseñas positivas de Steam</label><input type="range" id="drawerRatingSlider" min="0" max="100" step="10" value="0"><p id="drawerRatingLabel">Sin mínimo de reseñas</p><small>Valoración de Steam, no de otras plataformas.</small></div>
               </div>
-              <div class="filter-panel-footer"><p>PC: el porcentaje filtra la referencia de CheapShark en USD. El descuento regional de Steam puede variar.</p><button type="button" onclick="applyCustomDrawerFilters()">Aplicar filtros <i class="fa-solid fa-arrow-right"></i></button></div>
+              <div class="filter-panel-footer"><p>PC: el porcentaje filtra la referencia de CheapShark en USD. El descuento regional de Steam puede variar.</p><button type="button" data-ui-click="apply-custom-drawer-filters">Aplicar filtros <i class="fa-solid fa-arrow-right"></i></button></div>
             </div>
 
             <!-- SUB-BARRA ESPECIAL PARA JUEGOS 100% GRATIS -->
             <div id="freeGamesSubBar" class="hidden-el mt-3 pt-3 border-t border-emerald-500/20 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex flex-wrap items-center gap-1.5">
                     <span class="text-xs font-bold text-emerald-400 mr-1"><i class="fa-solid fa-filter mr-1"></i>Filtrar Regalos:</span>
-                    <button type="button" data-free-plat="all" onclick="filterFreeGamesByPlatform('all')" class="free-plat-btn bg-emerald-500 text-gray-950 font-extrabold text-xs px-3 py-1 rounded-lg transition">Todos</button>
-                    <button type="button" data-free-plat="epic" onclick="filterFreeGamesByPlatform('epic')" class="free-plat-btn bg-steam-base hover:bg-steam-light text-gray-300 text-xs px-3 py-1 rounded-lg border border-white/10 transition">Epic Games</button>
-                    <button type="button" data-free-plat="steam" onclick="filterFreeGamesByPlatform('steam')" class="free-plat-btn bg-steam-base hover:bg-steam-light text-gray-300 text-xs px-3 py-1 rounded-lg border border-white/10 transition">Steam</button>
-                    <button type="button" data-free-plat="gog" onclick="filterFreeGamesByPlatform('gog')" class="free-plat-btn bg-steam-base hover:bg-steam-light text-gray-300 text-xs px-3 py-1 rounded-lg border border-white/10 transition">GOG / PC</button>
-                    <button type="button" data-free-plat="console" onclick="filterFreeGamesByPlatform('console')" class="free-plat-btn bg-steam-base hover:bg-steam-light text-gray-300 text-xs px-3 py-1 rounded-lg border border-white/10 transition">Consolas</button>
+                    <button type="button" data-free-plat="all" data-ui-click="filter-free-games-by-platform-all" class="free-plat-btn bg-emerald-500 text-gray-950 font-extrabold text-xs px-3 py-1 rounded-lg transition">Todos</button>
+                    <button type="button" data-free-plat="epic" data-ui-click="filter-free-games-by-platform-epic" class="free-plat-btn bg-steam-base hover:bg-steam-light text-gray-300 text-xs px-3 py-1 rounded-lg border border-white/10 transition">Epic Games</button>
+                    <button type="button" data-free-plat="steam" data-ui-click="filter-free-games-by-platform-steam" class="free-plat-btn bg-steam-base hover:bg-steam-light text-gray-300 text-xs px-3 py-1 rounded-lg border border-white/10 transition">Steam</button>
+                    <button type="button" data-free-plat="gog" data-ui-click="filter-free-games-by-platform-gog" class="free-plat-btn bg-steam-base hover:bg-steam-light text-gray-300 text-xs px-3 py-1 rounded-lg border border-white/10 transition">GOG / PC</button>
+                    <button type="button" data-free-plat="console" data-ui-click="filter-free-games-by-platform-console" class="free-plat-btn bg-steam-base hover:bg-steam-light text-gray-300 text-xs px-3 py-1 rounded-lg border border-white/10 transition">Consolas</button>
                 </div>
                 <div class="flex items-center gap-2 text-[11px]">
                     <a href="https://store.epicgames.com/es-MX/free-games" target="_blank" rel="noopener noreferrer" class="text-emerald-300 hover:underline flex items-center gap-1 font-semibold">
@@ -262,22 +262,22 @@
             </div>
             <h3 class="text-base font-bold text-white mb-1">Sin coincidencias en las fuentes consultadas</h3>
             <p class="text-xs text-gray-400 max-w-md mx-auto mb-4">Prueba otro porcentaje, cambia entre Solo ofertas y Catálogo completo o restablece los filtros.</p>
-            <button type="button" onclick="selectSmartChip('top')" class="bg-sky-500 hover:bg-sky-400 text-gray-950 font-extrabold text-xs px-4 py-2.5 rounded-xl transition">
+            <button type="button" data-ui-click="select-smart-chip-top" class="bg-sky-500 hover:bg-sky-400 text-gray-950 font-extrabold text-xs px-4 py-2.5 rounded-xl transition">
                 Volver a Ofertas Top
             </button>
         </div>
 
         <div id="catalogError" role="alert" class="hidden-el text-center p-6 mb-5 rounded-xl border border-rose-400/40 text-rose-300">
             <p class="mb-3"></p>
-            <button type="button" onclick="activeChip === 'free' ? loadFreeGamesMode() : executeCatalogFetch(true)" class="bg-steam-base rounded-lg px-4 py-2 text-white">Reintentar</button>
+            <button type="button" data-ui-click="retry-catalog" class="bg-steam-base rounded-lg px-4 py-2 text-white">Reintentar</button>
         </div>
 
         <section id="consoleTools" class="hidden-el console-tools refined-filters">
-          <div class="filter-panel-heading"><div><span>ENCUENTRA TU PRÓXIMO JUEGO</span><h3>Tu plataforma, tus preferencias</h3></div><button type="button" onclick="resetConsoleFilters()">Restablecer filtros</button></div>
+          <div class="filter-panel-heading"><div><span>ENCUENTRA TU PRÓXIMO JUEGO</span><h3>Tu plataforma, tus preferencias</h3></div><button type="button" data-ui-click="reset-console-filters">Restablecer filtros</button></div>
           <div class="console-filters refined-filter-grid">
-            <div class="filter-field"><label for="consoleSource"><i class="fa-solid fa-store"></i> Tiendas</label><select id="consoleSource" onchange="loadConsoleCatalog()"><option value="all">Oficiales y externas</option><option value="official">Sólo tiendas oficiales</option><option value="external">Sólo mercados externos</option></select><small>Siempre distinguimos la fuente de cada precio.</small></div>
-            <div class="filter-field"><label for="consoleOrder"><i class="fa-solid fa-arrow-down-wide-short"></i> Ordenar resultados</label><select id="consoleOrder" onchange="loadConsoleCatalog()"><option value="relevance">Relevancia</option><option value="rating">Mejores reseñas disponibles</option><option value="priceAsc">Menor precio</option><option value="priceDesc">Mayor precio</option><option value="discountDesc">Mayor descuento</option><option value="discountAsc">Menor descuento</option></select><small>Sobre las coincidencias cargadas.</small></div>
-            <div class="filter-field"><label for="consoleDiscountMode"><i class="fa-solid fa-percent"></i> Descuento</label><select id="consoleDiscountMode" onchange="applyConsoleDiscount()"><option value="any">Cualquier porcentaje</option><option value="exact">Un porcentaje exacto</option><option value="range">Un rango de porcentajes</option></select><div class="discount-values"><label id="consoleValueLabel">Porcentaje<input id="consoleDiscountValue" type="number" min="0" max="100" step="1" value="10" onchange="applyConsoleDiscount()"></label><label id="consoleEndLabel">Hasta<input id="consoleDiscountEnd" type="number" min="0" max="100" step="1" value="50" onchange="applyConsoleDiscount()"></label></div><p id="consoleDiscountLabel">Sin restricción de porcentaje.</p></div>
+            <div class="filter-field"><label for="consoleSource"><i class="fa-solid fa-store"></i> Tiendas</label><select id="consoleSource" data-ui-change="load-console-catalog"><option value="all">Oficiales y externas</option><option value="official">Sólo tiendas oficiales</option><option value="external">Sólo mercados externos</option></select><small>Siempre distinguimos la fuente de cada precio.</small></div>
+            <div class="filter-field"><label for="consoleOrder"><i class="fa-solid fa-arrow-down-wide-short"></i> Ordenar resultados</label><select id="consoleOrder" data-ui-change="load-console-catalog"><option value="relevance">Relevancia</option><option value="rating">Mejores reseñas disponibles</option><option value="priceAsc">Menor precio</option><option value="priceDesc">Mayor precio</option><option value="discountDesc">Mayor descuento</option><option value="discountAsc">Menor descuento</option></select><small>Sobre las coincidencias cargadas.</small></div>
+            <div class="filter-field"><label for="consoleDiscountMode"><i class="fa-solid fa-percent"></i> Descuento</label><select id="consoleDiscountMode" data-ui-change="apply-console-discount"><option value="any">Cualquier porcentaje</option><option value="exact">Un porcentaje exacto</option><option value="range">Un rango de porcentajes</option></select><div class="discount-values"><label id="consoleValueLabel">Porcentaje<input id="consoleDiscountValue" type="number" min="0" max="100" step="1" value="10" data-ui-change="apply-console-discount"></label><label id="consoleEndLabel">Hasta<input id="consoleDiscountEnd" type="number" min="0" max="100" step="1" value="50" data-ui-change="apply-console-discount"></label></div><p id="consoleDiscountLabel">Sin restricción de porcentaje.</p></div>
           </div>
           <details class="source-details"><summary>Fuentes consultadas y alcance de la búsqueda</summary><div id="consoleSources"></div><p id="consoleScope"></p></details>
         </section>
@@ -317,7 +317,7 @@
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 self-start sm:self-end flex-shrink-0">
-                        <button type="button" id="modalWishlistToggleBtn" onclick="toggleModalGameWishlist()"
+                        <button type="button" id="modalWishlistToggleBtn" data-ui-click="toggle-modal-game-wishlist"
                             class="bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white text-xs font-bold px-3 py-2 rounded-xl border border-rose-400/40 transition flex items-center gap-1.5">
                             <i class="fa-regular fa-heart" id="modalWishlistIcon"></i>
                             <span id="modalWishlistBtnText">Guardar</span>
@@ -372,7 +372,7 @@
                                     <input type="number" id="modalTargetPriceInput" step="any" min="1" placeholder="Ej. 150"
                                         class="w-28 sm:w-32 bg-[#090d16] text-white text-xs font-bold rounded-xl px-3 py-2 border border-sky-500/40 focus:outline-none focus:border-amber-400">
                                 </div>
-                                <button type="button" onclick="saveModalPriceAlert()"
+                                <button type="button" data-ui-click="save-modal-price-alert"
                                     class="bg-amber-400 hover:bg-amber-300 text-gray-950 font-black text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-lg flex-shrink-0">
                                     <i class="fa-solid fa-bell-concierge"></i>
                                     <span>Guardar meta</span>
@@ -393,13 +393,13 @@
                     <!-- SELECTOR DE PESTAÑAS DEL COMPARADOR (FASE 2: TIENDAS OFICIALES VS MERCADOS DE KEYS) -->
                     <div>
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[#0b0f19] p-1.5 rounded-xl border border-white/10 mb-4">
-                            <button type="button" id="tabOfficialBtn" onclick="switchModalComparatorTab('official')"
+                            <button type="button" id="tabOfficialBtn" data-ui-click="switch-modal-comparator-tab-official"
                                 class="flex-1 py-2.5 px-4 rounded-lg text-xs font-extrabold transition flex items-center justify-center gap-2 bg-sky-500 text-gray-950 shadow">
                                 <i class="fa-solid fa-circle-check"></i>
                                 <span>1. Tiendas Oficiales Autorizadas</span>
                                 <span id="modalStoresCount" class="bg-gray-950/25 text-gray-950 px-2 py-0.5 rounded-full text-[10px]">0</span>
                             </button>
-                            <button type="button" id="tabKeysBtn" onclick="switchModalComparatorTab('keys')"
+                            <button type="button" id="tabKeysBtn" data-ui-click="switch-modal-comparator-tab-keys"
                                 class="flex-1 py-2.5 px-4 rounded-lg text-xs font-extrabold transition flex items-center justify-center gap-2 text-amber-300 hover:bg-white/5">
                                 <i class="fa-solid fa-key"></i>
                                 <span>2. Mercados de Keys (Eneba / CDKeys / G2A)</span>
@@ -449,7 +449,7 @@
                                     <span>Buscar Key para plataforma:</span>
                                 </span>
                                 <div class="flex flex-wrap gap-1.5" id="modalKeyPlatformSelector">
-                                    <button type="button" onclick="changeModalKeyPlatform('pc')" data-modal-plat="pc" class="modal-plat-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-500 text-gray-950">PC (Steam/Epic)</button>
+                                    <button type="button" data-ui-click="change-modal-key-platform-pc" data-modal-plat="pc" class="modal-plat-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-500 text-gray-950">PC (Steam/Epic)</button>
                                 </div>
                             </div>
 
@@ -477,7 +477,7 @@
                         <p class="text-[11px] text-gray-400" id="wishlistSyncStatusText">Sincronizado en almacenamiento híbrido</p>
                     </div>
                 </div>
-                <button type="button" onclick="closeWishlistDrawer()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-500 text-gray-300 hover:text-white flex items-center justify-center transition">
+                <button type="button" data-ui-click="close-wishlist-drawer" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-500 text-gray-300 hover:text-white flex items-center justify-center transition">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -486,12 +486,12 @@
             <div class="px-4 py-2.5 bg-[#121c30] border-b border-white/5 flex items-center justify-between text-xs">
                 <span class="text-gray-300"><strong id="drawerWishlistTotal">0</strong> juegos guardados</span>
                 <div class="flex items-center gap-2">
-                    <button type="button" onclick="exportWishlistJson()" class="text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1" title="Exportar respaldo JSON">
+                    <button type="button" data-ui-click="export-wishlist-json" class="text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1" title="Exportar respaldo JSON">
                         <i class="fa-solid fa-download"></i>
                         <span>Exportar JSON</span>
                     </button>
                     <span class="text-gray-600">|</span>
-                    <button type="button" onclick="clearEntireWishlist()" class="text-rose-400 hover:text-rose-300 font-semibold">
+                    <button type="button" data-ui-click="clear-entire-wishlist" class="text-rose-400 hover:text-rose-300 font-semibold">
                         Vaciar
                     </button>
                 </div>
@@ -501,7 +501,7 @@
             <div id="wishlistItemsContainer" class="p-4 overflow-y-auto flex-1 space-y-3"></div>
 
             <div class="p-4 border-t border-white/10 bg-[#090e19] flex flex-col gap-2">
-                <button type="button" onclick="openCloudConfigModal()"
+                <button type="button" data-ui-click="open-cloud-config-modal"
                     class="w-full bg-steam-base hover:bg-steam-light text-sky-300 font-bold py-2.5 px-4 rounded-xl text-xs border border-sky-500/30 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-cloud"></i>
                     <span>Configurar Sincronización Firebase / Cloud</span>
@@ -513,26 +513,26 @@
     <!-- 7. MODAL DE ARQUITECTURA CLOUD, FIREBASE & DESPLIEGUE (FASE 3) -->
     <div id="cloudConfigModal" role="dialog" aria-modal="true" aria-labelledby="authTitle" class="hidden-el auth-overlay">
       <section class="auth-card">
-        <button type="button" class="auth-close" aria-label="Cerrar acceso" onclick="closeCloudConfigModal()">×</button>
+        <button type="button" class="auth-close" aria-label="Cerrar acceso" data-ui-click="close-cloud-config-modal">×</button>
         <div class="auth-mark"><i class="fa-brands fa-steam"></i></div>
         <p class="auth-eyebrow">TU BIBLIOTECA, CONTIGO</p>
         <h2 id="authTitle">Bienvenido de nuevo</h2>
         <p class="auth-subtitle">Guarda tus favoritos y encuentra el momento de comprar.</p>
-        <div id="authTabs" class="auth-tabs"><button type="button" onclick="setAuthMode('login')" id="loginTab">Iniciar sesión</button><button type="button" onclick="setAuthMode('register')" id="registerTab">Crear cuenta</button></div>
-        <form id="authForm" onsubmit="submitAccount(event)">
+        <div id="authTabs" class="auth-tabs"><button type="button" data-ui-click="set-auth-mode-login" id="loginTab">Iniciar sesión</button><button type="button" data-ui-click="set-auth-mode-register" id="registerTab">Crear cuenta</button></div>
+        <form id="authForm" data-ui-submit="submit-account">
           <label id="authNameLabel" class="hidden-el">Nombre<input id="authName" autocomplete="nickname" maxlength="60" placeholder="¿Cómo te llamas?"></label>
           <label>Correo electrónico<input id="authEmail" type="email" autocomplete="email" required placeholder="tu@correo.com"></label>
-          <label id="authPasswordLabel">Contraseña<div class="auth-password"><input id="authPassword" type="password" autocomplete="current-password" minlength="8" required placeholder="Tu contraseña"><button type="button" aria-label="Mostrar contraseña" onclick="toggleAccountPassword()"><i class="fa-regular fa-eye"></i></button></div></label>
-          <button type="button" class="auth-forgot" onclick="setAuthMode('reset')">¿Olvidaste tu contraseña?</button>
+          <label id="authPasswordLabel">Contraseña<div class="auth-password"><input id="authPassword" type="password" autocomplete="current-password" minlength="8" required placeholder="Tu contraseña"><button type="button" aria-label="Mostrar contraseña" data-ui-click="toggle-account-password"><i class="fa-regular fa-eye"></i></button></div></label>
+          <button type="button" class="auth-forgot" data-ui-click="set-auth-mode-reset">¿Olvidaste tu contraseña?</button>
           <p id="authMessage" role="status" aria-live="polite"></p>
           <button id="authSubmit" class="auth-submit" type="submit">Entrar a mi cuenta <span>→</span></button>
         </form>
-        <div id="accountPanel" class="hidden-el"><p id="accountEmail"></p><p id="accountVerification"></p><button type="button" class="auth-submit" onclick="sendAccountVerification()">Verificar correo</button><button type="button" class="auth-forgot" onclick="logoutAccount()">Cerrar sesión</button></div>
+        <div id="accountPanel" class="hidden-el"><p id="accountEmail"></p><p id="accountVerification"></p><button type="button" class="auth-submit" data-ui-click="send-account-verification">Verificar correo</button><button type="button" class="auth-forgot" data-ui-click="logout-account">Cerrar sesión</button></div>
         <p class="auth-footnote">Tus favoritos locales siguen disponibles mientras navegas como invitado.</p>
       </section>
     </div>
 
-    <dialog id="consoleComparison" aria-labelledby="consoleComparisonTitle" class="comparison-dialog"><div class="comparison-heading"><div><p>COMPARAR OPCIONES DE COMPRA</p><h2 id="consoleComparisonTitle"></h2></div><button type="button" aria-label="Cerrar comparación" onclick="closeConsoleComparison()">×</button></div><div id="consoleComparisonBody"></div></dialog>
+    <dialog id="consoleComparison" aria-labelledby="consoleComparisonTitle" class="comparison-dialog"><div class="comparison-heading"><div><p>COMPARAR OPCIONES DE COMPRA</p><h2 id="consoleComparisonTitle"></h2></div><button type="button" aria-label="Cerrar comparación" data-ui-click="close-console-comparison">×</button></div><div id="consoleComparisonBody"></div></dialog>
     <!-- TOAST DE NOTIFICACIONES FLOTANTE -->
     <div id="toastNotification" class="hidden-el fixed bottom-5 right-5 z-50 bg-[#111c2d] border border-sky-400/50 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs font-bold">
         <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
@@ -566,5 +566,6 @@
     <script src="assets/js/comparator.js"></script>
     <script src="assets/js/wishlist-cloud.js"></script>
     <script src="assets/js/responsive-layout.js"></script>
+    <script src="assets/js/ui-events.js"></script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+const {publicFetch}=require('./public-fetch.cjs');
 const {embedded}=require('./console-sources.cjs');
 const currencies={MX:'MXN',US:'USD',ES:'EUR',GB:'GBP',BR:'BRL',JP:'JPY'};
 const locales={MX:'es-mx',US:'us',ES:'es-es',GB:'en-gb',BR:'pt-br',JP:'ja-jp'};
@@ -26,7 +27,7 @@ function nintendoVariants(html,region,url){
  });
 }
 const cache=new Map(),pending=new Map();
-async function loadNintendoVariants(item,region,fetchImpl=fetch){
+async function loadNintendoVariants(item,region,fetchImpl=publicFetch){
  const url=new URL(item.url);
  if(url.protocol!=='https:'||url.hostname!=='www.nintendo.com'||!url.pathname.startsWith('/'+locales[region]+'/store/products/'))throw Error('Ficha no válida');
  const key=region+url.href;

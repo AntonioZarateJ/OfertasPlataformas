@@ -137,7 +137,7 @@
         sortSelect.addEventListener('change', () => {
             queryConfig.sortBy = sortSelect.value;
             if (!['free', 'wishlist'].includes(activeChip)) {
-                executeCatalogFetch(true);
+                renderSortedPCCatalog();
             }
         });
 

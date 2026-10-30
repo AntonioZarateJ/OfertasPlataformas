@@ -42,7 +42,7 @@ async function initAccounts() {
         const epoch = ++accountEpoch;
         window.currentAccount = user;
         window.accountStorageKey = user ? 'steampulse_user_' + user.uid : WISHLIST_STORAGE_KEY;
-        try { userWishlist = normalizeWishlist(JSON.parse(localStorage.getItem(window.accountStorageKey) || '{}')); } catch { userWishlist = {}; }
+        try { userWishlist = normalizeWishlist(JSON.parse(localStorage.getItem(window.accountStorageKey) || '{}')); } catch { userWishlist = Object.create(null); }
         renderAccount();
         if (user) {
             try {

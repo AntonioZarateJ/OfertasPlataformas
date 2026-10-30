@@ -4,16 +4,18 @@
   "private": true,
   "scripts": {
     "build:css": "tailwindcss -c tailwind.config.cjs -i assets/css/tailwind.input.css -o assets/css/tailwind.css --minify",
-    "test": "node --test tests/server.cjs tests/consoles.cjs tests/comparison.cjs tests/filters.cjs tests/discount-pagination.cjs tests/provider-load.cjs tests/automatic-catalog.cjs tests/browser.cjs",
+    "test": "node tests/run.cjs",
     "start": "node server.cjs",
     "test:server": "node --test tests/server.cjs",
-    "test:browser": "node tests/browser.cjs"
+    "test:browser": "node tests/browser.cjs",
+    "test:security": "node --test tests/security.cjs",
+    "check": "node scripts/check.cjs"
   },
   "devDependencies": {
     "tailwindcss": "3.4.19",
     "@playwright/test": "1.58.2"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24.22.1 <25"
   }
 }

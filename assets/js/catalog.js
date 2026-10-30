@@ -1,3 +1,4 @@
+let pcFetchSort='DealRating';
 let pcStoreIDs=[],pcStoreIndex=0,pcNeedsSeek=true;
 let pendingPCDeals=[],pcSourceHasMore=true;
 function advancePCStore(){
@@ -12,9 +13,10 @@ async function executeCatalogFetch(resetGrid=true){
     const config=structuredClone(queryConfig),query=currentSearchQuery;
     const restricted=config.discountFilter?.mode!=='any'&&!!config.discountFilter;
     const ascending=restricted&&config.discountFilter.max<=50;
-    const started=Date.now();let partial=false,scanned=0,failure=null;
+    const deadline=Date.now()+45000;let partial=false,failure=null;
     document.getElementById('catalogError').classList.add('hidden-el');catalogNotice();
     if(resetGrid){
+        pcFetchSort=canonicalPCSort(config.sortBy);
         currentPage=0;currentDeals=[];pendingPCDeals=[];pcSourceHasMore=true;pcNeedsSeek=true;pcStoreIndex=0;
         pcStoreIDs=['1',...Object.keys(storesMap).filter(id=>id!=='1'&&storesMap[id].active!==false)];
         gamesGrid.replaceChildren();loadedCountBadge.textContent='0';emptyState.classList.add('hidden-el');
@@ -31,32 +33,32 @@ async function executeCatalogFetch(resetGrid=true){
         while(generation===catalogGeneration){
             append();
             if(currentDeals.length>=target||!pcSourceHasMore)break;
-            if(Date.now()-started>180000){partial=true;break;}
+            if(Date.now()>=deadline){partial=true;break;}
             if(restricted&&pcNeedsSeek){
                 const seek=new URLSearchParams({discount:String(ascending?config.discountFilter.min:config.discountFilter.max),desc:ascending?'1':'0',storeID:pcStoreIDs[pcStoreIndex]||'1'});
                 if(query)seek.set('title',query);
                 if(config.onSale==='1'||config.discountFilter.min>0)seek.set('onSale','1');
                 if(config.steamRating>0)seek.set('steamRating',String(config.steamRating));
                 loadingText.textContent='Buscando en '+(storesMap[pcStoreIDs[pcStoreIndex]]?.name||'Steam')+'…';
-                const position=await catalogJSON('/api/deals-position?'+seek,{signal:controller.signal,timeout:10000,ttl:0});
+                const position=await catalogJSON('/api/deals-position?'+seek,{signal:controller.signal,timeout:10000,ttl:0,deadline});
                 if(generation!==catalogGeneration)return;
                 if(position.limited){partial=true;advancePCStore();await catalogPause(700,controller.signal);continue;}
                 if(position.pending){await catalogPause(position.slow?2000:1000,controller.signal);continue;}
                 if(!Number.isInteger(position.page)||position.page<0)throw Error('Respuesta de paginación inválida');
                 currentPage=position.page;pcNeedsSeek=false;
             }
-            const params=new URLSearchParams({pageSize:'60',pageNumber:String(currentPage),sortBy:restricted?'Savings':config.sortBy});
+            const params=new URLSearchParams({pageSize:'60',pageNumber:String(currentPage),sortBy:restricted?'Savings':pcFetchSort});
             if(query)params.set('title',query);
             if(restricted){params.set('desc',ascending?'1':'0');params.set('storeID',pcStoreIDs[pcStoreIndex]||'1');}
             if(config.onSale==='1'||restricted&&config.discountFilter.min>0)params.set('onSale','1');
             if(config.steamRating>0)params.set('steamRating',String(config.steamRating));
             if(config.onlyAAA)params.set('AAA','1');
             let data;
-            try{data=await catalogJSON(`${DEALS_API}?${params}`,{signal:controller.signal});}
+            try{data=await catalogJSON(`${DEALS_API}?${params}`,{signal:controller.signal,deadline});}
             catch(error){if(restricted&&error.status===400){partial=true;advancePCStore();continue;}throw error;}
             if(generation!==catalogGeneration)return;
             if(!Array.isArray(data))throw Error('Respuesta de catálogo inválida');
-            currentPage++;scanned++;
+            currentPage++;
             const seen=new Set([...currentDeals,...pendingPCDeals].map(d=>String(d.gameID||d.dealID)));
             for(const game of data){const key=String(game.gameID||game.dealID);if(!seen.has(key)&&matchesDiscount(game.savings||0,config.discountFilter)){seen.add(key);pendingPCDeals.push(game);}}
             const end=data.length<60||restricted&&data.length&&data.every(d=>ascending?Math.round(Number(d.savings||0))>config.discountFilter.max:Math.round(Number(d.savings||0))<config.discountFilter.min);
@@ -74,14 +76,28 @@ async function executeCatalogFetch(resetGrid=true){
             loadMoreBtn.classList.remove('hidden-el');
             emptyState.classList.toggle('hidden-el',currentDeals.length>0||more||partial);
             paginationInfo.textContent=`Mostrando ${currentDeals.length} juegos${more?' · puedes cargar otros 60':''}`;
-            if(restricted&&currentDeals.length){
-                const sorts={Price:(a,b)=>Number(a.salePrice)-Number(b.salePrice),Savings:(a,b)=>Number(b.savings)-Number(a.savings),Reviews:(a,b)=>Number(b.steamRatingPercent)-Number(a.steamRatingPercent),Metacritic:(a,b)=>Number(b.metacriticScore)-Number(a.metacriticScore),Release:(a,b)=>Number(b.releaseDate)-Number(a.releaseDate),'Deal Rating':(a,b)=>Number(b.dealRating)-Number(a.dealRating)};
-                currentDeals.sort(sorts[config.sortBy]||sorts['Deal Rating']);gamesGrid.replaceChildren();renderStandardGameCards(currentDeals);
+            if(currentDeals.length){
+                renderSortedPCCatalog();
             }
             if(failure&&!currentDeals.length)showCatalogError('La tienda sigue sin responder después de varios intentos. Puedes reintentar; no significa que no existan ofertas.');
             else if(partial)catalogNotice('Mostramos los precios confirmados. Algunas tiendas no permitieron completar la consulta.');
         }
     }
+}
+
+function canonicalPCSort(value){return value==='Deal Rating'?'DealRating':value;}
+function renderSortedPCCatalog(){
+    const metric={Savings:'savings',Reviews:'steamRatingPercent',Metacritic:'metacriticScore',Release:'releaseDate',DealRating:'dealRating'};
+    const order=canonicalPCSort(queryConfig.sortBy),field=metric[order]||'dealRating';
+    const key=game=>String(game.gameID||game.dealID||game.title);
+    const cards=new Map([...gamesGrid.children].map(card=>[card.dataset.cardId,card]));
+    const price=game=>{
+        const box=cards.get(key(game))?.querySelector('.price-box');
+        return box&&box.dataset.regionalCurrency===currentCurrency?Number(box.dataset.regionalAmount):Number(game.salePrice)*(exchangeRates[currentCurrency]||1);
+    };
+    currentDeals.sort((a,b)=>order==='Price'?price(a)-price(b):(Number(b[field])||0)-(Number(a[field])||0));
+    // Move existing nodes: preserve images, listeners and regional quotes without fetching again.
+    currentDeals.forEach(game=>{const card=cards.get(key(game));if(card)gamesGrid.appendChild(card);else renderStandardGameCards([game]);});
 }
 
         function renderStandardGameCards(games) {
@@ -116,6 +132,7 @@ async function executeCatalogFetch(resetGrid=true){
 
                 const card = document.createElement('div');
                 card.className = "steam-card rounded-2xl overflow-hidden flex flex-col group";
+                card.dataset.cardId=String(game.gameID||game.dealID||game.title);
 
                 card.innerHTML = `
                     <!-- Portada Clickable -->

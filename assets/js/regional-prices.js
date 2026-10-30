@@ -61,6 +61,7 @@ async function showSteamRegionalPrice(element, id) {
     if (box && quote) {
         box.querySelector('span.uppercase')?.replaceChildren(document.createTextNode('Steam '+purchaseRegions[region][0]));
         box.dataset.regionalAmount = quote.amount;
+        box.dataset.regionalInitial = quote.initial;
         box.dataset.regionalCurrency = quote.currency;
         box.querySelector('.normal-val').textContent = new Intl.NumberFormat('es-MX', { style: 'currency', currency: quote.currency }).format(quote.initial);
         if (currentCurrency === quote.currency) box.querySelector('.sale-val').textContent = new Intl.NumberFormat('es-MX', { style: 'currency', currency: quote.currency }).format(quote.amount) + ' ' + quote.currency;
@@ -68,4 +69,8 @@ async function showSteamRegionalPrice(element, id) {
     element.textContent = quote
         ? `Steam ${purchaseRegions[currentRegion][0]}: ${new Intl.NumberFormat('es-MX', { style: 'currency', currency: quote.currency }).format(quote.amount)} ${quote.currency} · ${quote.discount > 0 ? '-' + quote.discount + '%' : 'Sin descuento'} · consultado ${new Date(quote.checkedAt).toLocaleTimeString('es-MX')}. Juego individual; no incluye lotes.`
         : `Steam ${purchaseRegions[currentRegion][0]}: precio regional no disponible. Confirma en la tienda.`;
+    if(quote&&element.closest('.steam-card')&&activeEcosystem==='pc'&&queryConfig.sortBy==='Price'){
+        const generation=catalogGeneration;clearTimeout(window._priceOrderTimer);
+        window._priceOrderTimer=setTimeout(()=>{if(generation===catalogGeneration&&activeEcosystem==='pc'&&queryConfig.sortBy==='Price')renderSortedPCCatalog();},120);
+    }
 }

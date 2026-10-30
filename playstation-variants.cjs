@@ -1,6 +1,7 @@
+const {publicFetch}=require('./public-fetch.cjs');
 const {playstationData}=require('./console-sources.cjs');
 function playstationVariants(html,region,selectedId){
- const state={};
+ const state=Object.create(null);
  for(const match of html.matchAll(/<script id="env:[^"]*"[^>]*>([\s\S]*?)<\/script>/g)){
   let data;try{data=JSON.parse(match[1]);}catch{continue;}
   for(const [key,value]of Object.entries(data.cache||{}))state[key]={...state[key],...value};
@@ -21,7 +22,7 @@ function playstationVariants(html,region,selectedId){
  });
 }
 const cache=new Map(),pending=new Map();
-async function loadPlaystationVariants(item,region,fetchImpl=fetch){
+async function loadPlaystationVariants(item,region,fetchImpl=publicFetch){
  const url=new URL(item.url),locale={MX:'es-mx',US:'en-us',ES:'es-es',GB:'en-gb',BR:'pt-br',JP:'ja-jp'}[region];
  if(url.protocol!=='https:'||url.hostname!=='store.playstation.com'||!url.pathname.startsWith('/'+locale+'/'))throw Error('Ficha inválida');
  const key=region+url.href;

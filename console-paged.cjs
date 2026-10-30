@@ -1,9 +1,10 @@
+const {publicFetch}=require('./public-fetch.cjs');
 const { randomBytes } = require('node:crypto');
 const { embedded, xboxData, playstationData, enebaData } = require('./console-sources.cjs');
 const locales={MX:'es-MX',US:'en-US',ES:'es-ES',GB:'en-GB',BR:'pt-BR',JP:'ja-JP'};
 const currencies={MX:'MXN',US:'USD',ES:'EUR',GB:'GBP',BR:'BRL',JP:'JPY'};
 async function request(url,body,headers={}){
- const r=await fetch(url,{method:body?'POST':'GET',headers:{'User-Agent':'SteamPulsePro/1.0 (catalog search)','Content-Type':'application/json',...headers},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(12000)});
+ const r=await publicFetch(url,{method:body?'POST':'GET',headers:{'User-Agent':'SteamPulsePro/1.0 (catalog search)','Content-Type':'application/json',...headers},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(12000)});
  if(!r.ok)throw Error('HTTP '+r.status);return r.json();
 }
 async function xbox(region,q,cursor,onlyDeals,sort){
@@ -48,7 +49,7 @@ async function external(platform,region,q,page,sort){
  if(q) return searchEneba(platform,region,q,page);
  const url=new URL('https://www.eneba.com/latam/store/'+({xbox:'xbox-games',ps:'psn-games',switch:'nintendo-games'}[platform]));url.searchParams.set('currency',currencies[region]);url.searchParams.set('page',String(page||1));if(q)url.searchParams.set('text',q);
  if(sort==='priceAsc'||sort==='priceDesc')url.searchParams.set('sortBy',sort==='priceAsc'?'PRICE_ASC':'PRICE_DESC');
- const r=await fetch(url,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('HTTP '+r.status);
+ const r=await publicFetch(url,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('HTTP '+r.status);
  const data=embedded(await r.text(),'id="__APOLLO_STATE__"');
  const search=Object.entries(data.ROOT_QUERY||{}).find(([k])=>k.startsWith('search('))?.[1];
  const response=search?.__ref?data[search.__ref]:search;

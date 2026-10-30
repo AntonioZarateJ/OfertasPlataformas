@@ -4,21 +4,14 @@
                 const rawWish = localStorage.getItem(WISHLIST_STORAGE_KEY);
                 if (rawWish) userWishlist = normalizeWishlist(JSON.parse(rawWish));
 
-                const rawProf = localStorage.getItem(CLOUD_PROFILE_KEY);
-                if (rawProf) {
-                    const profile = JSON.parse(rawProf);
-                    for (const key of ['alias', 'email', 'firebaseUrl']) {
-                        if (typeof profile?.[key] === 'string') cloudProfile[key] = profile[key];
-                    }
-                }
             } catch (e) {
                 console.warn("Error leyendo almacenamiento local:", e);
             }
             refreshCloudProfileHeader();
         }
 
-        let cloudWriteQueue = Promise.resolve(true);
         function persistWishlistState({ sync = true } = {}) {
+            userWishlist=normalizeWishlist(userWishlist);
             try {
                 localStorage.setItem(window.accountStorageKey || WISHLIST_STORAGE_KEY, JSON.stringify(userWishlist));
             } catch (error) {
@@ -29,22 +22,23 @@
         }
 
         function normalizeWishlist(value) {
-            const result = {};
-            if (!value || typeof value !== 'object' || Array.isArray(value)) return result;
-            Object.entries(value).forEach(([key, item]) => {
-                if (['__proto__', 'constructor', 'prototype'].includes(key)) return;
-                if (!item || typeof item !== 'object' || typeof item.title !== 'string') return;
-                if (!Number.isFinite(Number(item.salePrice)) || Number(item.salePrice) < 0) return;
-                if(item.native && (!['xbox','ps','switch'].includes(item.platform)||!purchaseRegions[item.region]||!/^[A-Z]{3}$/.test(item.currency)||!Number.isFinite(Number(item.price))||Number(item.price)<0))return;
-                if(item.native) item={...item,price:Number(item.price),targetPrice:Number(item.targetPrice)>0?Number(item.targetPrice):null};
-                result[key] = { ...item, gameID: key, savings: Number(item.savings) || 0, targetPriceUsd: Number(item.targetPriceUsd) > 0 ? Number(item.targetPriceUsd).toFixed(2) : null };
-            });
+            const result=Object.create(null);
+            if(!value||typeof value!=='object'||Array.isArray(value))return result;
+            const money=value=>['string','number'].includes(typeof value)&&value!==''&&Number.isFinite(Number(value))&&Number(value)>=0&&Number(value)<=1e12;
+            for(const [key,item]of Object.entries(value).slice(0,300)){
+                if(['__proto__','constructor','prototype'].includes(key)||key.length>600)continue;
+                if(!item||typeof item!=='object'||typeof item.title!=='string'||!money(item.salePrice))continue;
+                const native=item.native===true;
+                if(native&&(!['xbox','ps','switch'].includes(item.platform)||!purchaseRegions[item.region]||item.currency!==purchaseRegions[item.region][1]||!money(item.price)))continue;
+                const clean={gameID:key,title:item.title.slice(0,240),salePrice:Number(item.salePrice).toFixed(2),normalPrice:money(item.normalPrice)?Number(item.normalPrice).toFixed(2):Number(item.salePrice).toFixed(2),savings:Math.max(0,Math.min(100,Number(item.savings)||0)),targetPriceUsd:!native&&money(item.targetPriceUsd)&&Number(item.targetPriceUsd)>0?Number(item.targetPriceUsd).toFixed(2):null,addedAt:money(item.addedAt)?Number(item.addedAt):Date.now()};
+                for(const field of ['dealID','id','edition','store','seller','platform','region','currency'])if(typeof item[field]==='string'||typeof item[field]==='number')clean[field]=String(item[field]).slice(0,350);
+                for(const field of ['thumb','image','url','artwork'])if(typeof item[field]==='string')clean[field]=safeURL(item[field].slice(0,4096));
+                clean.steamAppID=/^\d{1,12}$/.test(String(item.steamAppID))?String(item.steamAppID):null;
+                if(native){clean.native=true;clean.price=Number(item.price);clean.regular=money(item.regular)?Number(item.regular):null;clean.discount=Number(item.discount)||0;clean.kind=item.kind==='external'?'external':'official';clean.targetPrice=money(item.targetPrice)&&Number(item.targetPrice)>0?Number(item.targetPrice):null;}
+                for(const field of ['checkedAt','priceCheckedAt','rating','ratingCount'])if(money(item[field]))clean[field]=Number(item[field]);
+                result[key]=clean;
+            }
             return result;
-        }
-
-        function saveCloudProfile() {
-            try { localStorage.setItem(CLOUD_PROFILE_KEY, JSON.stringify(cloudProfile)); return true; }
-            catch { showToast('No se pudo guardar el perfil en este navegador.', 'fa-solid fa-triangle-exclamation text-amber-400'); return false; }
         }
 
         function refreshCloudProfileHeader() {
@@ -67,11 +61,12 @@
         }
 
         function isGameInWishlist(gameID) {
-            return Boolean(gameID && userWishlist[gameID]);
+            return Boolean(gameID && Object.hasOwn(userWishlist,String(gameID)));
         }
 
         function toggleGameWishlist(gameObj, customTargetUsd = null) {
             const gId = String(gameObj.gameID || gameObj.dealID || gameObj.title);
+            if(!Object.hasOwn(userWishlist,gId)&&Object.keys(userWishlist).length>=300){showToast('Puedes guardar hasta 300 favoritos.');return;}
             if (userWishlist[gId] && customTargetUsd === null) {
                 delete userWishlist[gId];
                 showToast(`"${gameObj.title}" eliminado de tu Wishlist`, 'fa-solid fa-trash-can text-rose-400');

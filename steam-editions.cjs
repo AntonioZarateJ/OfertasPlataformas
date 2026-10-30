@@ -1,3 +1,4 @@
+const {publicFetch}=require('./public-fetch.cjs');
 const currencies={MX:'MXN',US:'USD',ES:'EUR',GB:'GBP',BR:'BRL',JP:'JPY'};
 function text(html){return html.replace(/<[^>]*>/g,' ').replace(/&quot;/g,'"').replace(/&#39;|&apos;/g,"'").replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();}
 function purchaseBlocks(html){
@@ -25,7 +26,7 @@ function steamEditions(data,html,appid,region){
  }
  return editions;
 }
-async function loadSteamEditions(appid,region,fetchImpl=fetch){
+async function loadSteamEditions(appid,region,fetchImpl=publicFetch){
  const [api,store]=await Promise.allSettled([
   fetchImpl(`https://store.steampowered.com/api/appdetails?appids=${appid}&cc=${region.toLowerCase()}&filters=basic,packages,price_overview`,{signal:AbortSignal.timeout(6500)}).then(r=>{if(!r.ok)throw Error('Steam no disponible');return r.json();}),
   fetchImpl(`https://store.steampowered.com/app/${appid}/?cc=${region.toLowerCase()}&l=spanish`,{headers:{Cookie:'birthtime=946684801; wants_mature_content=1'},signal:AbortSignal.timeout(6500)}).then(r=>r.ok?r.text():'')

@@ -1,3 +1,4 @@
+const {publicFetch}=require('./public-fetch.cjs');
 const locales = { MX:'es-MX', US:'en-US', ES:'es-ES', GB:'en-GB', BR:'pt-BR', JP:'ja-JP' };
 const currencies = { MX:'MXN', US:'USD', ES:'EUR', GB:'GBP', BR:'BRL', JP:'JPY' };
 function embedded(html, marker) {
@@ -8,7 +9,7 @@ function embedded(html, marker) {
  throw Error('Datos incompletos');
 }
 async function get(url,json=false,headers={}) {
- const r=await fetch(url,{headers:{'User-Agent':'SteamPulsePro/1.0 (regional price comparison)',...headers},signal:AbortSignal.timeout(12000)});
+ const r=await publicFetch(url,{headers:{'User-Agent':'SteamPulsePro/1.0 (regional price comparison)',...headers},signal:AbortSignal.timeout(12000)});
  if(!r.ok)throw Error('HTTP '+r.status);return json?r.json():r.text();
 }
 function walk(o,visit){if(!o||typeof o!=='object')return;visit(o);Object.values(o).forEach(v=>walk(v,visit));}

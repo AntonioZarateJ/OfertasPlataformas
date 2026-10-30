@@ -1,6 +1,9 @@
 const http = require('node:http');
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const {validateQuery,securityHeaders,createApiGuard,publicFirebaseConfig}=require('./security.cjs');
+const {createPublicFetch}=require('./public-fetch.cjs');
+const {BoundedCache}=require('./bounded-cache.cjs');
 const { consoleCatalog } = require('./console-sources.cjs');
 const { rememberCatalog, compareGame } = require('./console-comparison.cjs');
 
@@ -17,21 +20,34 @@ const upstreams = {
     '/api/giveaways': ['https://www.gamerpower.com/api/giveaways?type=game', 60000]
 };
 
-function createServer({ fetchImpl = fetch } = {}) {
-    const cache = new Map();
+function createServer({ fetchImpl = fetch, limits = {} } = {}) {
+    fetchImpl=createPublicFetch(fetchImpl);
+    const trustProxy=process.env.TRUST_PROXY==='1';
+    const admit=createApiGuard({trustProxy,...limits});
+    const cache = new BoundedCache();
     const positions=new Map();
+    const firebaseConfig=publicFirebaseConfig();
     const cheapsharkFetch=createCheapSharkClient(fetchImpl);
     const pending = new Map();
     const reply = (res, status, data) => {
-        if(status===429)res.setHeader('Retry-After',String(data.retryAfter||30));
+        if(res.destroyed||res.writableEnded)return;
+        if(status===429||status===503&&data.retryAfter)res.setHeader('Retry-After',String(data.retryAfter||30));
         res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify(data));
     };
-    return http.createServer(async (req, res) => {
-        res.setHeader('X-Content-Type-Options', 'nosniff');
+    const server=http.createServer({maxHeaderSize:16384,headersTimeout:10000,requestTimeout:15000,keepAliveTimeout:5000},async (req, res) => {
+        securityHeaders(res,!!req.socket.encrypted||trustProxy&&req.headers['x-forwarded-proto']==='https',firebaseConfig.authDomain);
+        let release=()=>{};
+        if(req.url.length>8192){reply(res,414,{error:'URL demasiado larga'});return;}
+        if(req.headers['transfer-encoding']||Number(req.headers['content-length']||0)>0){res.setHeader('Connection','close');reply(res,400,{error:'No se aceptan cuerpos en estas rutas'});return;}
         if (!['GET', 'HEAD'].includes(req.method)) { res.setHeader('Allow', 'GET, HEAD'); reply(res, 405, { error: 'Método no permitido' }); return; }
         try {
             const url = new URL(req.url, 'http://localhost');
+            if(url.pathname.startsWith('/api/')){
+                if(!validateQuery(url)){reply(res,upstreams[url.pathname]||['/api/deals-position','/api/console-catalog','/api/console-comparison','/api/auth-config','/api/pc-editions'].includes(url.pathname)?400:404,{error:'Parámetros inválidos'});return;}
+                const access=admit(req);if(access.status){reply(res,access.status,{error:'Límite temporal de acceso',retryAfter:access.retryAfter||0});return;}
+                release=access.release;
+            }
             if(url.pathname==='/api/pc-editions'){
                 const appid=url.searchParams.get('appid'),region=url.searchParams.get('region');
                 if(!/^\d{1,10}$/.test(appid||'')||!['MX','US','ES','GB','BR','JP'].includes(region)){reply(res,400,{error:'Juego inválido'});return;}
@@ -76,9 +92,9 @@ function createServer({ fetchImpl = fetch } = {}) {
                 }
                 let cursor;
                 try { cursor = JSON.parse(url.searchParams.get('cursor') || '{}'); } catch { reply(res,400,{error:'Paginación inválida'});return; }
-                const validCursor = cursor && typeof cursor === 'object' && !Array.isArray(cursor) && JSON.stringify(cursor).length < 6000 &&
+                const validCursor = cursor && typeof cursor === 'object' && !Array.isArray(cursor) && Object.keys(cursor).every(key=>['official','external'].includes(key)) && JSON.stringify(cursor).length < 6000 &&
                   (cursor.external === undefined || cursor.external === false || Number.isInteger(cursor.external) && cursor.external >= 1 && cursor.external <= 500) &&
-                  (cursor.official === undefined || cursor.official === false || typeof cursor.official === 'string' && /^[A-Za-z0-9+/=]+$/.test(cursor.official) || Number.isInteger(cursor.official) && cursor.official >= 0 && cursor.official <= 1000 || typeof cursor.official === 'object' && cursor.official !== null && Number.isInteger(cursor.official.offset) && cursor.official.offset >= 0 && cursor.official.offset <= 100000 && typeof cursor.official.token === 'string' && cursor.official.token.length < 4000);
+                  (cursor.official === undefined || cursor.official === false || typeof cursor.official === 'string' && /^[A-Za-z0-9+/=]+$/.test(cursor.official) || Number.isInteger(cursor.official) && cursor.official >= 0 && cursor.official <= 1000 || typeof cursor.official === 'object' && cursor.official !== null && !Array.isArray(cursor.official) && Object.keys(cursor.official).every(key=>['offset','token'].includes(key)) && Number.isInteger(cursor.official.offset) && cursor.official.offset >= 0 && cursor.official.offset <= 100000 && typeof cursor.official.token === 'string' && cursor.official.token.length < 4000);
                 if (!validCursor || !['all','official','external'].includes(source) || !['relevance','rating','priceAsc','priceDesc','discountAsc','discountDesc'].includes(sort)) { reply(res,400,{error:'Filtros inválidos'});return; }
                 const key = `console:${platform}:${region}:${query}:${sort}:${source}:${onlyDeals}:${JSON.stringify(discount)}:${JSON.stringify(cursor)}`;
                 if (cache.get(key)?.expires > Date.now()) { rememberCatalog(cache.get(key).data); reply(res,200,cache.get(key).data); return; }
@@ -93,7 +109,7 @@ function createServer({ fetchImpl = fetch } = {}) {
                 return;
             }
             if (url.pathname === '/api/auth-config') {
-                reply(res, 200, { apiKey: process.env.FIREBASE_API_KEY || '', authDomain: process.env.FIREBASE_AUTH_DOMAIN || '', projectId: process.env.FIREBASE_PROJECT_ID || '', appId: process.env.FIREBASE_APP_ID || '' }); return;
+                reply(res, 200, firebaseConfig); return;
             }
             if (upstreams[url.pathname]) {
                 const [base, ttl] = upstreams[url.pathname];
@@ -135,7 +151,7 @@ function createServer({ fetchImpl = fetch } = {}) {
                 finally { if (pending.get(key) === work) pending.delete(key); }
                 return;
             }
-            const name = decodeURIComponent(url.pathname);
+            let name;try{name=decodeURIComponent(url.pathname);}catch{reply(res,400,{error:'Ruta inválida'});return;}
             const relative = name === '/' || name === '/index.html' ? 'index.html' : name.slice(1);
             // Publicar sólo la interfaz; nunca exponer el servidor ni node_modules.
             if (relative !== 'index.html' && !/^assets\/(css|js)\/[a-zA-Z0-9_./-]+\.(css|js)$/.test(relative)) {
@@ -143,19 +159,24 @@ function createServer({ fetchImpl = fetch } = {}) {
             }
             const file = path.resolve(root, relative);
             if (!file.startsWith(root + path.sep)) { reply(res, 403, { error: 'Ruta no permitida' }); return; }
-            const stat = await fs.stat(file);
+            const resolved=await fs.realpath(file);
+            const actual=path.relative(root,resolved).replace(/\\/g,'/');
+            if(actual!=='index.html'&&!/^assets\/(css|js)\/[a-zA-Z0-9_./-]+\.(css|js)$/.test(actual)){reply(res,403,{error:'Ruta no permitida'});return;}
+            const stat = await fs.stat(resolved);
             const etag = `"${stat.size}-${stat.mtimeMs}"`;
             res.setHeader('ETag', etag);
             res.setHeader('Cache-Control', 'no-cache');
             if (req.headers['if-none-match'] === etag) { res.writeHead(304); res.end(); return; }
             const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
             res.setHeader('Content-Type', mime[path.extname(file)]);
-            res.end(req.method === 'HEAD' ? undefined : await fs.readFile(file));
+            res.end(req.method === 'HEAD' ? undefined : await fs.readFile(resolved));
         } catch (error) {
             const status = error.upstreamStatus===429?429:error.code === 'ENOENT' ? 404 : error.name === 'TimeoutError' ? 504 : 502;
             reply(res, status, { retryAfter:error.retryAfter||0,error: status === 404 ? 'Recurso no encontrado' : 'No se pudo consultar el proveedor. Inténtalo de nuevo.' });
-        }
+        }finally{release();}
     });
+    server.maxHeadersCount=50;server.maxRequestsPerSocket=100;server.timeout=25000;
+    return server;
 }
 
 if (require.main === module) {

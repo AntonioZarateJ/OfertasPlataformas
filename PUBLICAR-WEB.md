@@ -61,3 +61,10 @@ Este archivo prepara el despliegue. No se ha creado un servicio de Render ni se 
 Guarda los cambios, crea un commit y haz push a la rama vinculada a Render. Si el servicio está conectado mediante el proveedor GitHub y Auto-Deploy está en On Commit, Render recompila y publica tras cada push. Con After CI Checks Pass espera a que pasen los checks; con Off debes usar Manual Deploy → Deploy latest commit. Si creaste el servicio mediante Public Git Repository sin conectar GitHub, usa el despliegue manual. Comprueba Deploys/Events y el commit mostrado antes de probar la URL. Guardar archivos sólo en tu PC no modifica el sitio publicado.
 
 Documentación: https://render.com/docs/deploys#automatic-deploys
+
+
+## Controles de seguridad del despliegue
+
+Antes de publicar los cambios, revisa [SEGURIDAD.md](SEGURIDAD.md). Configura Node 24 actualizado y HTTPS. `TRUST_PROXY=1` solo es apropiado cuando el servidor está detrás de un proxy confiable que controla los encabezados reenviados; comprueba la topología del alojamiento. En un proceso expuesto directamente, déjalo desactivado. El archivo render.yaml no actualiza automáticamente variables de un servicio creado manualmente.
+
+Las reglas y ajustes de Firebase se configuran por separado antes de habilitar cuentas. Subir el código no despliega por sí solo esas reglas ni configura App Check.

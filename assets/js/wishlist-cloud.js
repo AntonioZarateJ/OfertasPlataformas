@@ -141,7 +141,7 @@
         }
 
         function clearEntireWishlist() {
-            userWishlist = {};
+            userWishlist = Object.create(null);
             persistWishlistState();
             refreshWishlistHeartButtonsOnGrid();
             renderWishlistDrawerItems();

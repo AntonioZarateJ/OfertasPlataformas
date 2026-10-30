@@ -4,7 +4,7 @@ Comparador de ofertas de juegos con wishlist local, alertas de precio y sincroni
 
 ## Ejecutar
 
-Necesitas Node.js 20 o posterior. Desde la carpeta del proyecto:
+Necesitas Node.js 24.22.1 o un parche posterior de la rama 24. Desde la carpeta del proyecto:
 
 ```sh
 node server.cjs
@@ -160,7 +160,7 @@ Se añadieron pruebas de porcentaje exacto, límites inclusivos, 0% con catálog
 
 ## Cobertura de descuentos, identidad y favoritos de consola
 
-El filtro de PC ya consulta todas las tiendas oficiales cubiertas por CheapShark, sin limitar el catálogo a Steam. Para porcentajes exactos o rangos localiza primero el tramo de Savings mediante búsqueda binaria sobre las páginas del proveedor y después reúne coincidencias, con hasta 60 juegos por carga. Se conserva el excedente para la siguiente carga y el orden elegido se aplica a las coincidencias recuperadas. Si falla la localización se recorre el catálogo; una consulta incompleta no se presenta como inexistencia de ofertas.
+El filtro de PC ya consulta todas las tiendas oficiales cubiertas por CheapShark, sin limitar el catálogo a Steam. Para porcentajes exactos o rangos localiza primero el tramo de Savings mediante búsqueda binaria sobre las páginas del proveedor y después reúne coincidencias, con hasta 60 juegos por carga. Se conserva el excedente para la siguiente carga y el orden elegido se aplica a las coincidencias recuperadas. Si falla la localización se reintenta de forma acotada; una consulta incompleta no se presenta como inexistencia de ofertas.
 
 El porcentaje de PC corresponde a la referencia de CheapShark en USD, que puede diferir del descuento regional de Steam. La consulta regional de Steam sigue mostrándose aparte y no sustituye la referencia de otras tiendas. El enlace de compra ahora corresponde a la tienda que publicó ese precio. Esto amplía la cobertura de la fuente; no convierte CheapShark en un inventario regional completo ni incluye automáticamente todos los mercados de claves de internet.
 
@@ -185,10 +185,19 @@ La localización de porcentajes se realiza por tienda, empezando por Steam y con
 
 ## Carga automática, imágenes y ediciones en las cuatro plataformas
 
-Se retiró Continuar búsqueda: la misma búsqueda conserva un AbortController y procesa tandas sucesivas con pausas de 700–1000 ms. El indicador muestra el logo de la plataforma con un aro animado y respeta prefers-reduced-motion. Cargar más se reserva para solicitar otros 60 resultados. Los cambios de búsqueda, región o plataforma cancelan peticiones y pausas anteriores. Las respuestas temporales HTTP 429/5xx y los tiempos de espera se reintentan hasta tres veces con backoff y Retry-After. Si una fuente sigue fallando, se conservan los precios confirmados con un aviso discreto; no se presentan resultados parciales como cobertura completa. La búsqueda tiene un límite de seguridad de tres minutos entre tandas, además de los tiempos acotados de cada petición.
+Se retiró Continuar búsqueda: la misma búsqueda conserva un AbortController y procesa tandas sucesivas con pausas de 700–1000 ms. El indicador muestra el logo de la plataforma con un aro animado y respeta prefers-reduced-motion. Cargar más se reserva para solicitar otros 60 resultados. Los cambios de búsqueda, región o plataforma cancelan peticiones y pausas anteriores. Las respuestas temporales HTTP 429/5xx y los tiempos de espera se reintentan hasta tres veces con backoff y Retry-After. Si una fuente sigue fallando, se conservan los precios confirmados con un aviso discreto; no se presentan resultados parciales como cobertura completa. Las consultas y sus reintentos comparten un presupuesto de 45 segundos, además de los límites de cada petición.
 
 Las portadas muestran de inmediato una ilustración SVG local mientras prueban URLs válidas de la fuente y rutas compatibles. Solo se descargan al acercarse al área visible, con un tiempo máximo por intento y cancelación al retirar la tarjeta. En el comparador PC se consulta la imagen canónica de Steam para recuperar cabeceras recientes con rutas variables. No se reutiliza la portada del juego anterior cuando falla una nueva imagen.
 
 PC muestra el juego base y paquetes/ediciones publicados en la ficha de Steam, separados de la comparación de la edición seleccionada y etiquetando los paquetes. Los precios son de la región solicitada; los paquetes pueden variar según la biblioteca del comprador. PlayStation consulta además las ediciones vinculadas al mismo concepto en su ficha oficial, excluyendo complementos y ofertas de suscripción. Xbox presenta las ediciones confirmadas en la búsqueda de su catálogo oficial. Nintendo mantiene su extracción de variantes vinculadas. La sección solo publica precios confirmados, sin inventar variantes cuando la fuente no las ofrece.
 
 Se añadieron pruebas de 0/10/20/50/75/90/100%, rango inclusivo, respuesta 429 recuperable, cancelación durante una espera y fallos de imagen con respaldo local/canónico; también se verifica la separación entre ediciones, DLC y suscripciones en PC, Xbox y PlayStation.
+
+
+## Orden local y revisión de seguridad
+
+El selector de PC ordena los resultados cargados sin volver a consultar la API, vaciar la cuadrícula ni recrear las tarjetas. La siguiente página conserva el orden de recuperación original; su presentación se ajusta al criterio actual. El precio regional mostrado, cuando está disponible, se utiliza al ordenar por precio. Consultar nuevos juegos o aplicar filtros que cambian el alcance sí necesita acceder al proveedor.
+
+Se añadieron controles de entradas, recursos y acceso, CSP sin scripts inline, protección de rutas privadas, límites de caché y verificación de destinos externos. El detalle de cambios, pruebas y requisitos pendientes de producción está en [SEGURIDAD.md](SEGURIDAD.md).
+
+Ejecuta `npm run check` para revisar la sintaxis y los eventos del HTML, y `npm test` para la suite completa. En Windows el runner usa Chrome instalado por defecto; `BROWSER_CHANNEL` permite elegir otro navegador compatible. La suite incluye la prueba de cuentas/regiones que antes no se ejecutaba desde el comando general. Las pruebas de navegador necesitan el navegador correspondiente instalado.

@@ -11,6 +11,7 @@ function nativeMoney(amount,currency) {
 }
 function saveConsoleWish(item, platform, region, target = null) {
     const saved=consoleWishItem(item,platform,region), key=saved.gameID, old=userWishlist[key];
+    if(!old&&Object.keys(userWishlist).length>=300){showToast('Puedes guardar hasta 300 favoritos.');return;}
     if(old && target===null) delete userWishlist[key];
     else userWishlist[key]={...saved, targetPrice:target??old?.targetPrice??null, addedAt:old?.addedAt||Date.now()};
     persistWishlistState(); refreshConsoleHearts();

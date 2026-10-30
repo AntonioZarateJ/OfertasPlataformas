@@ -36,7 +36,7 @@ function escapeHTML(value) {
 function safeURL(value) {
     try {
         const url = new URL(value);
-        return ['https:', 'http:'].includes(url.protocol) ? url.href : '';
+        return ['https:', 'http:'].includes(url.protocol)&&!url.username&&!url.password ? url.href : '';
     } catch { return ''; }
 }
 
@@ -99,14 +99,17 @@ function catalogPause(ms,signal) {
         signal?.addEventListener('abort',abort,{once:true});
     });
 }
-async function catalogJSON(url,options={}) {
+async function catalogJSON(url,{deadline=Date.now()+45000,...options}={}) {
     for(let attempt=0;;attempt++){
-        try{return await requestJSON(url,options);}
+        const remaining=deadline-Date.now();
+        if(remaining<=0)throw new DOMException('Tiempo de consulta agotado','TimeoutError');
+        try{return await requestJSON(url,{...options,timeout:Math.min(options.timeout||8000,remaining)});}
         catch(error){
             if(options.signal?.aborted)throw error;
             const transient=[429,500,502,503,504].includes(error.status)||['TimeoutError','TypeError'].includes(error.name);
             if(!transient||attempt>=3)throw error;
             const wait=error.status===429?Math.max(1,Math.min(300,error.retryAfter||30))*1000:1500*2**attempt;
+            if(wait>=deadline-Date.now())throw error;
             for(let remaining=wait;remaining>0;remaining-=1000){
                 loadingText.textContent=`La tienda está ocupada. Reintentamos automáticamente en ${Math.ceil(remaining/1000)} s…`;
                 await catalogPause(Math.min(1000,remaining),options.signal);
@@ -114,6 +117,7 @@ async function catalogJSON(url,options={}) {
         }
     }
 }
+
 function catalogNotice(message='') {
     let note=document.getElementById('catalogNotice');
     if(!note){note=document.createElement('p');note.id='catalogNotice';note.className='catalog-notice';note.setAttribute('role','status');document.getElementById('catalogError').after(note);}
@@ -159,6 +163,7 @@ let wishlistRefresh = null;
 function refreshWishlistPrices() {
     if (wishlistRefresh) return wishlistRefresh;
     wishlistRefresh = (async () => {
+        const owner=window.accountStorageKey;
         const ids = Object.keys(userWishlist).filter(id => /^\d+$/.test(id));
         const updates = [];
         for (let i = 0; i < ids.length; i += 4) {
@@ -171,6 +176,7 @@ function refreshWishlistPrices() {
                 } catch { /* Se conserva el último precio consultado si la API falla. */ }
             }));
         }
+        if(owner!==window.accountStorageKey)return;
         updateSavedPrices(updates);
         if (activeChip === 'wishlist') renderWishlistChipMode();
         if (!document.getElementById('wishlistDrawerModal').classList.contains('hidden-el')) renderWishlistDrawerItems();

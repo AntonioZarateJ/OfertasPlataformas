@@ -89,13 +89,7 @@
 
         // --- ESTADO FASE 3: WISHLIST CLOUD & ALERTAS DE PRECIO ---
         const WISHLIST_STORAGE_KEY = 'steampulse_wishlist_v3';
-        const CLOUD_PROFILE_KEY = 'steampulse_cloud_profile_v3';
-        let userWishlist = {}; // { gameID: { gameID, steamAppID, title, thumb, saleUsd, normalUsd, savings, targetPriceUsd, addedAt } }
-        let cloudProfile = {
-            alias: 'Invitado Cloud',
-            email: '',
-            firebaseUrl: ''
-        };
+        let userWishlist = Object.create(null);
 
         // Configuración de Ecosistemas (Fase 2)
         const ECOSYSTEM_META = {
@@ -208,7 +202,7 @@
             steamRating: 0,
             maxPriceUsd: 50,
             onlyAAA: false,
-            sortBy: 'Deal Rating'
+            sortBy: 'DealRating'
         };
 
         // --- ELEMENTOS DOM ---

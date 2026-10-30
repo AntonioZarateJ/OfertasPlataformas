@@ -1,6 +1,7 @@
+const {BoundedCache}=require('./bounded-cache.cjs');
 // Un solo acceso al proveedor por servidor: caché, cola corta y pausa ante 429.
 function createCheapSharkClient(fetchImpl, { spacing=650, now=Date.now, sleep=ms=>new Promise(r=>setTimeout(r,ms)) }={}) {
- const cache=new Map(),pending=new Map();
+ const cache=new BoundedCache({maxEntries:300,maxBytes:24*1024*1024}),pending=new Map();
  let queue=Promise.resolve(),last=0,cooldown=0,queued=0;
  function limited(seconds){return Response.json({error:'La tienda pidió una pausa',retryAfter:seconds},{status:429,headers:{'Retry-After':String(seconds)}});}
  return async function request(input,options={}){
@@ -23,8 +24,9 @@ function createCheapSharkClient(fetchImpl, { spacing=650, now=Date.now, sleep=ms
    }
    if(response.ok){
     if(cache.size>=300)cache.delete(cache.keys().next().value);
-    const snapshot=new Response(await response.arrayBuffer(),{status:response.status,headers:response.headers});
-    cache.set(key,{response:snapshot.clone(),expires:now()+60000});
+    const body=await response.arrayBuffer();
+    const snapshot=new Response(body,{status:response.status,headers:response.headers});
+    cache.set(key,{response:snapshot.clone(),bytes:body.byteLength,expires:now()+60000});
     return snapshot;
    }
    return response;
