@@ -237,3 +237,9 @@ main>div:first-child{border-color:rgba(var(--platform-rgb),.3);background:linear
 @media(max-width:767px){#modeIconBox{display:flex;width:34px;height:34px;font-size:17px;flex-shrink:0}.console-save-panel{padding:14px}.console-target-row button{padding:10px;font-size:11px}.console-save-title strong{font-size:14px}}
 
 .edition-jump{margin-top:10px;font-size:11px;font-weight:700;color:var(--platform-accent);padding:5px 0;border-bottom:1px solid rgba(var(--platform-rgb),.4)}
+
+.catalog-loading-mark{position:relative;display:grid;place-items:center;width:72px;height:72px;margin-bottom:20px;border:1px solid rgba(var(--platform-rgb),.25);border-radius:50%;background:rgba(var(--platform-rgb),.09);color:var(--platform-accent);font-size:32px}.catalog-loading-mark:before{content:"";position:absolute;inset:-5px;border:3px solid transparent;border-top-color:var(--platform-accent);border-right-color:rgba(var(--platform-rgb),.3);border-radius:50%;animation:catalog-orbit 1.4s linear infinite}.catalog-loading-mark i{animation:catalog-breathe 2s ease-in-out infinite}#loadingState{padding:35px 15px}#loadingText{text-align:center;max-width:500px;line-height:1.7}.catalog-notice{font-size:12px;line-height:1.7;color:#b8cbdf;background:#13263a;border:1px solid #284563;border-radius:12px;padding:14px;margin:12px 0}.catalog-notice[hidden]{display:none}@keyframes catalog-orbit{to{transform:rotate(360deg)}}@keyframes catalog-breathe{50%{opacity:.5;transform:scale(.94)}}@media(prefers-reduced-motion:reduce){.catalog-loading-mark:before,.catalog-loading-mark i{animation:none}}
+
+.game-editions>h3{font-size:16px;font-weight:800;line-height:1.5;color:#f8fafc}
+
+#pcEditions{width:100%}@media(prefers-reduced-motion:reduce){#loadingText{animation:none}}

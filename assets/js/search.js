@@ -20,6 +20,7 @@
         clearSearchBtn.addEventListener('click', () => {
             cancelSuggestions();
             predictiveSearchInput.value = '';
+            currentSearchQuery='';
             clearSearchBtn.classList.add('hidden-el');
             if (activeChip === 'search') selectSmartChip('top');
         });

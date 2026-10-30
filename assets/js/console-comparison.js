@@ -1,3 +1,6 @@
+function editionGrid(editions){
+ return '<div class="edition-grid">'+editions.map(q=>`<article class="edition-card ${q.selected?'edition-selected':''}"><div class="edition-card-label"><span>${q.variantType==='base'?'Juego base':q.variantType==='bundle'?'Paquete · revisar contenido':'Edición / colección'}</span>${q.selected?'<b>Seleccionada</b>':''}</div><h4>${escapeHTML(q.title)}</h4><p>${escapeHTML(q.edition)}</p><strong>${escapeHTML(nativeMoney(q.price,q.currency))}</strong><small>${escapeHTML(q.store)}</small><a href="${escapeHTML(safeURL(q.url))}" target="_blank" rel="noopener noreferrer">Ver esta versión ↗</a></article>`).join('')+'</div>';
+}
 let comparisonController;
 let comparisonSelection;
 function closeConsoleComparison(){comparisonController?.abort();document.getElementById('consoleComparison').close();}
@@ -12,7 +15,7 @@ async function openConsoleComparison(item,platform=activeEcosystem,region=curren
  document.getElementById('consoleComparisonTitle').textContent=item.title;
  document.querySelector('.comparison-poster')?.remove();
  document.querySelector('.edition-jump')?.remove();
- if(safeURL(item.image)){const poster=document.createElement('img');poster.className='comparison-poster';poster.src=safeURL(item.image);poster.alt='';document.querySelector('.comparison-heading').prepend(poster);}
+ {const poster=document.createElement('img');poster.className='comparison-poster';poster.alt='';setGameArtwork(poster,item);document.querySelector('.comparison-heading').prepend(poster);}
  if(!modal.open)modal.showModal();
  content.innerHTML='<p class="comparison-state" role="status">Consultando opciones para esta edición y región…</p>';
  try{
@@ -33,9 +36,9 @@ async function openConsoleComparison(item,platform=activeEcosystem,region=curren
   html+=external.length?external.map(row).join(''):'<p class="comparison-state">No encontramos otras ofertas verificadas de esta edición en las fuentes consultadas. Esto no significa que no exista en otras tiendas.</p>';
   const editions=data.editions||[];
   if(editions.length){
-   html+='<section class="game-editions" id="gameEditions"><h3><i class="fa-solid fa-layer-group"></i> Versiones y ediciones</h3><p class="comparison-note">Elige entre el juego base y sus colecciones. Cada versión conserva su consola, precio y enlace propios.</p><div class="edition-grid">';
-   html+=editions.map(q=>`<article class="edition-card ${q.selected?'edition-selected':''}"><div class="edition-card-label"><span>${q.variantType==='base'?'Juego base':'Edición / colección'}</span>${q.selected?'<b>Seleccionada</b>':''}</div><h4>${escapeHTML(q.title)}</h4><p>${escapeHTML(q.edition)}</p><strong>${escapeHTML(format(q))}</strong><small>${escapeHTML(q.store)}</small><a href="${escapeHTML(safeURL(q.url))}" target="_blank" rel="noopener noreferrer">Ver esta versión ↗</a></article>`).join('');
-   html+='</div></section>';
+   html+='<section class="game-editions" id="gameEditions"><h3><i class="fa-solid fa-layer-group"></i> Versiones y ediciones</h3><p class="comparison-note">Elige entre el juego base y sus colecciones. Cada versión conserva su consola, precio y enlace propios.</p>';
+   html+=editionGrid(editions);
+   html+='</section>';
   }
   if(data.editionsStatus==='unavailable')html+='<p class="comparison-note">La ficha oficial no permitió confirmar todas las variantes en esta consulta. Puedes verlas en la tienda; no estimamos sus precios.</p>';
   html+='<h3>Registro de precios de esta web</h3><div class="comparison-history">';

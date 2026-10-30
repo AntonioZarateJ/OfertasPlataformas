@@ -76,7 +76,6 @@ test('Encuentra porcentajes en páginas posteriores, añade 60 y guarda metas de
    await page.locator(`[data-ecosystem="${platform}"]`).click();
    await expect(page.locator('html')).toHaveAttribute('data-platform',platform);
    await page.evaluate(()=>{document.getElementById('consoleDiscountMode').value='exact';document.getElementById('consoleDiscountValue').value='20';applyConsoleDiscount();});
-   await page.locator('#loadMoreBtn').click();
    await expect(page.locator('.console-card')).toHaveCount(1);
    assert(consoleQueries.includes(5));
    await page.locator('.console-card-heart').click();

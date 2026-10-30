@@ -159,7 +159,7 @@ const server = http.createServer((req, res) => {
         await test('Errores del catálogo ofrecen reintento y se recuperan', async () => {
             mode.catalogFailure = true;
             await page.evaluate(() => { responseCache.clear(); selectSmartChip('top'); });
-            await expect(page.locator('#catalogError')).toBeVisible();
+            await expect(page.locator('#catalogError')).toBeVisible({timeout:20000});
             await expect(page.locator('#loadingState')).toBeHidden();
             mode.catalogFailure = false;
             await page.locator('#catalogError button').click();

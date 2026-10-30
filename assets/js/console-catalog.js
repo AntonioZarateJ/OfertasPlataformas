@@ -42,17 +42,20 @@ async function loadConsoleCatalog(reset = true) {
     document.querySelector('#consoleOrder option[value="discountAsc"]').disabled = !onlyDeals;
     document.querySelector('#consoleOrder option[value="discountDesc"]').disabled = !onlyDeals;
     document.getElementById('consoleTools').classList.remove('hidden-el');
-    document.getElementById('catalogError').classList.add('hidden-el');
+    document.getElementById('catalogError').classList.add('hidden-el');catalogNotice();
     loadMoreContainer.classList.add('hidden-el');
     sortContainer.classList.add('hidden-el');
     setHeaderInfo(`${ECOSYSTEM_META[platform].name} · ${purchaseRegions[region][0]}${query ? ' · ' + query : ''}`, 'Busca juegos con o sin oferta. Mostramos hasta 60 resultados por carga.', 'fa-gamepad', 'sky');
     try {
-        let scans = 0;const scanStarted=Date.now();
-        while (consoleNext !== null && filteredConsoleItems().length < consoleVisible && scans++ < 3 && Date.now()-scanStarted<12000) {
+        let scans = 0,sourceRetries=0;const scanStarted=Date.now();
+        showLoader('Comparando precios de esta plataforma…');
+        while (consoleNext !== null && filteredConsoleItems().length < consoleVisible && scans++ < 240 && Date.now()-scanStarted<180000) {
             const params = new URLSearchParams({ platform, region, q: query, source, sort, deals: onlyDeals ? '1' : '0', cursor: JSON.stringify(consoleNext) });
             if(discountFilter.mode!=='any'){params.set('discountMin',String(discountFilter.min));params.set('discountMax',String(discountFilter.max));}
-            const result = await requestJSON(`/api/console-catalog?${params}`, { signal: controller.signal, timeout: Math.max(1,12000-(Date.now()-scanStarted)) });
+            const result = await catalogJSON(`/api/console-catalog?${params}`, { signal: controller.signal, timeout:16000,ttl:0 });
             if (generation !== catalogGeneration || platform !== activeEcosystem || region !== currentRegion) return;
+            if(result.sources?.some(s=>s.status==='unavailable')&&sourceRetries++<2){loadingText.textContent='La tienda está ocupada; reintentamos automáticamente…';await catalogPause(2000,controller.signal);continue;}
+            sourceRetries=0;
             if (!Array.isArray(result.items)) throw Error('Respuesta inválida');
             if (!consoleResult) consoleResult = { ...result, items: [] };
             const seen = new Set(consoleResult.items.map(item => item.store + ':' + item.id));
@@ -62,7 +65,8 @@ async function loadConsoleCatalog(reset = true) {
             consoleResult.checkedAt = result.checkedAt;
             consoleNext = result.next || null;
             loadingText.textContent=`Buscando en tiendas oficiales y externas… ${scans} lote(s) revisados, ${filteredConsoleItems().length} coincidencias.`;
-            if(consoleNext && JSON.stringify(consoleNext)===params.get('cursor')){consoleResult.scope+=' La fuente repitió su página; consulta incompleta.';break;}
+            if(consoleNext&&filteredConsoleItems().length<consoleVisible)await catalogPause(900,controller.signal);
+            if(consoleNext && JSON.stringify(consoleNext)===params.get('cursor')){consoleResult.scope+=' La fuente repitió su página; consulta incompleta.';consoleNext=null;break;}
         }
         if (generation !== catalogGeneration) return;
         hideLoader();
@@ -70,7 +74,7 @@ async function loadConsoleCatalog(reset = true) {
     } catch (error) {
         if (generation !== catalogGeneration || controller.signal.aborted) return;
         hideLoader();
-        showCatalogError('No se pudo completar la consulta. Puedes reintentar; conservamos los resultados recuperados.');
+        if(consoleResult?.items.length)catalogNotice('Mostramos los precios confirmados. Una tienda no pudo completar su consulta.');else showCatalogError('La tienda sigue sin responder tras varios intentos. Puedes reintentar.');
         if (consoleResult) renderConsoleCatalog();
     } finally {
         if (generation === catalogGeneration) { consoleLoading = false; loadMoreBtn.disabled = false; }

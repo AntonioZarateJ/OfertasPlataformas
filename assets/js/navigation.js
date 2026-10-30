@@ -24,6 +24,7 @@
             cancelSuggestions();
             currentDeals = [];
             currentSearchQuery = '';
+            predictiveSearchInput.value='';clearSearchBtn.classList.add('hidden-el');
             gamesGrid.replaceChildren();
             document.getElementById('platformPriceNotice').classList.add('hidden-el');
             document.getElementById('consoleTools').classList.toggle('hidden-el', ecoKey === 'pc');

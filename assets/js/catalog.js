@@ -1,129 +1,88 @@
-let pcStoreIDs=[],pcStoreIndex=0;
-let pcSeeking=false;
-let pendingPCDeals = [];
-let pcSourceHasMore = true;
-        // Catálogo: cada vista es dueña de su petición; las respuestas antiguas se descartan.
-        async function executeCatalogFetch(resetGrid = true) {
-            if (activeEcosystem !== 'pc') return loadConsoleCatalog(resetGrid);
-            if (resetGrid) cancelCatalogRequest();
-            const generation = catalogGeneration;
-            const controller = new AbortController();
-            catalogController = controller;
-            const config = { ...queryConfig };
-            const query = currentSearchQuery;
-            document.getElementById('catalogError').classList.add('hidden-el');
-            if (resetGrid) {
-                currentPage = 0;
-                pendingPCDeals=[];pcSourceHasMore=true;pcSeeking=false;
-                pcStoreIDs=['1',...Object.keys(storesMap).filter(id=>id!=='1'&&storesMap[id].active!==false)];pcStoreIndex=0;
-                document.querySelector('#catalogError button').disabled=false;
-                currentDeals = [];
-                loadedCountBadge.textContent = '0';
-                gamesGrid.replaceChildren();
-                emptyState.classList.add('hidden-el');
-                loadMoreContainer.classList.add('hidden-el');
-                showLoader('Cargando ofertas...');
+let pcStoreIDs=[],pcStoreIndex=0,pcNeedsSeek=true;
+let pendingPCDeals=[],pcSourceHasMore=true;
+function advancePCStore(){
+    pcStoreIDs=[...new Set([...pcStoreIDs,...Object.keys(storesMap).filter(id=>storesMap[id].active!==false)])];
+    pcStoreIndex++;currentPage=0;pcNeedsSeek=true;
+    pcSourceHasMore=pcStoreIndex<pcStoreIDs.length;
+}
+async function executeCatalogFetch(resetGrid=true){
+    if(activeEcosystem!=='pc')return loadConsoleCatalog(resetGrid);
+    if(resetGrid)cancelCatalogRequest();
+    const generation=catalogGeneration,controller=new AbortController();catalogController=controller;
+    const config=structuredClone(queryConfig),query=currentSearchQuery;
+    const restricted=config.discountFilter?.mode!=='any'&&!!config.discountFilter;
+    const ascending=restricted&&config.discountFilter.max<=50;
+    const started=Date.now();let partial=false,scanned=0,failure=null;
+    document.getElementById('catalogError').classList.add('hidden-el');catalogNotice();
+    if(resetGrid){
+        currentPage=0;currentDeals=[];pendingPCDeals=[];pcSourceHasMore=true;pcNeedsSeek=true;pcStoreIndex=0;
+        pcStoreIDs=['1',...Object.keys(storesMap).filter(id=>id!=='1'&&storesMap[id].active!==false)];
+        gamesGrid.replaceChildren();loadedCountBadge.textContent='0';emptyState.classList.add('hidden-el');
+    }
+    const target=currentDeals.length+60;
+    loadMoreContainer.classList.add('hidden-el');showLoader('Buscando precios y descuentos…');
+    const append=()=>{
+        const additions=pendingPCDeals.splice(0,Math.max(0,target-currentDeals.length));
+        currentDeals.push(...additions);updateSavedPrices(additions);renderStandardGameCards(additions);
+        loadedCountBadge.textContent=currentDeals.length;
+        if(currentDeals.length)gamesGrid.classList.remove('hidden-el');
+    };
+    try{
+        while(generation===catalogGeneration){
+            append();
+            if(currentDeals.length>=target||!pcSourceHasMore)break;
+            if(Date.now()-started>180000){partial=true;break;}
+            if(restricted&&pcNeedsSeek){
+                const seek=new URLSearchParams({discount:String(ascending?config.discountFilter.min:config.discountFilter.max),desc:ascending?'1':'0',storeID:pcStoreIDs[pcStoreIndex]||'1'});
+                if(query)seek.set('title',query);
+                if(config.onSale==='1'||config.discountFilter.min>0)seek.set('onSale','1');
+                if(config.steamRating>0)seek.set('steamRating',String(config.steamRating));
+                loadingText.textContent='Buscando en '+(storesMap[pcStoreIDs[pcStoreIndex]]?.name||'Steam')+'…';
+                const position=await catalogJSON('/api/deals-position?'+seek,{signal:controller.signal,timeout:10000,ttl:0});
+                if(generation!==catalogGeneration)return;
+                if(position.limited){partial=true;advancePCStore();await catalogPause(700,controller.signal);continue;}
+                if(position.pending){await catalogPause(position.slow?2000:1000,controller.signal);continue;}
+                if(!Number.isInteger(position.page)||position.page<0)throw Error('Respuesta de paginación inválida');
+                currentPage=position.page;pcNeedsSeek=false;
             }
-            try {
-                const restricted = config.discountFilter && config.discountFilter.mode !== 'any';
-                const pagesToScan = restricted ? 3 : 1;
-
-                const ascending=restricted&&config.discountFilter.max<=50;
-                if(restricted && currentPage===0){
-                    const seek=new URLSearchParams({discount:String(ascending?config.discountFilter.min:config.discountFilter.max),desc:ascending?'1':'0'});
-                    seek.set('storeID',pcStoreIDs[pcStoreIndex]||'1');
-                    if(query)seek.set('title',query);
-                    if(config.onSale==='1'||config.discountFilter.min>0)seek.set('onSale','1');
-                    if(config.steamRating>0)seek.set('steamRating',String(config.steamRating));
-                    if(config.onlyAAA)seek.set('AAA','1');
-                    loadingText.textContent='Localizando el porcentaje en '+(storesMap[pcStoreIDs[pcStoreIndex]]?.name||'Steam')+'…';
-                    pcSeeking=true;
-                    const position=await requestJSON('/api/deals-position?'+seek,{signal:controller.signal,timeout:10000,ttl:0});
-                    if(generation!==catalogGeneration)return;
-                    if(position.limited){
-                        pcStoreIDs=[...new Set([...pcStoreIDs,...Object.keys(storesMap).filter(id=>storesMap[id].active!==false)])];
-                        pcStoreIndex++;currentPage=0;hideLoader();
-                        loadMoreContainer.classList.remove('hidden-el');loadMoreBtn.classList.toggle('hidden-el',pcStoreIndex>=pcStoreIDs.length);
-                        paginationInfo.textContent='Esta tienda limita los resultados disponibles. Continúa para revisar las siguientes tiendas, o busca un título más específico.';return;
-                    }
-                    if(position.pending){
-                        hideLoader();loadMoreContainer.classList.remove('hidden-el');
-                        loadMoreBtn.textContent='Continuar búsqueda';
-                        if(position.limited)loadMoreContainer.classList.add('hidden-el');
-                        paginationInfo.textContent=position.limited?'La fuente limita la profundidad disponible. Prueba un título o un filtro más amplio.':`${position.slow?'La tienda responde lento; conservamos el avance.':'Buscando el tramo del descuento'} · ${position.reviewed||0} páginas consultadas. Continúa cuando quieras; conservamos el avance.`;
-                        return;
-                    }
-                    if(Number.isInteger(position.page)&&position.page>=0)currentPage=position.page;
-                    pcSeeking=false;
-                }
-                const scanStarted=Date.now();
-                let fetchedBatch = pendingPCDeals.splice(0);
-                let pagesRead = 0;
-                let scanFailure=false;
-                let hasMore = pcSourceHasMore;
-                for (let i = 0; i < pagesToScan && Date.now()-scanStarted<8500 && hasMore && new Set(fetchedBatch.map(d=>d.gameID||d.dealID)).size < 60; i++) {
-                    const params = new URLSearchParams({ pageSize: '60', pageNumber: String(currentPage + i), sortBy: restricted ? 'Savings' : config.sortBy });
-                    if (query) params.set('title', query);
-                    // Consultar todas las tiendas cubiertas por CheapShark, no sólo Steam.
-                    if (restricted){params.set('desc',ascending?'1':'0');params.set('storeID',pcStoreIDs[pcStoreIndex]||'1');}
-                    if (config.onSale === '1'||restricted&&config.discountFilter.min>0) params.set('onSale', '1');
-                    if (config.steamRating > 0) params.set('steamRating', String(config.steamRating));
-
-                    if (config.onlyAAA) params.set('AAA', '1');
-                    let data;
-                    try{data=await requestJSON(`${DEALS_API}?${params}`,{signal:controller.signal,timeout:Math.max(1,8500-(Date.now()-scanStarted))});}
-                    catch(error){if(controller.signal.aborted||!pagesRead&&!fetchedBatch.length)throw error;scanFailure=true;break;}
-                    if (generation !== catalogGeneration) return;
-                    if (!Array.isArray(data)) throw new Error('Respuesta de catálogo inválida');
-                    pagesRead++;
-                    hasMore = data.length === 60;
-                    fetchedBatch.push(...data.filter(d => matchesDiscount(d.savings || 0, config.discountFilter)));
-                    loadingText.textContent = `Buscando coincidencias en las tiendas… ${pagesRead} página(s) revisadas, ${new Set(fetchedBatch.map(d=>d.gameID||d.dealID)).size} juegos encontrados.`;
-                    if(restricted && data.length && data.every(d=>ascending?Math.round(Number(d.savings||0))>config.discountFilter.max:Math.round(Number(d.savings||0))<config.discountFilter.min))hasMore=false;
-                    if (!hasMore || new Set(fetchedBatch.map(d=>d.gameID||d.dealID)).size >= 60) break;
-                }
-                if (generation !== catalogGeneration) return;
-                currentPage += pagesRead;
-                if(restricted&&!hasMore){
-                    pcStoreIDs=[...new Set([...pcStoreIDs,...Object.keys(storesMap).filter(id=>storesMap[id].active!==false)])];
-                    if(pcStoreIndex+1<pcStoreIDs.length){pcStoreIndex++;currentPage=0;hasMore=true;}
-                }
-                const seen = new Set(currentDeals.map(d => d.gameID || d.dealID));
-                const uniqueNew = fetchedBatch.filter(d => {
-                    const key = d.gameID || d.dealID;
-                    if (seen.has(key)) return false;
-                    seen.add(key);
-                    return true;
-                });
-                pcSourceHasMore=hasMore;
-                pendingPCDeals=uniqueNew.splice(60);
-                hasMore=hasMore||pendingPCDeals.length>0;
-                currentDeals.push(...uniqueNew);
-                updateSavedPrices(uniqueNew);
-                loadedCountBadge.textContent = currentDeals.length;
-                hideLoader();
-                emptyState.classList.toggle('hidden-el', currentDeals.length > 0 || hasMore);
-                if(restricted){
-                    const sorts={Price:(a,b)=>Number(a.salePrice)-Number(b.salePrice),Savings:(a,b)=>Number(b.savings)-Number(a.savings),Reviews:(a,b)=>Number(b.steamRatingPercent)-Number(a.steamRatingPercent),Metacritic:(a,b)=>Number(b.metacriticScore)-Number(a.metacriticScore),Release:(a,b)=>Number(b.releaseDate)-Number(a.releaseDate),'Deal Rating':(a,b)=>Number(b.dealRating)-Number(a.dealRating),DealRating:(a,b)=>Number(b.dealRating)-Number(a.dealRating)};
-                    currentDeals.sort(sorts[config.sortBy]||sorts.DealRating);gamesGrid.replaceChildren();renderStandardGameCards(currentDeals);
-                }else renderStandardGameCards(uniqueNew);
-                loadMoreContainer.classList.toggle('hidden-el', !hasMore);
-                paginationInfo.textContent = `Mostrando ${currentDeals.length} juegos · ${pagesRead} página(s) consultadas${hasMore ? ' · hay más catálogo disponible' : ' · páginas disponibles revisadas'}`;
-                if(restricted)paginationInfo.textContent+=' · orden sobre las coincidencias cargadas';
-                if(scanFailure)showCatalogError('La tienda limitó o interrumpió la consulta. Conservamos los resultados recuperados; puedes continuar con Cargar más.');
-                else if (!currentDeals.length && hasMore) paginationInfo.textContent+=' · Continúa la búsqueda para revisar el siguiente lote.';
-            } catch (error) {
-                if (generation !== catalogGeneration || controller.signal.aborted) return;
-                hideLoader();
-                showCatalogError(error.status===429?'La tienda pide una pausa. No enviaremos más peticiones automáticamente. Inténtalo de nuevo en '+(error.retryAfter||30)+' segundos.':'La consulta no pudo completarse a tiempo. Conservamos el avance; puedes reintentar sin iniciar un barrido completo.');
-                if(error.status===429){
-                    const retry=document.querySelector('#catalogError button');retry.disabled=true;
-                    setTimeout(()=>{if(generation===catalogGeneration)retry.disabled=false;},Math.min(300,error.retryAfter||30)*1000);
-                }
-            } finally {
-                if (generation === catalogGeneration) catalogController = null;
-            }
+            const params=new URLSearchParams({pageSize:'60',pageNumber:String(currentPage),sortBy:restricted?'Savings':config.sortBy});
+            if(query)params.set('title',query);
+            if(restricted){params.set('desc',ascending?'1':'0');params.set('storeID',pcStoreIDs[pcStoreIndex]||'1');}
+            if(config.onSale==='1'||restricted&&config.discountFilter.min>0)params.set('onSale','1');
+            if(config.steamRating>0)params.set('steamRating',String(config.steamRating));
+            if(config.onlyAAA)params.set('AAA','1');
+            let data;
+            try{data=await catalogJSON(`${DEALS_API}?${params}`,{signal:controller.signal});}
+            catch(error){if(restricted&&error.status===400){partial=true;advancePCStore();continue;}throw error;}
+            if(generation!==catalogGeneration)return;
+            if(!Array.isArray(data))throw Error('Respuesta de catálogo inválida');
+            currentPage++;scanned++;
+            const seen=new Set([...currentDeals,...pendingPCDeals].map(d=>String(d.gameID||d.dealID)));
+            for(const game of data){const key=String(game.gameID||game.dealID);if(!seen.has(key)&&matchesDiscount(game.savings||0,config.discountFilter)){seen.add(key);pendingPCDeals.push(game);}}
+            const end=data.length<60||restricted&&data.length&&data.every(d=>ascending?Math.round(Number(d.savings||0))>config.discountFilter.max:Math.round(Number(d.savings||0))<config.discountFilter.min);
+            if(end){if(restricted)advancePCStore();else pcSourceHasMore=false;}
+            append();loadingText.textContent=`Comparando precios… ${currentDeals.length} juegos encontrados.`;
+            if(!restricted||currentDeals.length>=target)break;
+            await catalogPause(700,controller.signal);
         }
+    }catch(error){if(controller.signal.aborted||generation!==catalogGeneration)return;failure=error;partial=true;}
+    finally{
+        if(generation===catalogGeneration){
+            catalogController=null;hideLoader();
+            const more=pcSourceHasMore||pendingPCDeals.length>0;
+            loadMoreContainer.classList.toggle('hidden-el',!more||!!failure&&!currentDeals.length);
+            loadMoreBtn.classList.remove('hidden-el');
+            emptyState.classList.toggle('hidden-el',currentDeals.length>0||more||partial);
+            paginationInfo.textContent=`Mostrando ${currentDeals.length} juegos${more?' · puedes cargar otros 60':''}`;
+            if(restricted&&currentDeals.length){
+                const sorts={Price:(a,b)=>Number(a.salePrice)-Number(b.salePrice),Savings:(a,b)=>Number(b.savings)-Number(a.savings),Reviews:(a,b)=>Number(b.steamRatingPercent)-Number(a.steamRatingPercent),Metacritic:(a,b)=>Number(b.metacriticScore)-Number(a.metacriticScore),Release:(a,b)=>Number(b.releaseDate)-Number(a.releaseDate),'Deal Rating':(a,b)=>Number(b.dealRating)-Number(a.dealRating)};
+                currentDeals.sort(sorts[config.sortBy]||sorts['Deal Rating']);gamesGrid.replaceChildren();renderStandardGameCards(currentDeals);
+            }
+            if(failure&&!currentDeals.length)showCatalogError('La tienda sigue sin responder después de varios intentos. Puedes reintentar; no significa que no existan ofertas.');
+            else if(partial)catalogNotice('Mostramos los precios confirmados. Algunas tiendas no permitieron completar la consulta.');
+        }
+    }
+}
 
         function renderStandardGameCards(games) {
             const ecoMeta = ECOSYSTEM_META[activeEcosystem] || ECOSYSTEM_META.pc;
@@ -139,8 +98,8 @@ let pcSourceHasMore = true;
 
                 const headerImg = steamId
                     ? `${STEAM_HEADER_IMG}${steamId}/header.jpg`
-                    : (game.thumb || 'https://placehold.co/460x215/131c2e/38bdf8?text=SteamPulse');
-                const fallbackImg = game.thumb || 'https://placehold.co/460x215/131c2e/38bdf8?text=Game';
+                    : (game.thumb || '');
+                const fallbackImg = game.thumb || '';
 
                 // Si el usuario eligió consola (Xbox/PS/Switch), el botón rápido apunta al buscador de Keys de esa consola; en PC va a Steam
                 const directStoreUrl = activeEcosystem === 'pc'
@@ -286,7 +245,7 @@ let pcSourceHasMore = true;
                 if (generation === catalogGeneration) {
                     isLoadingMore = false;
                     loadMoreBtn.disabled = false;
-                    loadMoreBtn.innerHTML = pcSeeking?'Continuar búsqueda':'<i class="fa-solid fa-plus"></i><span>Cargar Más Juegos</span>';
+                    loadMoreBtn.innerHTML = '<i class="fa-solid fa-plus"></i><span>Cargar Más Juegos</span>';
                 }
             }
         });

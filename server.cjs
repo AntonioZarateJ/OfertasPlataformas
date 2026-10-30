@@ -5,6 +5,7 @@ const { consoleCatalog } = require('./console-sources.cjs');
 const { rememberCatalog, compareGame } = require('./console-comparison.cjs');
 
 const { createCheapSharkClient } = require('./cheapshark-client.cjs');
+const {loadSteamEditions}=require('./steam-editions.cjs');
 const { discountPosition } = require('./discount-position.cjs');
 const root = __dirname;
 const upstreams = {
@@ -31,6 +32,14 @@ function createServer({ fetchImpl = fetch } = {}) {
         if (!['GET', 'HEAD'].includes(req.method)) { res.setHeader('Allow', 'GET, HEAD'); reply(res, 405, { error: 'Método no permitido' }); return; }
         try {
             const url = new URL(req.url, 'http://localhost');
+            if(url.pathname==='/api/pc-editions'){
+                const appid=url.searchParams.get('appid'),region=url.searchParams.get('region');
+                if(!/^\d{1,10}$/.test(appid||'')||!['MX','US','ES','GB','BR','JP'].includes(region)){reply(res,400,{error:'Juego inválido'});return;}
+                const key='steam-editions:'+appid+':'+region;
+                if(cache.get(key)?.expires>Date.now()){reply(res,200,cache.get(key).data);return;}
+                if(!pending.has(key))pending.set(key,loadSteamEditions(appid,region,fetchImpl));
+                try{const data=await pending.get(key);if(cache.size>=200)cache.delete(cache.keys().next().value);cache.set(key,{data,expires:Date.now()+60000});reply(res,200,data);}finally{pending.delete(key);}return;
+            }
             if (url.pathname === '/api/deals-position') {
                 if(!url.searchParams.has('storeID'))url.searchParams.set('storeID','1');
                 if(!/^\d{1,5}$/.test(url.searchParams.get('storeID')||'')||!/^\d{1,3}$/.test(url.searchParams.get('discount')||'')||Number(url.searchParams.get('discount'))>100||[...url.searchParams].some(([k,v])=>!['discount','desc','storeID','title','onSale','steamRating','AAA'].includes(k)||v.length>250)){reply(res,400,{error:'Filtros inválidos'});return;}
@@ -78,7 +87,7 @@ function createServer({ fetchImpl = fetch } = {}) {
                     const data = await pending.get(key);
                     rememberCatalog(data);
                     if (cache.size >= 200) cache.delete(cache.keys().next().value);
-                    if (data.sources.some(s => s.status === 'ok')) cache.set(key,{data,expires:Date.now()+60000});
+                    if (data.sources.every(s => s.status !== 'unavailable')) cache.set(key,{data,expires:Date.now()+60000});
                     reply(res,200,data);
                 } finally { pending.delete(key); }
                 return;

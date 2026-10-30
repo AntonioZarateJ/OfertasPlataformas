@@ -12,6 +12,7 @@ test('Porcentajes exactos y rangos inclusivos funcionan en PC y consola con un Ã
   await page.route('**/api/**',async route=>{
    const u=new URL(route.request().url());let data={};
    if(u.pathname==='/api/stores')data=[];
+   if(u.pathname==='/api/deals-position')data={page:0};
    if(u.pathname==='/api/deals')catalogQueries.push(u.searchParams);
    if(u.pathname==='/api/deals')data=percentages.filter(n=>u.searchParams.get('onSale')!=='1'||n>0).map(n=>({gameID:String(n),title:'Descuento '+n,salePrice:100-n,normalPrice:100,savings:String(n),storeID:'1'}));
    if(u.pathname==='/api/console-catalog')data={platform:u.searchParams.get('platform'),region:'MX',checkedAt:Date.now(),sources:[],scope:'Prueba',next:null,items:percentages.filter(n=>u.searchParams.get('deals')!=='1'||n>0).map(n=>({id:String(n),title:'Descuento '+n,price:100-n,regular:100,discount:n,currency:'MXN',store:'Oficial',kind:'official',edition:'Xbox',url:'https://www.xbox.com'}))};

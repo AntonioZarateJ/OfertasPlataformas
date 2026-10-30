@@ -64,5 +64,5 @@ function renderConsoleWishCard(item) {
     card.innerHTML=`<button class="native-wish-open" type="button"><img src="${escapeHTML(safeURL(item.image||item.thumb))}" alt=""><span><strong>${escapeHTML(item.title)}</strong><small>${escapeHTML(ECOSYSTEM_META[item.platform].name)} · ${escapeHTML(purchaseRegions[item.region][0])} · ${escapeHTML(item.store)}</small><b>${escapeHTML(nativeMoney(item.price,item.currency))}</b></span></button><button type="button" class="native-wish-remove" aria-label="Eliminar de Wishlist"><i class="fa-solid fa-trash-can"></i></button><p>${item.targetPrice?'Meta: '+escapeHTML(nativeMoney(item.targetPrice,item.currency))+(met?' · Meta alcanzada según el último precio':' · Pendiente'):'Pulsa el juego para comparar o guardar una meta.'}</p><small>Última consulta: ${item.checkedAt?escapeHTML(new Date(item.checkedAt).toLocaleString('es-MX')):'fecha no disponible'}</small>`;
     card.querySelector('.native-wish-open').onclick=()=>{closeWishlistDrawer();openConsoleComparison(item,item.platform,item.region);};
     card.querySelector('.native-wish-remove').onclick=()=>{delete userWishlist[item.gameID];persistWishlistState();refreshConsoleHearts();renderWishlistDrawerItems();};
-    return card;
+    prepareImages(card);return card;
 }

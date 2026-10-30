@@ -42,6 +42,7 @@ function applyCustomDrawerFilters(){
     const filter=updateDiscountControls('drawer');
     if(!filter.valid){showToast('Revisa el porcentaje o el rango de descuento.');return;}
     cancelSuggestions();
+    currentSearchQuery=expandGameAlias(predictiveSearchInput.value.trim());
     queryConfig.discountFilter=filter;
     queryConfig.minDiscount=0;
     queryConfig.steamRating=Number(drawerRatingSlider.value);
@@ -57,6 +58,7 @@ function resetFineTuneFilters(){
 }
 function applyConsoleDiscount(){
     const filter=updateDiscountControls('console');if(!filter.valid)return;
+    currentSearchQuery=expandGameAlias(predictiveSearchInput.value.trim());
     void loadConsoleCatalog();
 }
 function resetConsoleFilters(){document.getElementById('consoleSource').value='all';document.getElementById('consoleOrder').value='relevance';document.getElementById('consoleDiscountMode').value='any';document.getElementById('consoleDiscountValue').value=10;document.getElementById('consoleDiscountEnd').value=50;applyConsoleDiscount();}

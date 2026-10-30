@@ -108,7 +108,7 @@ test('La interfaz continúa la búsqueda sin barridos y muestra ediciones visibl
    if(u.pathname==='/api/deals'){deals++;data=[{gameID:'1',title:'Juego al 20%',savings:20,salePrice:8,normalPrice:10,storeID:'1'}];}
    if(u.pathname==='/api/deals-position'){
     seeks++;
-    if(blocked){status=429;headers={'Retry-After':'30'};data={error:'Pausa'};}
+    if(blocked){blocked=false;status=429;headers={'Retry-After':'1'};data={error:'Pausa'};}
     else data=seeks===1?{page:null,pending:true,reviewed:4}:{page:6};
    }
    if(u.pathname==='/api/stores')data=[];
@@ -121,13 +121,15 @@ test('La interfaz continúa la búsqueda sin barridos y muestra ediciones visibl
   const before=deals;
   const apply=()=>page.evaluate(()=>{document.getElementById('drawerDiscountMode').value='exact';document.getElementById('drawerDiscountSlider').value='20';applyCustomDrawerFilters();});
   await apply();
-  await expect(page.locator('#loadMoreBtn')).toHaveText('Continuar búsqueda');
-  await expect(page.locator('#catalogError')).not.toBeVisible();assert.equal(deals,before);
-  await page.locator('#loadMoreBtn').click();
-  await expect(page.locator('#gamesGrid .steam-card')).toHaveCount(1);assert.equal(deals,before+1);
+  await expect(page.locator('#gamesGrid .steam-card')).toHaveCount(1);
+  assert(seeks>=2);assert.equal(deals,before+1);
+  await expect(page.locator('#catalogError')).not.toBeVisible();
+  await expect(page.locator('#loadMoreBtn')).not.toContainText('Continuar');
   blocked=true;await apply();
-  await expect(page.locator('#catalogError')).toContainText('30 segundos');
-  await expect(page.locator('#catalogError button')).toBeDisabled();assert.equal(deals,before+1);
+  await expect(page.locator('#loadingState')).toBeVisible();
+  await expect(page.locator('#loadingText')).toContainText('automáticamente');
+  await expect(page.locator('#loadingState')).toBeHidden({timeout:10000});
+  await expect(page.locator('#catalogError')).not.toBeVisible();
   await page.locator('[data-ecosystem="switch"]').click();
   // El catálogo completo incluye Minecraft aunque no esté rebajado.
   await page.locator('[data-chip="all"]').click();

@@ -40,6 +40,8 @@
             modalLoading.innerHTML = modalLoadingTemplate;
             activeModalDealContext = dealItem;
             activeModalGameData = null;
+            document.getElementById('pcEditions')?.remove();
+            analyticsModal.dataset.platform='pc';
             modalKeyPlatform = activeEcosystem;
 
             // Si el usuario está en modo consola (Xbox/PS/Switch), abrimos directo la pestaña de Keys; si está en PC, Tiendas Oficiales
@@ -47,10 +49,9 @@
             changeModalKeyPlatform(activeEcosystem);
 
             const steamId = dealItem.steamAppID;
-            const highResImg = steamId ? `${STEAM_HEADER_IMG}${steamId}/header.jpg` : (dealItem.thumb || '');
 
-            modalHeaderImg.src = highResImg;
-            modalCoverImg.src = highResImg;
+            setGameArtwork(modalHeaderImg,dealItem);
+            setGameArtwork(modalCoverImg,dealItem);
             modalGameTitle.textContent = dealItem.title || 'Cargando...';
             syncModalWishlistAndAlertUI(dealItem);
             document.getElementById('regionalSteamQuote')?.remove();
@@ -58,7 +59,8 @@
             regionalQuote.id = 'regionalSteamQuote';
             regionalQuote.className = 'text-sm text-emerald-300 p-3';
             modalGameTitle.parentElement.appendChild(regionalQuote);
-            if (steamId) void showSteamRegionalPrice(regionalQuote, steamId);
+            if (steamId)void showSteamRegionalPrice(regionalQuote, steamId);
+            void loadPCEditions(dealItem,controller.signal,generation);
 
             if (steamId) {
                 modalSteamDirectBtn.href = `${STEAM_APP_URL}${steamId}`;
@@ -92,13 +94,15 @@
                 if (generation !== modalGeneration) return;
                 if (!gameData || !Array.isArray(gameData.deals)) throw new Error('Respuesta inválida');
                 activeModalGameData = gameData;
+                if(gameData.info?.thumb){setGameArtwork(modalHeaderImg,{...dealItem,thumb:gameData.info.thumb});setGameArtwork(modalCoverImg,{...dealItem,thumb:gameData.info.thumb});}
 
                 modalLoading.classList.add('hidden-el');
                 modalDataContent.classList.remove('hidden-el');
                 renderModalAnalyticsContent(gameData, dealItem);
             } catch (e) {
                 if (controller.signal.aborted || generation !== modalGeneration) return;
-                modalLoading.innerHTML = `<p class="text-xs text-rose-400">No se pudo obtener el desglose de tiendas en este momento.</p>`;
+                modalLoading.innerHTML = `<p class="comparison-note" data-detail-error>No se pudo obtener el desglose de todas las tiendas. Mostramos las versiones que podamos confirmar.</p>`;
+                const versions=document.getElementById('pcEditions');if(versions)modalLoading.appendChild(versions);
             }
         }
 
@@ -308,7 +312,10 @@
         function showLoader(msg) {
             if (msg) loadingText.textContent = msg;
             loadingState.classList.remove('hidden-el');
-            gamesGrid.classList.add('hidden-el');
+            gamesGrid.classList.toggle('hidden-el',!gamesGrid.children.length);
+            let mark=document.getElementById('catalogLoadingMark');
+            if(!mark){mark=document.createElement('div');mark.id='catalogLoadingMark';mark.className='catalog-loading-mark';loadingState.prepend(mark);}
+            mark.innerHTML=`<i class="${ECOSYSTEM_META[activeEcosystem].icon}"></i>`;
         }
 
         function hideLoader() {
@@ -316,3 +323,15 @@
             gamesGrid.classList.remove('hidden-el');
         }
 
+
+async function loadPCEditions(game,signal,generation){
+ const panel=document.createElement('section');panel.id='pcEditions';panel.className='game-editions';panel.innerHTML='<h3>Versiones y paquetes de PC</h3><p class="comparison-note">Consultando versiones en Steam…</p>';historicalLowBanner.after(panel);
+ if(!game.steamAppID){panel.innerHTML='<h3>Versiones de PC</h3><p class="comparison-note">No hay otras ediciones verificadas de este producto en las fuentes consultadas.</p>';return;}
+ try{
+  const data=await requestJSON('/api/pc-editions?'+new URLSearchParams({appid:String(game.steamAppID),region:currentRegion}),{signal,timeout:15000});
+  if(signal.aborted||generation!==modalGeneration)return;
+  if(data.image){game.artwork=data.image;setGameArtwork(modalHeaderImg,game);setGameArtwork(modalCoverImg,game);}
+  panel.innerHTML='<h3><i class="fa-solid fa-layer-group"></i> Versiones y paquetes de PC</h3>'+editionGrid(data.editions||[])+'<p class="comparison-note">'+escapeHTML(data.coverage||'Solo versiones confirmadas en esta consulta.')+'</p>';
+  if(modalLoading.querySelector('[data-detail-error]'))modalLoading.appendChild(panel);
+ }catch(error){if(!signal.aborted)panel.innerHTML='<h3>Versiones y paquetes de PC</h3><p class="comparison-note">No se pudieron confirmar otras versiones en Steam en esta consulta.</p>';}
+}

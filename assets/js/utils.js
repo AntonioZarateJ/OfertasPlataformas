@@ -46,13 +46,78 @@ function dealRedirectURL(value) {
     return `${CHEAPSHARK_REDIRECT}${encodeURIComponent(id)}`;
 }
 
+const GAME_IMAGE_PLACEHOLDER='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="460" height="215" viewBox="0 0 460 215"><rect width="460" height="215" fill="#112237"/><rect x="195" y="62" width="70" height="47" rx="14" fill="none" stroke="#7dd3fc" stroke-width="3"/><path d="M210 85h17m-8-8v16m28-12h1m-1 9h1" stroke="#7dd3fc" stroke-width="4" stroke-linecap="round"/><text x="230" y="147" text-anchor="middle" fill="#b6c9dd" font-family="sans-serif" font-size="15">Portada no disponible</text></svg>');
+function imageCandidates(steamId,thumb,primary='') {
+    const image=safeURL(thumb);
+    const inferred=image&&/steamstatic\.com|steamcdn/.test(image)?image.replace(/(?:capsule_[a-z0-9_]+|header)\.(jpg|png)(?=\?|$)/i,'header.$1'):'';
+    return [...new Set([inferred,image,safeURL(primary),/^\d+$/.test(String(steamId))?`https://cdn.akamai.steamstatic.com/steam/apps/${steamId}/header.jpg`:''].filter(Boolean))];
+}
+const imageJobs=new WeakMap();
+const imageObserver=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{if(entry.isIntersecting){imageObserver.unobserve(entry.target);imageJobs.get(entry.target)?.start();}});
+},{rootMargin:'240px'}):null;
+function setImageFallbacks(img,urls) {
+    imageJobs.get(img)?.cancel();imageObserver?.unobserve(img);
+    const candidates=[...new Set(urls.map(safeURL).filter(Boolean))];let index=0,probe,timer,started=false;
+    const clean=()=>{clearTimeout(timer);if(probe){probe.onload=null;probe.onerror=null;probe.src='';probe=null;}};
+    const job={cancel:()=>{clean();img.onerror=null;},start:()=>{if(started)return;started=true;next();}};
+    const next=()=>{
+        if(imageJobs.get(img)!==job)return;clean();
+        if(index>=candidates.length){img.onerror=null;img.src=GAME_IMAGE_PLACEHOLDER;img.dataset.imageState='placeholder';return;}
+        probe=new Image();probe.decoding='async';
+        probe.onload=()=>{
+            if(imageJobs.get(img)!==job)return;
+            const src=probe.src;clearTimeout(timer);probe.onload=null;probe.onerror=null;probe=null;
+            img.dataset.imageState='loaded';img.onerror=next;img.src=src;
+        };
+        probe.onerror=next;timer=setTimeout(next,3500);probe.src=candidates[index++];
+    };
+    imageJobs.set(img,job);img.decoding='async';img.dataset.imageReady='1';img.dataset.imageState='loading';img.onerror=null;img.src=GAME_IMAGE_PLACEHOLDER;
+    if(imageObserver)imageObserver.observe(img);else job.start();
+}
+
+new MutationObserver(records=>{
+    for(const record of records)for(const node of record.removedNodes){
+        if(node.nodeType!==1||node.isConnected)continue;
+        const images=node.matches('img')?[node]:node.querySelectorAll('img');
+        images.forEach(img=>{imageObserver?.unobserve(img);imageJobs.get(img)?.cancel();imageJobs.delete(img);});
+    }
+}).observe(document.body,{childList:true,subtree:true});
+function setGameArtwork(img,game) {setImageFallbacks(img,[safeURL(game.artwork),...imageCandidates(game.steamAppID,game.thumb||game.image)]);}
 function prepareImages(container) {
-    container.querySelectorAll('img').forEach(img => {
-        img.decoding = 'async';
-        img.addEventListener('error', () => {
-            img.src = safeURL(img.dataset.fallback) || 'https://placehold.co/460x215/131c2e/38bdf8?text=SteamPulse';
-        }, { once: true });
+    container.querySelectorAll('img').forEach(img=>{
+        if(img.dataset.imageReady)return;
+        const source=img.getAttribute('src');
+        setImageFallbacks(img,[...imageCandidates('',img.dataset.fallback),source]);
     });
+}
+function catalogPause(ms,signal) {
+    return new Promise((resolve,reject)=>{
+        if(signal?.aborted){reject(signal.reason);return;}
+        const abort=()=>{clearTimeout(timer);reject(signal.reason);};
+        const timer=setTimeout(()=>{signal?.removeEventListener('abort',abort);resolve();},ms);
+        signal?.addEventListener('abort',abort,{once:true});
+    });
+}
+async function catalogJSON(url,options={}) {
+    for(let attempt=0;;attempt++){
+        try{return await requestJSON(url,options);}
+        catch(error){
+            if(options.signal?.aborted)throw error;
+            const transient=[429,500,502,503,504].includes(error.status)||['TimeoutError','TypeError'].includes(error.name);
+            if(!transient||attempt>=3)throw error;
+            const wait=error.status===429?Math.max(1,Math.min(300,error.retryAfter||30))*1000:1500*2**attempt;
+            for(let remaining=wait;remaining>0;remaining-=1000){
+                loadingText.textContent=`La tienda está ocupada. Reintentamos automáticamente en ${Math.ceil(remaining/1000)} s…`;
+                await catalogPause(Math.min(1000,remaining),options.signal);
+            }
+        }
+    }
+}
+function catalogNotice(message='') {
+    let note=document.getElementById('catalogNotice');
+    if(!note){note=document.createElement('p');note.id='catalogNotice';note.className='catalog-notice';note.setAttribute('role','status');document.getElementById('catalogError').after(note);}
+    note.textContent=message;note.hidden=!message;
 }
 
 let catalogGeneration = 0;
