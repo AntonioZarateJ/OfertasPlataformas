@@ -86,8 +86,8 @@
                 };
                 showToast(
                     customTargetUsd !== null
-                        ? `🔔 Alerta creada para "${gameObj.title}" (${formatPrice(customTargetUsd, true)})`
-                        : `❤️ "${gameObj.title}" guardado en tu Wishlist Cloud`,
+                        ? `Meta guardada para "${gameObj.title}" (${formatPrice(customTargetUsd, true)})`
+                        : `❤️ "${gameObj.title}" guardado en tus favoritos`,
                     'fa-solid fa-heart text-rose-400'
                 );
             }

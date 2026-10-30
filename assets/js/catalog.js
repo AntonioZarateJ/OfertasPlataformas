@@ -2,12 +2,13 @@ let pcFetchSort='DealRating';
 let pcStoreIDs=[],pcStoreIndex=0,pcNeedsSeek=true;
 let pendingPCDeals=[],pcSourceHasMore=true;
 function advancePCStore(){
-    pcStoreIDs=[...new Set([...pcStoreIDs,...Object.keys(storesMap).filter(id=>storesMap[id].active!==false)])];
+    pcStoreIDs=[...new Set([...pcStoreIDs,...getPCStoreIDs()])];
     pcStoreIndex++;currentPage=0;pcNeedsSeek=true;
     pcSourceHasMore=pcStoreIndex<pcStoreIDs.length;
 }
 async function executeCatalogFetch(resetGrid=true){
     if(activeEcosystem!=='pc')return loadConsoleCatalog(resetGrid);
+    renderPCStoreControls();
     if(resetGrid)cancelCatalogRequest();
     const generation=catalogGeneration,controller=new AbortController();catalogController=controller;
     const config=structuredClone(queryConfig),query=currentSearchQuery;
@@ -18,7 +19,7 @@ async function executeCatalogFetch(resetGrid=true){
     if(resetGrid){
         pcFetchSort=canonicalPCSort(config.sortBy);
         currentPage=0;currentDeals=[];pendingPCDeals=[];pcSourceHasMore=true;pcNeedsSeek=true;pcStoreIndex=0;
-        pcStoreIDs=['1',...Object.keys(storesMap).filter(id=>id!=='1'&&storesMap[id].active!==false)];
+        pcStoreIDs=getPCStoreIDs();
         gamesGrid.replaceChildren();loadedCountBadge.textContent='0';emptyState.classList.add('hidden-el');
     }
     const target=currentDeals.length+60;
@@ -48,6 +49,7 @@ async function executeCatalogFetch(resetGrid=true){
                 currentPage=position.page;pcNeedsSeek=false;
             }
             const params=new URLSearchParams({pageSize:'60',pageNumber:String(currentPage),sortBy:restricted?'Savings':pcFetchSort});
+            if(config.storeID && config.storeID!=='all')params.set('storeID',config.storeID);
             if(query)params.set('title',query);
             if(restricted){params.set('desc',ascending?'1':'0');params.set('storeID',pcStoreIDs[pcStoreIndex]||'1');}
             if(config.onSale==='1'||restricted&&config.discountFilter.min>0)params.set('onSale','1');

@@ -64,7 +64,20 @@
 
         function renderWishlistDrawerItems() {
             const container = document.getElementById('wishlistItemsContainer');
-            const list = Object.values(userWishlist).sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+            const all = Object.values(userWishlist);
+            const hasGoal = item => Number(item.native ? item.targetPrice : item.targetPriceUsd) > 0;
+            const reached = item => hasGoal(item) && Number(item.native ? item.price : item.salePrice) <= Number(item.native ? item.targetPrice : item.targetPriceUsd);
+            document.getElementById('wishGoalsCount').textContent = all.filter(hasGoal).length;
+            document.getElementById('wishReachedCount').textContent = all.filter(reached).length;
+            document.getElementById('wishlistSyncStatusText').textContent = window.currentAccount ? 'Favoritos asociados a tu cuenta' : 'Guardados en este navegador';
+            document.getElementById('wishAccountAction').textContent = window.currentAccount ? 'Ver mi perfil' : 'Iniciar sesión para guardar en mi cuenta';
+            const search = document.getElementById('wishSearch').value.trim().toLocaleLowerCase('es');
+            const platform = document.getElementById('wishPlatform').value;
+            const order = document.getElementById('wishOrder').value;
+            const list = all.filter(item => item.title.toLocaleLowerCase('es').includes(search)
+                && (platform === 'all' || (item.native ? item.platform : 'pc') === platform)
+                && (order !== 'goals' || hasGoal(item)) && (order !== 'reached' || reached(item)))
+                .sort((a,b) => order === 'title' ? a.title.localeCompare(b.title, 'es') : (b.addedAt || 0) - (a.addedAt || 0));
             container.innerHTML = '';
 
             if (list.length === 0) {
@@ -73,9 +86,9 @@
                         <div class="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto mb-3 text-lg">
                             <i class="fa-regular fa-heart"></i>
                         </div>
-                        <h4 class="text-sm font-bold text-white mb-1">Tu Wishlist está vacía</h4>
+                        <h4 class="text-sm font-bold text-white mb-1">${all.length ? 'No hay favoritos con estos filtros' : 'Tu próxima aventura empieza aquí'}</h4>
                         <p class="text-xs text-gray-400 leading-relaxed">
-                            Pulsa el corazón <i class="fa-solid fa-heart text-rose-400"></i> en cualquier juego o configura una alerta de precio dentro del comparador.
+                            ${all.length ? 'Prueba otro nombre o cambia los filtros de plataforma y metas.' : 'Pulsa el corazón en un juego para guardarlo. También puedes elegir el precio que te gustaría pagar.'}
                         </p>
                     </div>
                 `;
@@ -90,7 +103,7 @@
                 const img = item.steamAppID ? `${STEAM_HEADER_IMG}${item.steamAppID}/header.jpg` : item.thumb;
 
                 const card = document.createElement('div');
-                card.className = `p-3 rounded-xl border transition flex flex-col gap-2.5 ${
+                card.className = `wish-game-card p-3 rounded-xl border transition flex flex-col gap-2.5 ${
                     alertMet ? 'bg-emerald-950/30 border-emerald-500/50' : 'bg-[#141e33] border-white/10'
                 }`;
 
@@ -99,13 +112,14 @@
                         <img src="${escapeHTML(safeURL(img))}" alt="${escapeHTML(item.title)}" data-fallback="${escapeHTML(safeURL(item.thumb))}"
                              class="w-16 h-10 object-cover rounded-lg border border-white/10 flex-shrink-0 cursor-pointer">
                         <div class="min-w-0 flex-1">
-                            <h4 class="text-xs font-bold text-white truncate cursor-pointer hover:text-sky-400">${escapeHTML(item.title)}</h4>
+                            <span class="wish-platform-tag"><i class="fa-brands fa-steam"></i> PC · Comparar tiendas</span>
+                            <button type="button" class="wish-game-title">${escapeHTML(item.title)}</button>
                             <div class="flex items-center gap-2 mt-0.5">
                                 <span class="text-xs font-black text-emerald-400">${formatPrice(saleUsd, true)}</span>
                                 ${item.savings > 0 ? `<span class="text-[10px] bg-steam-greenBg text-steam-green px-1.5 py-0.5 rounded font-bold">-${item.savings}%</span>` : ''}
                             </div>
                         </div>
-                        <button type="button" class="remove-wish-btn text-gray-400 hover:text-rose-400 p-1.5" title="Eliminar">
+                        <button type="button" class="remove-wish-btn text-gray-400 hover:text-rose-400 p-1.5" title="Eliminar" aria-label="Quitar ${escapeHTML(item.title)} de favoritos">
                             <i class="fa-solid fa-trash-can text-xs"></i>
                         </button>
                     </div>
@@ -123,7 +137,7 @@
                     closeWishlistDrawer();
                     openAnalyticalModal(item);
                 });
-                card.querySelector('h4').addEventListener('click', () => {
+                card.querySelector('.wish-game-title').addEventListener('click', () => {
                     closeWishlistDrawer();
                     openAnalyticalModal(item);
                 });
@@ -161,8 +175,10 @@
         }
 
         function openCloudConfigModal() {
+            closeWishlistDrawer();
             document.getElementById('cloudConfigModal').classList.remove('hidden-el');
             renderAccount();
+            void refreshAccountVerification();
         }
         function closeCloudConfigModal() { document.getElementById('cloudConfigModal').classList.add('hidden-el'); }
 

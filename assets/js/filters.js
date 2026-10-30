@@ -54,6 +54,7 @@ function applyCustomDrawerFilters(){
     updateScopeNote();executeCatalogFetch(true);
 }
 function resetFineTuneFilters(){
+    queryConfig.storeID = 'all';
     document.getElementById('drawerDiscountMode').value='any';drawerDiscountSlider.value=10;document.getElementById('drawerDiscountEnd').value=50;drawerRatingSlider.value=0;applyCustomDrawerFilters();
 }
 function applyConsoleDiscount(){

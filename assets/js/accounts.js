@@ -3,6 +3,74 @@ let accountMode = 'login';
 let accountWriteQueue = Promise.resolve();
 let accountEpoch = 0;
 window.currentAccount = null;
+const PROFILE_AVATARS = ['orbit', 'nova', 'pixel', 'comet', 'quest', 'arcade'];
+let selectedProfileAvatar = 'orbit';
+function profileAvatarKey(user) {
+    try {
+        const url = new URL(user?.photoURL || '', location.origin);
+        return PROFILE_AVATARS.find(key => url.pathname === '/assets/avatars/' + key + '.svg') || 'orbit';
+    } catch { return 'orbit'; }
+}
+function renderProfileAvatars() {
+    const container = document.getElementById('profileAvatarOptions');
+    container.replaceChildren();
+    for (const key of PROFILE_AVATARS) {
+        const button = document.createElement('button');
+        button.type = 'button'; button.setAttribute('aria-label', 'Avatar ' + key);
+        button.setAttribute('aria-pressed', String(key === selectedProfileAvatar));
+        const img = document.createElement('img'); img.src = 'assets/avatars/' + key + '.svg'; img.alt = ''; img.width = 44; img.height = 44;
+        button.append(img);
+        button.addEventListener('click', () => {
+            selectedProfileAvatar = key;
+            document.getElementById('profileAvatar').src = img.src;
+            renderProfileAvatars();
+        });
+        container.append(button);
+    }
+}
+function profileFeedback(message) { document.getElementById('profileMessage').textContent = message; }
+async function refreshAccountVerification() {
+    const user = window.currentAccount;
+    if (!user || !accountSDK) return;
+    try {
+        await accountSDK.auth.reload(user);
+        if (window.currentAccount?.uid !== user.uid) return;
+        await user.getIdToken(true);
+        renderAccountVerification(user);
+    } catch { if (window.currentAccount?.uid === user.uid) profileFeedback('No pudimos actualizar el estado del correo. Inténtalo de nuevo.'); }
+}
+function renderAccountVerification(user) {
+    document.getElementById('accountVerification').textContent = user.emailVerified ? '✓ Correo verificado' : 'Correo pendiente de verificar';
+    document.getElementById('accountVerification').classList.toggle('verified', user.emailVerified);
+    document.getElementById('verifyAccountButton').classList.toggle('hidden-el', user.emailVerified);
+    document.getElementById('refreshVerificationButton').classList.toggle('hidden-el', user.emailVerified);
+}
+async function saveAccountProfile(event) {
+    event.preventDefault();
+    const user = window.currentAccount;
+    if (!user || !accountSDK) return;
+    const displayName = document.getElementById('profileName').value.trim();
+    if (!displayName || displayName.length > 60) { profileFeedback('Escribe un nombre de entre 1 y 60 caracteres.'); return; }
+    const button = document.getElementById('profileSaveButton'); button.disabled = true;
+    profileFeedback('Guardando tu perfil…');
+    try {
+        const key = PROFILE_AVATARS.includes(selectedProfileAvatar) ? selectedProfileAvatar : 'orbit';
+        await accountSDK.auth.updateProfile(user, { displayName, photoURL: new URL('assets/avatars/' + key + '.svg', location.href).href });
+        if (window.currentAccount?.uid !== user.uid) return;
+        renderAccount(); profileFeedback('Tu perfil está actualizado.');
+    } catch { if (window.currentAccount?.uid === user.uid) profileFeedback('No pudimos guardar el perfil. Inténtalo de nuevo.'); }
+    finally { button.disabled = false; }
+}
+async function resetAccountPassword() {
+    const user = window.currentAccount;
+    if (!user?.email || !accountSDK) return;
+    const button = document.getElementById('accountPasswordButton'); button.disabled = true;
+    try {
+        await accountSDK.auth.sendPasswordResetEmail(accountSDK.session, user.email);
+        if (window.currentAccount?.uid === user.uid) profileFeedback('Te enviamos un enlace para cambiar la contraseña. Revisa también spam.');
+    } catch { if (window.currentAccount?.uid === user.uid) profileFeedback('No pudimos enviar el enlace. Espera un momento e inténtalo de nuevo.'); }
+    finally { button.disabled = false; }
+}
 function setAuthMode(mode) {
     accountMode = mode;
     document.getElementById('authTitle').textContent = mode === 'register' ? 'Tu próxima gran oferta' : mode === 'reset' ? 'Recupera tu acceso' : 'Bienvenido de nuevo';
@@ -21,10 +89,21 @@ function renderAccount() {
     document.getElementById('authForm').classList.toggle('hidden-el', !!user);
     document.getElementById('authTabs').classList.toggle('hidden-el', !!user);
     document.getElementById('accountPanel').classList.toggle('hidden-el', !user);
+    document.querySelector('.auth-card').classList.toggle('has-profile', !!user);
+    document.querySelector('.auth-subtitle').textContent = user ? 'Tu espacio de jugador. Personaliza tu perfil y prepara tu próxima aventura.' : 'Guarda tus favoritos y encuentra el momento de comprar.';
+    document.querySelector('.auth-footnote').textContent = user ? 'Tus favoritos y metas se guardan en tu cuenta. Los avisos por correo están en preparación.' : 'Tus favoritos de invitado se guardan en este navegador.';
+    profileFeedback('');
     if (user) {
         document.getElementById('authTitle').textContent = user.displayName || 'Mi cuenta';
         document.getElementById('accountEmail').textContent = user.email;
-        document.getElementById('accountVerification').textContent = user.emailVerified ? 'Correo verificado' : 'Verifica tu correo para recibir alertas.';
+        renderAccountVerification(user);
+        document.getElementById('profileName').value = user.displayName || '';
+        selectedProfileAvatar = profileAvatarKey(user);
+        document.getElementById('profileAvatar').src = 'assets/avatars/' + selectedProfileAvatar + '.svg';
+        renderProfileAvatars();
+        const list = Object.values(userWishlist);
+        document.getElementById('profileSavedCount').textContent = list.length;
+        document.getElementById('profileGoalsCount').textContent = list.filter(item => item.targetPriceUsd || item.targetPrice).length;
     } else setAuthMode('login');
     refreshCloudProfileHeader();
 }
@@ -86,7 +165,14 @@ async function submitAccount(event) {
 }
 async function logoutAccount() { if (accountSDK) await accountSDK.auth.signOut(accountSDK.session); }
 async function sendAccountVerification() {
-    try { if (accountSDK && window.currentAccount) { await accountSDK.auth.sendEmailVerification(window.currentAccount); showToast('Revisa tu correo para verificar tu cuenta.'); } }
+    try {
+        await refreshAccountVerification();
+        if (accountSDK && window.currentAccount && !window.currentAccount.emailVerified) {
+            const button = document.getElementById('verifyAccountButton'); button.disabled = true;
+            try { await accountSDK.auth.sendEmailVerification(window.currentAccount); profileFeedback('Revisa tu correo para verificar tu cuenta.'); }
+            finally { button.disabled = false; }
+        }
+    }
     catch { showToast('No se pudo enviar el correo. Inténtalo más tarde.'); }
 }
 window.accountSync = () => {
@@ -97,3 +183,6 @@ window.accountSync = () => {
     accountWriteQueue = accountWriteQueue.catch(() => {}).then(() => store.setDoc(store.doc(db, 'users', user.uid, 'data', 'wishlist'), { items, updatedAt: store.serverTimestamp() })).then(() => true).catch(() => { showToast('No se pudo sincronizar. Tus favoritos siguen guardados en este dispositivo.'); return false; });
     return accountWriteQueue;
 };
+window.addEventListener('focus', () => {
+    if (!document.getElementById('cloudConfigModal').classList.contains('hidden-el')) void refreshAccountVerification();
+});

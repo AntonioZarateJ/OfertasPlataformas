@@ -17,7 +17,7 @@ const server = http.createServer((req, res) => {
     if (!file.startsWith(root + path.sep)) { res.writeHead(403).end(); return; }
     fs.readFile(file, (error, data) => {
         if (error) { res.writeHead(404).end(); return; }
-        res.setHeader('Content-Type', ({ '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript' })[path.extname(file)] || 'application/octet-stream');
+        res.setHeader('Content-Type', ({ '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml' })[path.extname(file)] || 'application/octet-stream');
         res.end(data);
     });
 });
@@ -179,6 +179,91 @@ const server = http.createServer((req, res) => {
             await expect(page.locator('#authEmail')).toBeVisible();
             await expect(page.locator('#firebaseDbUrlInput')).toHaveCount(0);
             await page.keyboard.press('Escape');
+        });
+        await test('Perfil verificado oculta reenvío y permite guardar nombre, avatar y recuperar contraseña', async () => {
+            await page.evaluate(() => {
+                window.profileTest = { verifications: 0, resets: 0, updates: 0 };
+                window.currentAccount = { uid: 'profile-test', email: 'jugador@example.com', displayName: 'Player Uno', emailVerified: true, getIdToken: async () => 'test' };
+                accountSDK = { session: {}, auth: {
+                    reload: async user => { user.emailVerified = true; },
+                    updateProfile: async (user, changes) => { Object.assign(user, changes); window.profileTest.updates++; },
+                    sendEmailVerification: async () => { window.profileTest.verifications++; },
+                    sendPasswordResetEmail: async (_, email) => { window.profileTest.resets++; window.profileTest.resetEmail = email; }
+                } };
+                openCloudConfigModal();
+            });
+            await expect(page.locator('#verifyAccountButton')).toBeHidden();
+            await expect(page.locator('#accountVerification')).toContainText('Correo verificado');
+            // A stale unverified session must reload before sending another verification.
+            await page.evaluate(async () => { window.currentAccount.emailVerified = false; renderAccount(); await sendAccountVerification(); });
+            assert.equal(await page.evaluate(() => window.profileTest.verifications), 0);
+            await expect(page.locator('#verifyAccountButton')).toBeHidden();
+            await page.locator('#profileName').fill('Nova <script>');
+            await page.getByRole('button', { name: 'Avatar quest', exact: true }).click();
+            await page.locator('#profileSaveButton').click();
+            await expect(page.locator('#profileMessage')).toHaveText('Tu perfil está actualizado.');
+            await expect(page.locator('#authTitle')).toHaveText('Nova <script>');
+            assert.equal(await page.locator('#authTitle script').count(), 0);
+            assert.match(await page.evaluate(() => window.currentAccount.photoURL), /\/assets\/avatars\/quest.svg$/);
+            await expect(page.locator('#profileAvatar')).toHaveJSProperty('naturalWidth', 96);
+            await page.locator('#accountPasswordButton').click();
+            await expect(page.locator('#profileMessage')).toContainText('Te enviamos un enlace');
+            assert.equal(await page.evaluate(() => window.profileTest.resetEmail), 'jugador@example.com');
+            fs.mkdirSync(path.join(root, 'test-results'), { recursive: true });
+            await page.screenshot({ path: path.join(root, 'test-results/profile-desktop.png') });
+            await page.setViewportSize({ width: 390, height: 844 });
+            await page.screenshot({ path: path.join(root, 'test-results/profile-mobile.png') });
+            assert.equal(await page.evaluate(() => document.querySelector('.auth-card').scrollWidth > document.querySelector('.auth-card').clientWidth), false);
+            await page.setViewportSize({ width: 1440, height: 1000 });
+            await page.keyboard.press('Escape');
+            await page.evaluate(() => { window.currentAccount = null; accountSDK = null; renderAccount(); });
+        });
+        await test('Wishlist filtra plataformas y metas sin mezclar monedas ni exponer configuración', async () => {
+            await page.evaluate(() => {
+                userWishlist = normalizeWishlist({
+                    '1': { gameID: '1', title: 'Aventura PC', salePrice: '10', targetPriceUsd: '12' },
+                    '2': { gameID: '2', title: 'Juego sin meta', salePrice: '15' },
+                    '3': { gameID: '3', title: 'Aventura Xbox', native: true, platform: 'xbox', region: 'MX', currency: 'MXN', store: 'Xbox Store', id: 'ABC', price: 500, salePrice: '500', targetPrice: 300 }
+                });
+                persistWishlistState({ sync: false }); openWishlistDrawer();
+            });
+            await expect(page.locator('#wishGoalsCount')).toHaveText('2');
+            await expect(page.locator('#wishReachedCount')).toHaveText('1');
+            await expect(page.locator('#wishlistItemsContainer > *')).toHaveCount(3);
+            await expect(page.locator('#wishlistDrawerModal')).not.toContainText('Firebase');
+            await page.locator('#wishPlatform').selectOption('xbox');
+            await expect(page.locator('#wishlistItemsContainer')).toContainText('Aventura Xbox');
+            await expect(page.locator('#wishlistItemsContainer > *')).toHaveCount(1);
+            await page.locator('#wishPlatform').selectOption('all');
+            await page.locator('#wishOrder').selectOption('reached');
+            await expect(page.locator('#wishlistItemsContainer')).toContainText('Aventura PC');
+            await expect(page.locator('#wishlistItemsContainer')).not.toContainText('Aventura Xbox');
+            await page.locator('#wishSearch').fill('No existe');
+            await expect(page.locator('#wishlistItemsContainer')).toContainText('No hay favoritos con estos filtros');
+            await page.locator('#wishSearch').fill('');
+            await page.locator('#wishOrder').selectOption('recent');
+            await page.setViewportSize({ width: 390, height: 844 });
+            await page.screenshot({ path: path.join(root, 'test-results/wishlist-mobile.png') });
+            assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+            await page.setViewportSize({ width: 1440, height: 1000 });
+            await page.keyboard.press('Escape');
+        });
+        await test('Seleccionar tienda consulta y pagina ese catálogo y conserva el filtro al buscar', async () => {
+            await reset();
+            const before = calls.length;
+            await page.locator('#pcStoreSelect').selectOption('7');
+            await expect(cards).toHaveCount(60);
+            await page.locator('#loadMoreBtn').click();
+            await expect(cards).toHaveCount(61);
+            const queries = calls.slice(before).filter(c => new URL(c.url).pathname === '/api/deals');
+            assert(queries.length >= 2);
+            assert(queries.every(c => new URL(c.url).searchParams.get('storeID') === '7'));
+            await page.locator('#predictiveSearchInput').fill('Portal');
+            await page.locator('#predictiveSearchInput').press('Enter');
+            await expect(cards).toHaveCount(1);
+            assert(calls.some(c => { const u = new URL(c.url); return u.pathname === '/api/deals' && u.searchParams.get('title') === 'Portal' && u.searchParams.get('storeID') === '7'; }));
+            await expect(page.locator('#pcExternalLinks a').first()).toHaveAttribute('href', /Portal/);
+            await reset();
         });
         await test('Juegos gratis y cambio de plataforma funcionan sin romper la navegación', async () => {
             await page.locator('[data-chip="free"]').click();

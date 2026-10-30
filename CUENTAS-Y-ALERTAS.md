@@ -1,5 +1,7 @@
 # Activar las cuentas de SteamPulse
 
+La guía detallada y actualizada para configurar Firebase y el servicio existente de Render está en [CONFIGURAR-FIREBASE-RENDER.md](CONFIGURAR-FIREBASE-RENDER.md).
+
 La web incluye el diseño y la integración con Firebase Authentication y Firestore. Para activarla debes crear tu propio proyecto. Sin configuración se informa que el acceso estará disponible pronto; no se simula un registro correcto. Las contraseñas se envían a Firebase Authentication y nunca se guardan en localStorage ni en Firestore.
 
 ## Configuración del propietario
@@ -27,7 +29,7 @@ El servidor publica sólo esa configuración web mediante `/api/auth-config`. Es
 
 Cada usuario tiene su wishlist en `users/{uid}/data/wishlist`, dentro de `items`, con fecha `updatedAt`. Se conserva una caché local separada por UID. Al salir se recuperan los favoritos del invitado. Los favoritos del invitado no se importan automáticamente para evitar mezclar cuentas.
 
-Los objetivos actuales `targetPriceUsd` siguen siendo referencias en USD de CheapShark. No deben usarse para mandar correos comparando directamente con pesos mexicanos. Las cotizaciones regionales del catálogo no convierten automáticamente los objetivos ya guardados.
+Las metas de PC `targetPriceUsd` son referencias en USD de CheapShark. Las metas de consola conservan tienda, región y moneda nativa. No se deben comparar objetivos USD directamente con pesos mexicanos ni convertir silenciosamente metas antiguas.
 
 ## Alertas con la página cerrada: siguiente componente del servidor
 
@@ -46,4 +48,4 @@ Documentación oficial:
 
 ## Plataformas y región
 
-El catálogo se limita a PC hasta disponer de integraciones verificadas para consolas. La región seleccionada cambia las consultas de Steam y su caché. CheapShark sigue siendo una referencia en USD; los buscadores de keys requieren comprobar edición y región en destino. No se promete cotización regional para fuentes que no la proporcionan.
+El catálogo incluye PC, Xbox, PlayStation y Nintendo con los adaptadores disponibles. La región seleccionada afecta las consultas regionales y su caché. CheapShark sigue siendo una referencia en USD; cada comparación debe conservar edición, plataforma, tienda y moneda.

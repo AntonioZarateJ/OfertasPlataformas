@@ -154,20 +154,21 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
             let name;try{name=decodeURIComponent(url.pathname);}catch{reply(res,400,{error:'Ruta inválida'});return;}
             const relative = name === '/' || name === '/index.html' ? 'index.html' : name.slice(1);
             // Publicar sólo la interfaz; nunca exponer el servidor ni node_modules.
-            if (relative !== 'index.html' && !/^assets\/(css|js)\/[a-zA-Z0-9_./-]+\.(css|js)$/.test(relative)) {
+            const isAvatar = name => /^assets\/avatars\/(orbit|nova|pixel|comet|quest|arcade)\.svg$/.test(name);
+            if (relative !== 'index.html' && !/^assets\/(css|js)\/[a-zA-Z0-9_./-]+\.(css|js)$/.test(relative) && !isAvatar(relative)) {
                 reply(res, 404, { error: 'Recurso no encontrado' }); return;
             }
             const file = path.resolve(root, relative);
             if (!file.startsWith(root + path.sep)) { reply(res, 403, { error: 'Ruta no permitida' }); return; }
             const resolved=await fs.realpath(file);
             const actual=path.relative(root,resolved).replace(/\\/g,'/');
-            if(actual!=='index.html'&&!/^assets\/(css|js)\/[a-zA-Z0-9_./-]+\.(css|js)$/.test(actual)){reply(res,403,{error:'Ruta no permitida'});return;}
+            if(actual!=='index.html'&&!/^assets\/(css|js)\/[a-zA-Z0-9_./-]+\.(css|js)$/.test(actual)&&!isAvatar(actual)){reply(res,403,{error:'Ruta no permitida'});return;}
             const stat = await fs.stat(resolved);
             const etag = `"${stat.size}-${stat.mtimeMs}"`;
             res.setHeader('ETag', etag);
             res.setHeader('Cache-Control', 'no-cache');
             if (req.headers['if-none-match'] === etag) { res.writeHead(304); res.end(); return; }
-            const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
+            const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml' };
             res.setHeader('Content-Type', mime[path.extname(file)]);
             res.end(req.method === 'HEAD' ? undefined : await fs.readFile(resolved));
         } catch (error) {

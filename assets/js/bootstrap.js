@@ -38,6 +38,7 @@
                             icon: st.images?.icon ? `https://www.cheapshark.com${st.images.icon}` : ''
                         };
                     });
+                    renderPCStoreControls();
                 }
             } catch (e) {
                 console.warn("Error cargando catálogo de tiendas:", e);

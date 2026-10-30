@@ -50,6 +50,20 @@ test('Sólo se sirven archivos públicos y rutas API conocidas', async () => {
     });
 });
 
+test('Avatares locales se sirven como SVG sin ampliar el acceso a archivos privados', async () => {
+    await withServer(async () => { throw new Error('No debe consultar'); }, async base => {
+        for (const name of ['orbit', 'nova', 'pixel', 'comet', 'quest', 'arcade']) {
+            const response = await fetch(`${base}/assets/avatars/${name}.svg`);
+            assert.equal(response.status, 200);
+            assert.equal(response.headers.get('content-type'), 'image/svg+xml');
+            assert.match(await response.text(), /<svg/);
+        }
+        for (const name of ['/assets/avatars/unknown.svg', '/scripts/probar-resend.ps1', '/firestore.rules']) {
+            assert.equal((await fetch(base + name)).status, 404);
+        }
+    });
+});
+
 test('HTML, CSS y JS se entregan con MIME correcto y revalidación ETag', async () => {
     await withServer(async () => {}, async base => {
         const response = await fetch(base);

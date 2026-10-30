@@ -204,6 +204,11 @@
               <div class="filter-panel-footer"><p>PC: el porcentaje filtra la referencia de CheapShark en USD. El descuento regional de Steam puede variar.</p><button type="button" data-ui-click="apply-custom-drawer-filters">Aplicar filtros <i class="fa-solid fa-arrow-right"></i></button></div>
             </div>
 
+            <div id="pcStoreBar" class="pc-store-bar">
+              <label for="pcStoreSelect"><i class="fa-solid fa-store"></i> Tienda <select id="pcStoreSelect" class="pc-store-select" data-ui-change="select-pc-store"><option value="all">Todas las tiendas oficiales</option><option value="1">Steam</option><option value="25">Epic Games Store</option><option value="7">GOG</option></select></label>
+              <div id="pcExternalLinks" class="pc-external-links" aria-label="Búsquedas en mercados externos"></div>
+              <small>El selector filtra las tiendas con catálogo disponible. Los mercados externos se abren aparte; confirma allí el precio y la región.</small>
+            </div>
             <!-- SUB-BARRA ESPECIAL PARA JUEGOS 100% GRATIS -->
             <div id="freeGamesSubBar" class="hidden-el mt-3 pt-3 border-t border-emerald-500/20 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex flex-wrap items-center gap-1.5">
@@ -473,8 +478,8 @@
                         <i class="fa-solid fa-heart"></i>
                     </div>
                     <div>
-                        <h3 class="text-base font-black text-white font-display">Mi Wishlist & Alertas Cloud</h3>
-                        <p class="text-[11px] text-gray-400" id="wishlistSyncStatusText">Sincronizado en almacenamiento híbrido</p>
+                        <h3 class="text-base font-black text-white font-display">Tu próxima aventura</h3>
+                        <p class="text-[11px] text-gray-400" id="wishlistSyncStatusText">Tus favoritos, en un solo lugar</p>
                     </div>
                 </div>
                 <button type="button" data-ui-click="close-wishlist-drawer" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-500 text-gray-300 hover:text-white flex items-center justify-center transition">
@@ -488,7 +493,7 @@
                 <div class="flex items-center gap-2">
                     <button type="button" data-ui-click="export-wishlist-json" class="text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1" title="Exportar respaldo JSON">
                         <i class="fa-solid fa-download"></i>
-                        <span>Exportar JSON</span>
+                        <span>Descargar copia</span>
                     </button>
                     <span class="text-gray-600">|</span>
                     <button type="button" data-ui-click="clear-entire-wishlist" class="text-rose-400 hover:text-rose-300 font-semibold">
@@ -497,6 +502,11 @@
                 </div>
             </div>
 
+            <div class="wish-discovery">
+              <div class="wish-stats"><span><strong id="wishGoalsCount">0</strong> con meta</span><span><strong id="wishReachedCount">0</strong> metas alcanzadas*</span></div>
+              <label class="wish-search"><i class="fa-solid fa-magnifying-glass"></i><input id="wishSearch" type="search" placeholder="Buscar en tus favoritos" aria-label="Buscar en favoritos" data-ui-input="filter-wishlist"></label>
+              <div class="wish-selects"><select id="wishPlatform" aria-label="Plataforma de favoritos" data-ui-change="filter-wishlist"><option value="all">Todas las plataformas</option><option value="pc">PC</option><option value="xbox">Xbox</option><option value="ps">PlayStation</option><option value="switch">Nintendo Switch</option></select><select id="wishOrder" aria-label="Orden de favoritos" data-ui-change="filter-wishlist"><option value="recent">Más recientes</option><option value="title">Nombre A–Z</option><option value="goals">Con meta de precio</option><option value="reached">Meta alcanzada</option></select></div>
+            </div>
             <!-- Lista de juegos en Wishlist -->
             <div id="wishlistItemsContainer" class="p-4 overflow-y-auto flex-1 space-y-3"></div>
 
@@ -504,8 +514,9 @@
                 <button type="button" data-ui-click="open-cloud-config-modal"
                     class="w-full bg-steam-base hover:bg-steam-light text-sky-300 font-bold py-2.5 px-4 rounded-xl text-xs border border-sky-500/30 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-cloud"></i>
-                    <span>Configurar Sincronización Firebase / Cloud</span>
+                    <span id="wishAccountAction">Mi cuenta y favoritos</span>
                 </button>
+                <p class="wish-footnote">*Según el último precio consultado. Los avisos por correo están en preparación.</p>
             </div>
         </div>
     </div>
@@ -527,7 +538,16 @@
           <p id="authMessage" role="status" aria-live="polite"></p>
           <button id="authSubmit" class="auth-submit" type="submit">Entrar a mi cuenta <span>→</span></button>
         </form>
-        <div id="accountPanel" class="hidden-el"><p id="accountEmail"></p><p id="accountVerification"></p><button type="button" class="auth-submit" data-ui-click="send-account-verification">Verificar correo</button><button type="button" class="auth-forgot" data-ui-click="logout-account">Cerrar sesión</button></div>
+        <div id="accountPanel" class="hidden-el">
+          <div class="profile-identity"><img id="profileAvatar" src="assets/avatars/orbit.svg" alt="Tu avatar" width="72" height="72"><div><p id="accountEmail"></p><p id="accountVerification" class="profile-badge"></p></div></div>
+          <p id="profileMessage" role="status" aria-live="polite"></p>
+          <div class="profile-stats"><span><strong id="profileSavedCount">0</strong> favoritos</span><span><strong id="profileGoalsCount">0</strong> metas de precio</span></div>
+          <button type="button" id="verifyAccountButton" class="auth-submit" data-ui-click="send-account-verification">Verificar correo</button>
+          <button type="button" id="refreshVerificationButton" class="auth-forgot" data-ui-click="refresh-account">Ya verifiqué mi correo · Actualizar</button>
+          <form id="profileForm" data-ui-submit="save-account-profile"><label for="profileName">Nombre público<input id="profileName" autocomplete="nickname" maxlength="60" required placeholder="Tu nombre de jugador"></label><fieldset class="profile-avatar-picker"><legend>Elige tu avatar</legend><div id="profileAvatarOptions"></div></fieldset><button type="submit" id="profileSaveButton" class="auth-submit">Guardar perfil <i class="fa-solid fa-check"></i></button></form>
+          <div class="profile-security"><div><strong><i class="fa-solid fa-shield-halved"></i> Seguridad de tu cuenta</strong><p>Te enviaremos un enlace para elegir una nueva contraseña.</p></div><button type="button" id="accountPasswordButton" data-ui-click="reset-account-password">Cambiar contraseña <i class="fa-solid fa-arrow-up-right-from-square"></i></button></div>
+          <div class="profile-footer"><button type="button" data-ui-click="profile-open-wishlist"><i class="fa-regular fa-heart"></i> Ver mis favoritos</button><button type="button" class="profile-logout" data-ui-click="logout-account">Cerrar sesión</button></div>
+        </div>
         <p class="auth-footnote">Tus favoritos locales siguen disponibles mientras navegas como invitado.</p>
       </section>
     </div>
@@ -552,6 +572,7 @@
     <script src="assets/js/utils.js"></script>
     <script src="assets/js/regional-prices.js"></script>
     <script src="assets/js/accounts.js"></script>
+    <script src="assets/js/pc-store-filter.js"></script>
     <script src="assets/js/bootstrap.js"></script>
     <script src="assets/js/wishlist-storage.js"></script>
     <script src="assets/js/currency.js"></script>

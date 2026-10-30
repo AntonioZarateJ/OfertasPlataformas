@@ -1,5 +1,11 @@
 // Static actions: no inline event handlers, eval or dynamically compiled code.
 const uiActions = Object.freeze({
+    'select-pc-store': function() { selectPCStore() },
+    'filter-wishlist': function() { renderWishlistDrawerItems() },
+    'save-account-profile': function(event) { saveAccountProfile(event) },
+    'refresh-account': function() { refreshAccountVerification() },
+    'reset-account-password': function() { resetAccountPassword() },
+    'profile-open-wishlist': function() { closeCloudConfigModal(); openWishlistDrawer() },
     'open-wishlist-drawer': function(event) { openWishlistDrawer() },
     'select-smart-chip-top-link': function(event) { selectSmartChip('top'); return false; },
     'select-ecosystem-pc': function(event) { selectEcosystem('pc') },

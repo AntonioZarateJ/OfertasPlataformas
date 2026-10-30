@@ -3,6 +3,7 @@
             if (!ECOSYSTEM_META[ecoKey]) return;
             document.getElementById('platformPriceNotice').classList.toggle('hidden-el', ecoKey === 'pc');
             activeEcosystem = ecoKey;
+            document.getElementById('pcStoreBar').classList.toggle('hidden-el', ecoKey !== 'pc');
             document.documentElement.dataset.platform = ecoKey;
             modalKeyPlatform = ecoKey;
 
@@ -42,6 +43,7 @@
             cancelSuggestions();
             document.getElementById('catalogError').classList.add('hidden-el');
             activeChip = chipKey;
+            renderPCStoreControls();
             if (['free','wishlist'].includes(chipKey)) currentSearchQuery = '';
             if (['top','all'].includes(chipKey)) queryConfig.onSale=chipKey==='top'?'1':'0';
             updateScopeNote();
