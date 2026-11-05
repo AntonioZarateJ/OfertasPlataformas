@@ -3,7 +3,7 @@ function editionGrid(editions){
 }
 let comparisonController;
 let comparisonSelection;
-function closeConsoleComparison(){comparisonController?.abort();document.getElementById('consoleComparison').close();}
+function closeConsoleComparison(){comparisonController?.abort();document.getElementById('consoleComparison').close();document.documentElement.classList.remove('console-modal-open');}
 async function openConsoleComparison(item,platform=activeEcosystem,region=currentRegion){
  comparisonController?.abort();
  comparisonSelection=item;
@@ -17,7 +17,9 @@ async function openConsoleComparison(item,platform=activeEcosystem,region=curren
  document.querySelector('.edition-jump')?.remove();
  {const poster=document.createElement('img');poster.className='comparison-poster';poster.alt='';setGameArtwork(poster,item);document.querySelector('.comparison-heading').prepend(poster);}
  if(!modal.open)modal.showModal();
+ document.documentElement.classList.add('console-modal-open');
  content.innerHTML='<p class="comparison-state" role="status">Consultando opciones para esta edición y región…</p>';
+ modal.scrollTop=0;
  try{
   const params=new URLSearchParams({platform,region,title:item.title,id:item.id,store:item.store});
   const data=await requestJSON('/api/console-comparison?'+params,{signal:controller.signal,timeout:18000});
@@ -61,3 +63,20 @@ async function openConsoleComparison(item,platform=activeEcosystem,region=curren
  }catch(error){if(!controller.signal.aborted){content.innerHTML='<p class="comparison-state">No se pudo completar la comparación.</p><button class="console-compare" type="button" id="retryComparison">Reintentar</button>';document.getElementById('retryComparison').onclick=()=>openConsoleComparison(item,platform,region);}}
 }
 document.getElementById('consoleComparison').addEventListener('cancel',()=>comparisonController?.abort());
+{
+ const modal=document.getElementById('consoleComparison');
+ let pressedOutside=false;
+ const outside=event=>{
+  const box=modal.getBoundingClientRect();
+  return event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom;
+ };
+ modal.addEventListener('pointerdown',event=>{pressedOutside=event.target===modal&&outside(event);});
+ modal.addEventListener('click',event=>{
+  if(pressedOutside&&event.target===modal&&outside(event))closeConsoleComparison();
+  pressedOutside=false;
+ });
+ modal.addEventListener('close',()=>{
+  comparisonController?.abort();pressedOutside=false;
+  document.documentElement.classList.remove('console-modal-open');
+ });
+}

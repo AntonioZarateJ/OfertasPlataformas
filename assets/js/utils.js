@@ -130,6 +130,7 @@ function catalogNotice(message='') {
 let catalogGeneration = 0;
 let catalogController = null;
 function cancelCatalogRequest() {
+    clearCatalogBatch();
     catalogGeneration++;
     catalogController?.abort();
     catalogController = null;

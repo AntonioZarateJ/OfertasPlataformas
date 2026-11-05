@@ -288,6 +288,10 @@
         </section>
         <!-- Grid de Tarjetas -->
         <div id="gamesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+        <section id="catalogBatchBar" class="catalog-batch-bar" hidden aria-label="Juegos recién añadidos">
+            <p id="catalogBatchText" role="status" aria-live="polite"></p>
+            <div><button type="button" id="catalogBatchShowNew" data-ui-click="show-catalog-batch">Ver recién añadidos</button><button type="button" id="catalogBatchShowAll" data-ui-click="show-entire-catalog" hidden>Volver a todos</button><button type="button" class="catalog-batch-dismiss" data-ui-click="dismiss-catalog-batch" aria-label="Cerrar aviso de juegos añadidos">×</button></div>
+        </section>
 
         <!-- Paginación / Cargar Más -->
         <div id="loadMoreContainer" class="hidden-el mt-8 flex flex-col items-center gap-2">
@@ -572,6 +576,7 @@
     <!-- LÓGICA JAVASCRIPT -->
     <script src="assets/js/core.js"></script>
     <script src="assets/js/catalog-loading.js"></script>
+    <script src="assets/js/catalog-batches.js"></script>
     <script src="assets/js/utils.js"></script>
     <script src="assets/js/regional-prices.js"></script>
     <script src="assets/js/accounts.js"></script>

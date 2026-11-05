@@ -106,6 +106,7 @@ function renderSortedPCCatalog(){
         if(card){if(card!==cursor)gamesGrid.insertBefore(card,cursor);cursor=card.nextElementSibling;}
         else renderStandardGameCards([game]);
     });
+    syncCatalogBatchView();
 }
 
         function renderStandardGameCards(games) {
@@ -263,12 +264,14 @@ function renderSortedPCCatalog(){
             if (isLoadingMore || ['free', 'wishlist'].includes(activeChip)) return;
             isLoadingMore = true;
             const generation = catalogGeneration;
+            const previousKeys = catalogCardKeys();
             loadMoreBtn.disabled = true;
             try { await executeCatalogFetch(false); }
             finally {
                 if (generation === catalogGeneration) {
                     isLoadingMore = false;
                     resetLoadMoreButton();
+                    announceCatalogBatch(previousKeys);
                 }
             }
         });

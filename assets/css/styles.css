@@ -276,3 +276,14 @@ main>div:first-child{border-color:rgba(var(--platform-rgb),.3);background:linear
 @media(max-width:359px){.nav-brand .radar-wordmark{font-size:17px}.nav-brand>a>.radar-brand-mark{width:29px;height:29px}.radar-brand-link{gap:6px!important}}
 @media(prefers-reduced-motion:reduce){.radar-beam{animation:none}.radar-brand-mark{transition:none}}
 .console-art-backdrop[data-image-state="placeholder"]{visibility:hidden}
+
+/* Comparadores: desplazamiento nativo sin desenfoque de pantalla completa. */
+html.console-modal-open{overflow:hidden;scrollbar-gutter:stable}
+.comparison-dialog{overflow-y:auto;overscroll-behavior:contain;scroll-behavior:auto;scrollbar-gutter:stable;box-shadow:0 18px 55px #0008}
+.comparison-dialog::backdrop{background:#030712e6;backdrop-filter:none}
+#analyticsModal{backdrop-filter:none}
+.comparison-row{transition:border-color .15s ease}.comparison-row:hover{transform:none}
+.catalog-batch-bar{position:fixed;z-index:45;bottom:18px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 28px);display:flex;align-items:center;gap:18px;padding:13px 16px;background:#102235;border:1px solid #387c9e;border-radius:15px;box-shadow:0 10px 35px #0007;color:#dbeafe}
+.catalog-batch-bar[hidden],.catalog-batch-bar button[hidden]{display:none}.catalog-batch-bar p{font-size:12px;line-height:1.6;max-width:350px}.catalog-batch-bar>div{display:flex;align-items:center;gap:10px;flex-shrink:0}.catalog-batch-bar button{padding:9px 12px;border-radius:9px;color:#082f49;background:#67d9f2;font-size:11px;font-weight:800;white-space:nowrap}.catalog-batch-bar .catalog-batch-dismiss{padding:4px 7px;background:transparent;color:#b6cadd;font-size:22px;line-height:1}
+.catalog-batch-hidden{display:none!important}.catalog-new-card{outline:1px solid rgba(var(--platform-rgb),.65);outline-offset:2px}#gamesGrid>article,#gamesGrid>.steam-card{scroll-margin-top:170px}
+@media(max-width:767px){.catalog-batch-bar{width:calc(100% - 24px);bottom:12px;gap:9px;flex-wrap:wrap;padding:12px 14px}.catalog-batch-bar p{font-size:11px;flex:1 1 100%;padding-right:20px}.catalog-batch-bar .catalog-batch-dismiss{position:absolute;top:10px;right:8px}.catalog-batch-bar>div{width:100%}#gamesGrid>article,#gamesGrid>.steam-card{scroll-margin-top:18px}}

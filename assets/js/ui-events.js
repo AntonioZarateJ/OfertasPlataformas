@@ -1,5 +1,8 @@
 // Static actions: no inline event handlers, eval or dynamically compiled code.
 const uiActions = Object.freeze({
+    'show-catalog-batch': function() { showCatalogBatch(true) },
+    'show-entire-catalog': function() { showCatalogBatch(false) },
+    'dismiss-catalog-batch': function() { dismissCatalogBatch() },
     'select-pc-store': function() { selectPCStore() },
     'filter-wishlist': function() { renderWishlistDrawerItems() },
     'save-account-profile': function(event) { saveAccountProfile(event) },

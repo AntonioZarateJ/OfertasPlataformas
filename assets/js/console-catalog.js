@@ -149,4 +149,5 @@ function renderConsoleCatalog() {
     emptyState.classList.toggle('hidden-el', filtered.length > 0 || !!consoleNext || unavailable);
     if(!filtered.length&&unavailable)showCatalogError('Una tienda no pudo responder. La consulta está incompleta; reintenta para comprobar sus ofertas.');
     if (!filtered.length) document.getElementById('consoleScope').textContent += ' No hay coincidencias con estos filtros en las páginas cargadas. Prueba Catálogo completo, cambia el porcentaje o carga más resultados.';
+    syncCatalogBatchView();
 }
