@@ -60,6 +60,36 @@ test('Un fallo de carga conserva el modo observación sin registrar credenciales
     assert(!warnings[0].includes(key));
 });
 
+test('Depuración requiere permiso explícito en loopback y se fija antes de cargar el SDK', async () => {
+    for (const hostname of ['localhost', '127.0.0.1', '[::1]', '::1']) {
+        const {sandbox} = context();
+        sandbox.localStorage = {getItem: () => '1'};
+        let calls = 0;
+        const initialized = {};
+        const result = await sandbox.configureAccountAppCheck({}, key, '', async () => {
+            calls++;
+            assert.equal(sandbox.window.FIREBASE_APPCHECK_DEBUG_TOKEN, true);
+            return {ReCaptchaEnterpriseProvider: class {}, initializeAppCheck: () => initialized};
+        }, hostname);
+        assert.equal(result, initialized);
+        assert.equal(calls, 1);
+    }
+});
+
+test('La opción local no activa debug en Render, dominios parecidos ni redes LAN', async () => {
+    for (const hostname of ['salesplataforms.onrender.com', 'localhost.evil.example', '192.168.1.2']) {
+        const {sandbox} = context();
+        sandbox.localStorage = {getItem() {throw Error('No debe consultar la opción local');}};
+        let calls = 0;
+        await sandbox.configureAccountAppCheck({}, key, '', async () => {
+            calls++;
+            assert.equal(sandbox.window.FIREBASE_APPCHECK_DEBUG_TOKEN, undefined);
+            return {ReCaptchaEnterpriseProvider: class {}, initializeAppCheck: () => ({})};
+        }, hostname);
+        assert.equal(calls, 1);
+    }
+});
+
 test('La configuración solo publica la clave de sitio válida y CSP admite reCAPTCHA sin scripts inline', () => {
     assert.equal(publicFirebaseConfig({FIREBASE_APPCHECK_SITE_KEY: key, FIREBASE_APPCHECK_DEBUG_TOKEN: 'secret'}).appCheckSiteKey, key);
     assert(!JSON.stringify(publicFirebaseConfig({FIREBASE_APPCHECK_DEBUG_TOKEN: 'secret'})).includes('secret'));

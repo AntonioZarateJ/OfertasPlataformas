@@ -108,8 +108,14 @@ function renderAccount() {
     refreshCloudProfileHeader();
 }
 async function configureAccountAppCheck(firebase, siteKey, base, loadModule = url => import(url), hostname = location.hostname) {
-    // Production keys must not be used on localhost. Local debug tokens are never published by the server.
-    if (!/^6L[A-Za-z0-9_-]{38}$/.test(siteKey || '') || ['localhost', '127.0.0.1', '[::1]', '::1'].includes(hostname)) return null;
+    if (!/^6L[A-Za-z0-9_-]{38}$/.test(siteKey || '')) return null;
+    const local = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(hostname);
+    if (local) {
+        // Explicit opt-in in this local browser only. Firebase generates and stores the private token.
+        try { if (localStorage.getItem('radarplay_appcheck_debug') !== '1') return null; }
+        catch { return null; }
+        window.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    }
     try {
         const sdk = await loadModule(base + 'firebase-app-check.js');
         return sdk.initializeAppCheck(firebase, {
