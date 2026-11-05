@@ -6,6 +6,7 @@ function renderLegalPage(pathname, config = configuration) {
     if (!Object.hasOwn(routes, pathname)) return null;
     const email = /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/.test(config.email) ? config.email : '';
     const missing = [[config.responsible, 'nombre del responsable'], [email, 'correo de contacto'], [config.country, 'país'], [config.address, 'domicilio para asuntos de privacidad']].filter(([value]) => !value).map(([, label]) => label);
+    if (config.address && config.addressReviewed !== true) missing.push('revisión del domicilio para asuntos de privacidad');
     const ready = missing.length === 0;
     const mail = (subject, label) => email ? `<a class="action" href="mailto:${escape(email)}?subject=${encodeURIComponent(subject)}">${escape(label)}</a>` : '<p class="pending">El correo de atención está pendiente de definir.</p>';
     const identity = `<dl><dt>Responsable</dt><dd>${escape(config.responsible || 'Pendiente de completar')}</dd><dt>País</dt><dd>${escape(config.country || 'Pendiente de completar')}</dd><dt>Domicilio para asuntos de privacidad</dt><dd>${escape(config.address || 'Pendiente de completar')}</dd><dt>Correo de contacto</dt><dd>${email ? `<a href="mailto:${escape(email)}">${escape(email)}</a>` : 'Pendiente de completar'}</dd></dl>`;

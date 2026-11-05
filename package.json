@@ -9,6 +9,7 @@
     "test:server": "node --test tests/server.cjs",
     "test:browser": "node tests/browser.cjs",
     "test:security": "node --test tests/security.cjs",
+    "test:load": "node scripts/prueba-carga.cjs",
     "check": "node scripts/check.cjs"
   },
   "devDependencies": {

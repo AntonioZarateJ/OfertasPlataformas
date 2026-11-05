@@ -8,12 +8,13 @@ test('Los datos pendientes se muestran como borrador y el contacto válido gener
     const draft = renderLegalPage('/privacidad', {});
     assert.match(draft, /Borrador pendiente/);
     assert.match(draft, /noindex/);
-    const config = {responsible: 'Responsable <ejemplo>', email: 'contacto@example.com', country: 'México', address: 'Domicilio público', updated: '2026-11-05'};
+    const config = {responsible: 'Responsable <ejemplo>', email: 'contacto@example.com', country: 'México', address: 'Domicilio público', addressReviewed: true, updated: '2026-11-05'};
     const html = renderLegalPage('/contacto', config);
     assert(!html.includes('noindex'));
     assert(!html.includes('Responsable <ejemplo>'));
     assert(html.includes('Responsable &lt;ejemplo&gt;'));
     assert(html.includes('mailto:contacto@example.com?subject='));
+    assert.match(renderLegalPage('/privacidad', {...config, addressReviewed: false}), /Borrador pendiente/);
     const invalid = renderLegalPage('/contacto', {...config, email: 'a@example.com?bcc=bad@example.com'});
     assert(!invalid.includes('mailto:'));
     assert.equal(renderLegalPage('/unknown'), null);
