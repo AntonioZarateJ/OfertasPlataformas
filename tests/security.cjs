@@ -33,6 +33,32 @@ test('Valida parámetros, cabeceras y rutas privadas antes de consultar al prove
     } finally {await new Promise(resolve => server.close(resolve));}
 });
 
+test('HSTS solo se envía tras reconocer HTTPS mediante un proxy autorizado', async () => {
+    for (const trustProxy of ['0', '1']) {
+        const previous = process.env.TRUST_PROXY;
+        let server;
+        try {
+            process.env.TRUST_PROXY = trustProxy;
+            server = createServer();
+        } finally {
+            if (previous === undefined) delete process.env.TRUST_PROXY;
+            else process.env.TRUST_PROXY = previous;
+        }
+        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+        try {
+            const base = 'http://127.0.0.1:' + server.address().port;
+            for (const route of ['/', '/api/auth-config', '/missing']) {
+                const plain = await fetch(base + route);
+                assert.equal(plain.headers.get('strict-transport-security'), null);
+                const forwarded = await fetch(base + route, {headers: {'X-Forwarded-Proto': 'https'}});
+                assert.equal(forwarded.headers.get('strict-transport-security'), trustProxy === '1' ? 'max-age=31536000' : null);
+                const http = await fetch(base + route, {headers: {'X-Forwarded-Proto': 'http'}});
+                assert.equal(http.headers.get('strict-transport-security'), null);
+            }
+        } finally {await new Promise(resolve => server.close(resolve));}
+    }
+});
+
 test('La limitación no confía en IP falsificada y mantiene el límite concurrente', () => {
     let time = 0;
     const guard = createApiGuard({capacity: 3, refillPerSecond: 1, maxConcurrent: 1, now: () => time});
