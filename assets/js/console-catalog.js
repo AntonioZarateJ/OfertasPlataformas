@@ -2,6 +2,12 @@ let consoleResult = null;
 let consoleVisible = 60;
 let consoleNext = {};
 let consoleLoading = false;
+// El orden remoto pertenece a la consulta y su cursor. El orden visual puede
+// cambiar sin reiniciar ni mezclar páginas obtenidas con distintos órdenes.
+let consoleFetchSort = 'relevance';
+function changeConsoleOrder() {
+    if (consoleResult) renderConsoleCatalog();
+}
 function filteredConsoleItems() {
     if (!consoleResult) return [];
     const onlyDeals = queryConfig.onSale === '1';
@@ -38,7 +44,8 @@ async function loadConsoleCatalog(reset = true) {
     const source = document.getElementById('consoleSource').value;
     const onlyDeals = queryConfig.onSale === '1';
     if (!onlyDeals && document.getElementById('consoleOrder').value.startsWith('discount')) document.getElementById('consoleOrder').value = 'relevance';
-    const sort = document.getElementById('consoleOrder').value;
+    if (reset) consoleFetchSort = document.getElementById('consoleOrder').value;
+    const sort = consoleFetchSort;
     document.querySelector('#consoleOrder option[value="discountAsc"]').disabled = !onlyDeals;
     document.querySelector('#consoleOrder option[value="discountDesc"]').disabled = !onlyDeals;
     document.getElementById('consoleTools').classList.remove('hidden-el');
@@ -108,7 +115,7 @@ function renderConsoleCatalog() {
     visible.forEach(item => {
         item.checkedAt=checkedAt;
         const key = [activeEcosystem,currentRegion,item.store,item.id].join(':');
-        const signature = JSON.stringify([item.title,item.price,item.regular,item.discount,item.currency,item.edition,item.image,item.url,item.seller,item.rating,item.ratingCount,item.kind]);
+        const signature = JSON.stringify([item.title,item.price,item.regular,item.discount,item.currency,item.edition,item.image,item.imageAlternatives,item.url,item.seller,item.rating,item.ratingCount,item.kind]);
         const existing = existingCards.get(key);
         if(existing?.dataset.quoteSignature === signature){orderedCards.push(existing);return;}
         const format = value => new Intl.NumberFormat('es-MX', { style:'currency', currency:item.currency }).format(value);
@@ -129,7 +136,8 @@ function renderConsoleCatalog() {
         card.querySelector('.console-card-actions').prepend(compare);
         card.querySelector('.console-art').addEventListener('click',()=>openConsoleComparison(item));
         card.querySelector('h3').addEventListener('click',()=>openConsoleComparison(item));
-        prepareImages(card); orderedCards.push(card);
+        card.querySelectorAll('img').forEach(img => setGameArtwork(img,item));
+        orderedCards.push(card);
     });
     const wanted = new Set(orderedCards);
     for(const card of [...gamesGrid.children])if(!wanted.has(card))card.remove();

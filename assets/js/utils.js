@@ -83,7 +83,10 @@ new MutationObserver(records=>{
         images.forEach(img=>{imageObserver?.unobserve(img);imageJobs.get(img)?.cancel();imageJobs.delete(img);});
     }
 }).observe(document.body,{childList:true,subtree:true});
-function setGameArtwork(img,game) {setImageFallbacks(img,[safeURL(game.artwork),...imageCandidates(game.steamAppID,game.thumb||game.image)]);}
+function setGameArtwork(img,game) {
+    const alternatives=Array.isArray(game.imageAlternatives)?game.imageAlternatives.slice(0,8):[];
+    setImageFallbacks(img,[safeURL(game.artwork),...imageCandidates(game.steamAppID,game.thumb||game.image),...alternatives]);
+}
 function prepareImages(container) {
     container.querySelectorAll('img').forEach(img=>{
         if(img.dataset.imageReady)return;

@@ -82,7 +82,7 @@ test('Carga 60 en 60, busca sin oferta y ordena sin duplicar resultados', async 
  assert.equal(new Set(await p.locator('.console-card h3').allTextContents()).size,120);
  await expect(p.locator('#loadMoreContainer')).toBeHidden();
  await p.locator('#consoleOrder').selectOption('priceDesc');
- await expect(p.locator('.console-card')).toHaveCount(60);
+ await expect(p.locator('.console-card')).toHaveCount(120);
  await expect(p.locator('.console-price strong').first()).toContainText('60.00');
  await expect(p.locator('#consoleMaxPrice')).toHaveCount(0);
  await p.locator('#predictiveSearchInput').fill('Halo');

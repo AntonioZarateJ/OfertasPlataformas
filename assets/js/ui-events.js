@@ -28,6 +28,7 @@ const uiActions = Object.freeze({
     'retry-catalog': function(event) { activeChip === 'free' ? loadFreeGamesMode() : executeCatalogFetch(true) },
     'reset-console-filters': function(event) { resetConsoleFilters() },
     'load-console-catalog': function(event) { loadConsoleCatalog() },
+    'change-console-order': function() { changeConsoleOrder() },
     'apply-console-discount': function(event) { applyConsoleDiscount() },
     'toggle-modal-game-wishlist': function(event) { toggleModalGameWishlist() },
     'save-modal-price-alert': function(event) { saveModalPriceAlert() },

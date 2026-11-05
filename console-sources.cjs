@@ -23,7 +23,30 @@ function xboxData(state,region){
 }
 function nintendoData(data,region){const found=new Map();walk(data,p=>{if(!p.name||!p.urlKey||p.prices?.currency!==currencies[region])return;const platform=typeof p.platform==='string'?p.platform:p.platform?.label;if(!/Nintendo Switch/.test(platform||''))return;const q=p.prices;if(!Number.isFinite(q.finalPrice))return;found.set(p.nsuid||p.urlKey,{id:p.nsuid||p.urlKey,title:p.name,price:q.finalPrice,regular:q.regularPrice,currency:q.currency,discount:q.percentOff||0,image:p.productImageSquare?.url||(p.productImage?.publicId?'https://assets.nintendo.com/image/upload/q_auto/f_auto/'+p.productImage.publicId:''),url:`https://www.nintendo.com/${locales[region].toLowerCase()}/store/products/${p.urlKey}/`,edition:platform,store:'Nintendo eShop',kind:'official'});});if(!found.size)throw Error('No se encontraron precios regionales');return [...found.values()];}
 function money(text,region){const parts=new Intl.NumberFormat(locales[region]).formatToParts(1234.5);const group=parts.find(p=>p.type==='group')?.value,decimal=parts.find(p=>p.type==='decimal')?.value;let s=String(text||'');if(group)s=s.split(group).join('');if(decimal)s=s.replace(decimal,'.');s=s.replace(/[^0-9.]/g,'');return s?Number(s):NaN;}
-function playstationData(data,region){const products=data.data?.categoryStrandRetrieve?.products;if(!Array.isArray(products))throw Error('Catálogo no disponible');return products.flatMap(p=>{if(!p.price||p.price.isTiedToSubscription||p.price.isExclusive||p.storeDisplayClassification==='ADD_ON')return [];const price=p.price.isFree?0:money(p.price.discountedPrice,region),regular=money(p.price.basePrice,region);if(!Number.isFinite(price))return [];return [{id:p.id,title:p.name,price,regular,currency:currencies[region],discount:Number(String(p.price.discountText||'').replace(/[^0-9]/g,''))||0,image:p.media?.find(m=>m.type==='IMAGE')?.url,url:`https://store.playstation.com/${locales[region].toLowerCase()}/${p.isConcept?'concept':'product'}/${p.id}`,edition:p.platforms?.join(' / ')+' · '+p.localizedStoreDisplayClassification,store:'PlayStation Store',kind:'official'}];});}
+function playstationArtwork(product) {
+ const priorities={MASTER:0,PACKSHOT:1,GAMEHUB_COVER_ART:2,PORTRAIT_BANNER:3,HERO:5,BACKGROUND_ART:10,SCREENSHOT:20,LOGO:30,ICON:30};
+ const media=[...(Array.isArray(product.media)?product.media:[]),...(Array.isArray(product.images)?product.images:[])];
+ const validURL=value=>{
+  if(typeof value!=='string'||value.length>4096)return '';
+  try{const url=new URL(value);return ['https:','http:'].includes(url.protocol)&&!url.username&&!url.password&&!/\.(mp4|webm)(?:[?#]|$)/i.test(url.href)?url.href:'';}catch{return '';}
+ };
+ const images=media.filter(item=>item&&(!item.type||String(item.type).toUpperCase()==='IMAGE'))
+  .map(item=>({url:validURL(item.url||item.src),priority:priorities[String(item.role||'').toUpperCase()]??6}))
+  .filter(item=>item.url).sort((a,b)=>a.priority-b.priority).map(item=>item.url);
+ images.push(validURL(typeof product.image==='string'?product.image:product.image?.url),validURL(product.imageUrl),validURL(product.thumbnail?.url));
+ return [...new Set(images.filter(Boolean))].slice(0,8);
+}
+function playstationData(data,region){
+ const products=data.data?.categoryStrandRetrieve?.products;
+ if(!Array.isArray(products))throw Error('Catálogo no disponible');
+ return products.flatMap(p=>{
+  if(!p.price||p.price.isTiedToSubscription||p.price.isExclusive||p.storeDisplayClassification==='ADD_ON')return [];
+  const price=p.price.isFree?0:money(p.price.discountedPrice,region),regular=money(p.price.basePrice,region);
+  if(!Number.isFinite(price))return [];
+  const images=playstationArtwork(p);
+  return [{id:p.id,title:p.name,price,regular,currency:currencies[region],discount:Number(String(p.price.discountText||'').replace(/[^0-9]/g,''))||0,image:images[0]||'',imageAlternatives:images.slice(1),url:`https://store.playstation.com/${locales[region].toLowerCase()}/${p.isConcept?'concept':'product'}/${p.id}`,edition:p.platforms?.join(' / ')+' · '+p.localizedStoreDisplayClassification,store:'PlayStation Store',kind:'official'}];
+ });
+}
 function enebaData(data,platform,region){return Object.values(data).flatMap(p=>{
  if(p.__typename!=='Product'||p.type?.value!=='GAME')return [];
  if(platform==='xbox' && /\(PC\)|Windows/i.test(p.name||'') && !/Xbox One|Xbox Series/i.test(p.name||''))return [];

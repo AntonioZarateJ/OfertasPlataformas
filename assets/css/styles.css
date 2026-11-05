@@ -275,3 +275,4 @@ main>div:first-child{border-color:rgba(var(--platform-rgb),.3);background:linear
 @media(max-width:767px){.nav-brand .radar-wordmark{font-size:20px;letter-spacing:-.8px}.nav-brand>a>.radar-brand-mark{width:34px;height:34px;border-radius:11px}.radar-brand-link{gap:8px!important}.nav-brand .radar-tagline{display:none}}
 @media(max-width:359px){.nav-brand .radar-wordmark{font-size:17px}.nav-brand>a>.radar-brand-mark{width:29px;height:29px}.radar-brand-link{gap:6px!important}}
 @media(prefers-reduced-motion:reduce){.radar-beam{animation:none}.radar-brand-mark{transition:none}}
+.console-art-backdrop[data-image-state="placeholder"]{visibility:hidden}
