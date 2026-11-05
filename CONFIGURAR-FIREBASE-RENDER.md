@@ -158,9 +158,9 @@ La sincronización actual guarda un mapa completo por usuario y recupera el remo
 
 ## 9. App Check: no exigir tokens antes de integrarlo
 
-El código actual no inicializa App Check. No activar Enforcement / Aplicar en Firestore o Authentication antes de integrar y desplegar el SDK y ajustar la CSP para el proveedor elegido: se bloquearía a usuarios legítimos.
+El código inicializa App Check con reCAPTCHA Enterprise antes de usar Authentication y Firestore cuando `FIREBASE_APPCHECK_SITE_KEY` contiene una clave de sitio válida y se ejecuta fuera de localhost. La CSP incluye los recursos de reCAPTCHA. Configurar esa variable en Render y seguir [FASE-3-APP-CHECK.md](FASE-3-APP-CHECK.md). No activar Enforcement / Aplicar antes de desplegar, comprobar tokens válidos y preparar los entornos de desarrollo: se bloquearía a usuarios legítimos.
 
-La secuencia será registrar aplicación/proveedor, integrar el SDK y la configuración de desarrollo, desplegar, revisar métricas y después exigir tokens. Las reglas privadas permanecen activas desde el principio.
+La secuencia es registrar aplicación/proveedor, configurar y desplegar el SDK, revisar métricas y compatibilidad, preparar la depuración local y después exigir tokens. Las reglas privadas permanecen activas desde el principio. Esta integración no valida automáticamente las rutas de catálogo del servidor de Render.
 
 ## 10. Correos automáticos de ofertas: componente pendiente
 

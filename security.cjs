@@ -45,12 +45,12 @@ function securityHeaders(res, secure = false, authDomain = '') {
     const authOrigin=/^(?!.*\.\.)[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/.test(authDomain)?' https://'+authDomain:'';
     const policy = [
         "default-src 'self'", "base-uri 'none'", "object-src 'none'", "frame-ancestors 'none'", "form-action 'self'",
-        "script-src 'self' https://www.gstatic.com", "script-src-attr 'none'",
+        "script-src 'self' https://www.gstatic.com https://www.google.com/recaptcha/", "script-src-attr 'none'",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
         "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
         "img-src 'self' https: data:",
-        "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com" + authOrigin,
-        "frame-src https://*.firebaseapp.com https://*.web.app" + authOrigin
+        "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://www.google.com/recaptcha/" + authOrigin,
+        "frame-src https://*.firebaseapp.com https://*.web.app https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/" + authOrigin
     ];
     res.setHeader('Content-Security-Policy', policy.join('; '));
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -90,7 +90,8 @@ function publicFirebaseConfig(env = process.env) {
         apiKey: ['FIREBASE_API_KEY', /^AIza[A-Za-z0-9_-]{35}$/],
         authDomain: ['FIREBASE_AUTH_DOMAIN', /^(?!.*\.\.)[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/],
         projectId: ['FIREBASE_PROJECT_ID', /^[a-z][a-z0-9-]{4,62}$/],
-        appId: ['FIREBASE_APP_ID', /^1:\d+:web:[a-f0-9]+$/i]
+        appId: ['FIREBASE_APP_ID', /^1:\d+:web:[a-f0-9]+$/i],
+        appCheckSiteKey: ['FIREBASE_APPCHECK_SITE_KEY', /^6L[A-Za-z0-9_-]{38}$/]
     };
     return Object.fromEntries(Object.entries(fields).map(([key, [name, pattern]]) => {
         const value = String(env[name] || '');

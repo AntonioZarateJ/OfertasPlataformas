@@ -107,16 +107,33 @@ function renderAccount() {
     } else setAuthMode('login');
     refreshCloudProfileHeader();
 }
-async function initAccounts() {
+async function configureAccountAppCheck(firebase, siteKey, base, loadModule = url => import(url), hostname = location.hostname) {
+    // Production keys must not be used on localhost. Local debug tokens are never published by the server.
+    if (!/^6L[A-Za-z0-9_-]{38}$/.test(siteKey || '') || ['localhost', '127.0.0.1', '[::1]', '::1'].includes(hostname)) return null;
+    try {
+        const sdk = await loadModule(base + 'firebase-app-check.js');
+        return sdk.initializeAppCheck(firebase, {
+            provider: new sdk.ReCaptchaEnterpriseProvider(siteKey),
+            isTokenAutoRefreshEnabled: true
+        });
+    } catch {
+        // In monitoring mode Auth can still run. Enforced Firebase services reject invalid tokens themselves.
+        console.warn('No se pudo iniciar App Check. Revisa la configuración y las métricas de Firebase.');
+        return null;
+    }
+}
+async function initAccounts(loadModule = url => import(url)) {
     const config = await requestJSON('/api/auth-config', { ttl: 0 });
     if (!config.apiKey || !config.projectId || !config.authDomain) return null;
     const base = 'https://www.gstatic.com/firebasejs/12.4.0/';
-    const [app, auth, store] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]);
-    const firebase = app.initializeApp(config);
+    const [app, auth, store] = await Promise.all([loadModule(base + 'firebase-app.js'), loadModule(base + 'firebase-auth.js'), loadModule(base + 'firebase-firestore.js')]);
+    const { appCheckSiteKey, ...firebaseConfig } = config;
+    const firebase = app.initializeApp(firebaseConfig);
+    const appCheck = await configureAccountAppCheck(firebase, appCheckSiteKey, base, loadModule);
     const session = auth.getAuth(firebase);
     session.languageCode = 'es';
     const db = store.getFirestore(firebase);
-    accountSDK = { auth, store, session, db };
+    accountSDK = { auth, store, session, db, appCheck };
     auth.onAuthStateChanged(session, async user => {
         const epoch = ++accountEpoch;
         window.currentAccount = user;
