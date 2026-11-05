@@ -31,7 +31,8 @@ async function measure(base, {concurrency, rounds, route, pause = 80, timeout = 
             try {
                 const response = await fetch(new URL(route(user, round), base), {redirect: 'manual', signal: AbortSignal.timeout(timeout), headers: {'User-Agent': 'RadarPlay-Controlled-Load-Test/1.0'}});
                 status = String(response.status);
-                bytes += (await response.arrayBuffer()).byteLength;
+                const size = (await response.arrayBuffer()).byteLength;
+                bytes += size;
             } catch (error) {status = error.name === 'TimeoutError' ? 'timeout' : 'network';}
             const ms = performance.now() - tick;
             statuses[status] = (statuses[status] || 0) + 1;

@@ -32,3 +32,17 @@ test('El informe distingue timeouts y no presenta respuestas fallidas como laten
         assert.equal(result.errorPercent, 100);
     } finally {server.closeAllConnections(); await new Promise(resolve => server.close(resolve));}
 });
+
+test('El contador de bytes suma todas las respuestas cuando los cuerpos llegan simultáneamente', async () => {
+    const server = http.createServer((req, res) => {
+        res.writeHead(200); res.flushHeaders();
+        setTimeout(() => res.end('x'.repeat(100)), 50);
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    try {
+        const result = await measure('http://127.0.0.1:' + server.address().port, {concurrency: 5, rounds: 1, route: () => '/'});
+        assert.equal(result.requests, 5);
+        assert.equal(result.bytes, 500);
+        assert.equal(result.errorPercent, 0);
+    } finally {await new Promise(resolve => server.close(resolve));}
+});

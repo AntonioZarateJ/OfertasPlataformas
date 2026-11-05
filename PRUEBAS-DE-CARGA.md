@@ -77,3 +77,20 @@ También se comprimen y reutilizan HTML, CSS y JS públicos, con una caché adic
 Gzip agrega trabajo de CPU al primer acceso y al cliente al descomprimir; en loopback no hay una ventaja de red equivalente a internet. La segunda muestra de páginas/recursos con 100 simultáneas siguió sin errores, con p95 de 275 ms frente a los 152 ms iniciales. Parte de la ejecución coincidió con pruebas de navegador: estos tiempos no son una comparación aislada de CPU. El beneficio demostrado de gzip es la reducción de bytes; no se afirma que reduzca toda latencia local.
 
 La suite completa terminó con 58 pruebas de Node aprobadas, incluido el ejecutable que valida 17 flujos de navegador. Se comprobaron filtros exactos/rangos, paginación, ediciones, regiones, precios, cancelación, seguridad, acceso y favoritos. Los resultados son locales; hace falta desplegar en Render para evaluar su comportamiento real después del cambio. No se cambiaron planes, variables de Firebase, reglas ni configuración de App Check.
+
+## Comprobación real de APIs en Render después del despliegue
+
+El 5 de noviembre de 2026 se ejecutó `node scripts/probar-render-api.cjs`. Esta prueba hace como máximo 40 peticiones a rutas fijas del sitio propio: una consulta inicial y etapas de 1, 3 y 5 solicitudes simultáneas al mismo catálogo de cada plataforma, con pausas. No usa cuentas, no consulta Firebase, no vacía cachés ni fuerza búsquedas masivas. La primera consulta sí puede contactar a las tiendas; se desconoce si ya había caché previa en Render. Se omite la carga de una plataforma si su muestra es parcial, vacía, inválida o lenta, y se detiene la escalada ante errores HTTP o latencia excesiva. Los campos numéricos de precios, moneda y región se inspeccionan antes de la carga; esto no verifica el importe final en el checkout.
+
+| Plataforma | Consulta inicial | Elementos en esa página | p95 con 5 simultáneas, misma consulta |
+| --- | ---: | ---: | ---: |
+| PC / referencia CheapShark de Steam | 911 ms | 60 | 403 ms |
+| Xbox, México | 1.520 ms | 25 | 369 ms |
+| PlayStation, México | 1.631 ms | 24 | 381 ms |
+| Nintendo, México | 1.430 ms | 60 | 260 ms |
+
+Las 40 respuestas fueron HTTP 200; en las consultas iniciales no se detectaron precios inválidos, regiones mezcladas ni fuentes con estado unavailable. HSTS estuvo presente. Eneba devolvió estado ok con cero elementos en estas páginas con filtro de ofertas: no se puede deducir que carezca de productos ni garantizar cobertura completa del marketplace. Los precios PC inspeccionados son la referencia USD de CheapShark, no una comprobación del precio regional directo de Steam.
+
+Las conclusiones se basan en estados HTTP y tiempos de respuesta. Se corrigió además el acumulador de bytes del medidor para evitar pérdida de sumas concurrentes; no se utiliza el volumen de transferencia de esta primera ejecución para extraer conclusiones.
+
+Esto confirma el funcionamiento de estas consultas y su reutilización bajo una ráfaga pequeña. No demuestra capacidad máxima, carga sostenida de usuarios, comportamiento de búsquedas diferentes simultáneas ni memoria/CPU del servicio. Para esas conclusiones se necesitan métricas de Render y una prueba de mayor alcance, con presupuesto y cuotas de proveedores definidos. No se contrataron planes ni servicios adicionales.
