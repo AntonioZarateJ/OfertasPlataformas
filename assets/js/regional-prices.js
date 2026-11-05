@@ -4,6 +4,12 @@ try { if (purchaseRegions[localStorage.getItem('purchaseRegion')]) currentRegion
 document.getElementById('regionSelect').value = currentRegion;
 currentCurrency = purchaseRegions[currentRegion][1];
 currencySelect.value = currentCurrency;
+function updateLocaleFlags() {
+    const currencyFlags = { MXN:'MX', USD:'US', EUR:'EU', GBP:'GB', BRL:'BR', JPY:'JP', ARS:'AR', COP:'CO', CLP:'CL' };
+    document.getElementById('regionFlag').src = 'assets/flags/' + currentRegion + '.svg';
+    document.getElementById('currencyFlag').src = 'assets/flags/' + (currencyFlags[currentCurrency] || 'MX') + '.svg';
+}
+updateLocaleFlags();
 document.getElementById('regionSelect').addEventListener('change', e => {
     currentRegion = e.target.value;
     try { localStorage.setItem('purchaseRegion', currentRegion); } catch {}
@@ -17,6 +23,7 @@ document.getElementById('regionSelect').addEventListener('change', e => {
 });
 const regionalPrices = new Map();
 const regionalWaiters = new Map();
+const regionalPending = new Map();
 let regionalTimer;
 function steamRegionalPrice(id) {
     id = String(id);
@@ -24,12 +31,16 @@ function steamRegionalPrice(id) {
     const key = currentRegion + id;
     const cached = regionalPrices.get(key);
     if (cached && Date.now() - cached.checkedAt < 60000) return Promise.resolve(cached);
-    return new Promise(resolve => {
+    if (regionalPending.has(key)) return regionalPending.get(key);
+    const pending = new Promise(resolve => {
         if (!regionalWaiters.has(key)) regionalWaiters.set(key, { id, region: currentRegion, waiters: [] });
         regionalWaiters.get(key).waiters.push(resolve);
         clearTimeout(regionalTimer);
         regionalTimer = setTimeout(flushRegionalPrices, 40);
     });
+    regionalPending.set(key,pending);
+    void pending.finally(() => { if(regionalPending.get(key)===pending)regionalPending.delete(key); });
+    return pending;
 }
 async function flushRegionalPrices() {
     const all = [...regionalWaiters.values()];
@@ -42,7 +53,7 @@ async function flushRegionalPrices() {
         try { data = await requestJSON(`/api/steam-prices?appids=${group.map(item => item.id).join(',')}&region=${group[0].region}`, { ttl: 60000 }); }
         catch { /* Nunca sustituir un fallo por un precio inventado. */ }
         for (const { id, region, waiters } of group) {
-            const price = data[id]?.success && data[id]?.data?.price_overview;
+            const price = data?.[id]?.success && data[id]?.data?.price_overview;
             const quote = price?.currency === purchaseRegions[region][1] && Number.isFinite(price.final)
                 ? { amount: price.final / 100, currency: price.currency, region, initial: price.initial / 100, discount: price.discount_percent, checkedAt: Date.now() } : null;
             if (quote) regionalPrices.set(region + id, quote);

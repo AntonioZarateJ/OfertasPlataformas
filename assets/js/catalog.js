@@ -40,7 +40,7 @@ async function executeCatalogFetch(resetGrid=true){
                 if(query)seek.set('title',query);
                 if(config.onSale==='1'||config.discountFilter.min>0)seek.set('onSale','1');
                 if(config.steamRating>0)seek.set('steamRating',String(config.steamRating));
-                loadingText.textContent='Buscando en '+(storesMap[pcStoreIDs[pcStoreIndex]]?.name||'Steam')+'…';
+                loadingText.textContent=catalogLoadingMessage();
                 const position=await catalogJSON('/api/deals-position?'+seek,{signal:controller.signal,timeout:10000,ttl:0,deadline});
                 if(generation!==catalogGeneration)return;
                 if(position.limited){partial=true;advancePCStore();await catalogPause(700,controller.signal);continue;}
@@ -65,7 +65,7 @@ async function executeCatalogFetch(resetGrid=true){
             for(const game of data){const key=String(game.gameID||game.dealID);if(!seen.has(key)&&matchesDiscount(game.savings||0,config.discountFilter)){seen.add(key);pendingPCDeals.push(game);}}
             const end=data.length<60||restricted&&data.length&&data.every(d=>ascending?Math.round(Number(d.savings||0))>config.discountFilter.max:Math.round(Number(d.savings||0))<config.discountFilter.min);
             if(end){if(restricted)advancePCStore();else pcSourceHasMore=false;}
-            append();loadingText.textContent=`Comparando precios… ${currentDeals.length} juegos encontrados.`;
+            append();
             if(!restricted||currentDeals.length>=target)break;
             await catalogPause(700,controller.signal);
         }
@@ -76,6 +76,7 @@ async function executeCatalogFetch(resetGrid=true){
             const more=pcSourceHasMore||pendingPCDeals.length>0;
             loadMoreContainer.classList.toggle('hidden-el',!more||!!failure&&!currentDeals.length);
             loadMoreBtn.classList.remove('hidden-el');
+            updateCatalogEndStatus(more || partial, currentDeals.length);
             emptyState.classList.toggle('hidden-el',currentDeals.length>0||more||partial);
             paginationInfo.textContent=`Mostrando ${currentDeals.length} juegos${more?' · puedes cargar otros 60':''}`;
             if(currentDeals.length){
@@ -99,7 +100,12 @@ function renderSortedPCCatalog(){
     };
     currentDeals.sort((a,b)=>order==='Price'?price(a)-price(b):(Number(b[field])||0)-(Number(a[field])||0));
     // Move existing nodes: preserve images, listeners and regional quotes without fetching again.
-    currentDeals.forEach(game=>{const card=cards.get(key(game));if(card)gamesGrid.appendChild(card);else renderStandardGameCards([game]);});
+    let cursor=gamesGrid.firstElementChild;
+    currentDeals.forEach(game=>{
+        const card=cards.get(key(game));
+        if(card){if(card!==cursor)gamesGrid.insertBefore(card,cursor);cursor=card.nextElementSibling;}
+        else renderStandardGameCards([game]);
+    });
 }
 
         function renderStandardGameCards(games) {
@@ -258,13 +264,11 @@ function renderSortedPCCatalog(){
             isLoadingMore = true;
             const generation = catalogGeneration;
             loadMoreBtn.disabled = true;
-            loadMoreBtn.textContent = 'Cargando más títulos...';
             try { await executeCatalogFetch(false); }
             finally {
                 if (generation === catalogGeneration) {
                     isLoadingMore = false;
-                    loadMoreBtn.disabled = false;
-                    loadMoreBtn.innerHTML = '<i class="fa-solid fa-plus"></i><span>Cargar Más Juegos</span>';
+                    resetLoadMoreButton();
                 }
             }
         });

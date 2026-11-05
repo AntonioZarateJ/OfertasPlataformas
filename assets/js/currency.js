@@ -27,6 +27,7 @@
 
         currencySelect.addEventListener('change', (e) => {
             currentCurrency = e.target.value;
+            updateLocaleFlags();
             updateExchangeBadge();
             updateDrawerLabels();
             updateAllPricesOnScreen();
@@ -51,14 +52,9 @@
                 if (normalEl && normalUsd) normalEl.textContent = currentCurrency===box.dataset.regionalCurrency?new Intl.NumberFormat('es-MX',{style:'currency',currency:currentCurrency}).format(Number(box.dataset.regionalInitial)):formatPrice(normalUsd, false);
                 if (saleEl && !isFreeCard && saleUsd) saleEl.textContent = currentCurrency === box.dataset.regionalCurrency ? new Intl.NumberFormat('es-MX', { style: 'currency', currency: currentCurrency }).format(Number(box.dataset.regionalAmount)) + ' ' + currentCurrency : formatPrice(saleUsd, true);
 
-                box.classList.remove('price-flash');
 
             });
 
-            if (boxes.length) {
-                void gamesGrid.offsetWidth;
-                boxes.forEach(box => box.classList.add('price-flash'));
-            }
             noticeCurrencyCode.textContent = currentCurrency;
             liveCurrencyNotice.classList.remove('hidden-el');
             if(activeEcosystem==='pc'&&queryConfig.sortBy==='Price'&&!['free','wishlist'].includes(activeChip))renderSortedPCCatalog();

@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SteamPulse Pro — Fase 3: Cloud Wishlist, Alertas de Precio, Keys & Multiplataforma</title>
+    <title>RadarPlay — Compara precios y ofertas de juegos</title>
+    <meta name="description" content="Encuentra juegos para PC, Xbox, PlayStation y Nintendo Switch. Compara precios de tiendas oficiales y mercados de keys y guarda tus favoritos en RadarPlay.">
+    <meta name="theme-color" content="#0e1525">
+    <link rel="icon" type="image/svg+xml" href="assets/brand/radarplay.svg">
     <!-- Tailwind CSS -->
     <link rel="stylesheet" href="assets/css/tailwind.css">
     <!-- FontAwesome Icons -->
@@ -50,16 +53,13 @@
             
             <!-- Marca -->
             <div class="nav-brand flex flex-wrap items-center justify-between gap-3 w-full lg:w-auto">
-                <a href="#" data-ui-click="select-smart-chip-top-link" class="flex items-center gap-3 group">
-                    <div class="w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-sky-400 to-blue-700 flex items-center justify-center shadow-lg shadow-sky-500/20 group-hover:scale-105 transition">
-                        <i class="fa-brands fa-steam text-white text-2xl"></i>
+                <a href="#" data-ui-click="select-smart-chip-top-link" class="radar-brand-link flex items-center gap-3 group" aria-label="RadarPlay, inicio">
+                    <div class="radar-brand-mark" aria-hidden="true">
+                        <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="18" stroke="currentColor" stroke-opacity=".45"/><circle cx="24" cy="24" r="11" stroke="currentColor" stroke-opacity=".25"/><path d="M24 6v36M6 24h36" stroke="currentColor" stroke-opacity=".18"/><path class="radar-beam" d="M24 24V6a18 18 0 0 1 18 18Z" fill="currentColor" fill-opacity=".2"/><path d="M24 24 36 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="34" cy="14" r="2.6" fill="#b9f7ff"/><circle cx="15" cy="29" r="2" fill="#5eead4"/><path d="m23 20 7 4-7 4Z" fill="#e0faff"/></svg>
                     </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xl font-black tracking-tight text-white font-display">STEAMPULSE</span>
-                            <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">FASE 3 CLOUD</span>
-                        </div>
-                        <p class="text-[11px] text-gray-400">Comparador Oficial + Keys, Consolas, Wishlist & Alertas</p>
+                    <div class="radar-brand-copy">
+                        <span class="radar-wordmark font-display">Radar<span>Play</span></span>
+                        <p class="radar-tagline">Tu juego. Su mejor precio.</p>
                     </div>
                 </a>
             </div>
@@ -117,22 +117,22 @@
                     <span id="userAccountLabel" class="hidden xl:inline">Iniciar sesión</span>
                 </button>
 
-                <label class="region-control">Región de compra<select id="regionSelect" aria-label="Región de compra"><option value="MX">México</option><option value="US">Estados Unidos</option><option value="ES">España</option><option value="GB">Reino Unido</option><option value="BR">Brasil</option><option value="JP">Japón</option></select></label>
+                <label class="region-control locale-control"><img id="regionFlag" src="assets/flags/MX.svg" alt="" width="24" height="18"><span>Región de compra</span><select id="regionSelect" aria-label="Región de compra"><option value="MX">México</option><option value="US">Estados Unidos</option><option value="ES">España</option><option value="GB">Reino Unido</option><option value="BR">Brasil</option><option value="JP">Japón</option></select></label>
                 <!-- Selector de Divisa -->
-                <div class="w-full sm:w-auto">
+                <label class="currency-control locale-control"><img id="currencyFlag" src="assets/flags/MX.svg" alt="" width="24" height="18"><span>Moneda</span>
                     <select id="currencySelect" aria-label="Seleccionar divisa"
                         class="w-full bg-[#162032] hover:bg-[#1e2c44] text-white border border-sky-500/40 rounded-xl py-2 px-3 text-xs font-semibold focus:outline-none focus:border-sky-400 cursor-pointer transition">
-                        <option value="MXN" selected>🇲🇽 MXN (Peso Mex)</option>
-                        <option value="USD">🇺🇸 USD (Dólar)</option>
-                        <option value="EUR">🇪🇺 EUR (Euro)</option>
-                        <option value="GBP">🇬🇧 GBP (Libra)</option>
-                        <option value="ARS">🇦🇷 ARS (Peso Arg)</option>
-                        <option value="COP">🇨🇴 COP (Peso Col)</option>
-                        <option value="CLP">🇨🇱 CLP (Peso Chi)</option>
-                        <option value="BRL">🇧🇷 BRL (Real)</option>
-                        <option value="JPY">🇯🇵 JPY (Yen)</option>
+                        <option value="MXN" selected>MXN</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                        <option value="ARS">ARS</option>
+                        <option value="COP">COP</option>
+                        <option value="CLP">CLP</option>
+                        <option value="BRL">BRL</option>
+                        <option value="JPY">JPY</option>
                     </select>
-                </div>
+                </label>
             </div>
 
         </div>
@@ -257,7 +257,7 @@
         <!-- Estado de Carga -->
         <div id="loadingState" class="hidden-el flex flex-col items-center justify-center py-20">
             <div id="catalogLoadingMark" class="catalog-loading-mark" aria-hidden="true"></div>
-            <p id="loadingText" class="text-sm text-sky-400 font-semibold animate-pulse">Sincronizando catálogo...</p>
+            <p id="loadingText" role="status" aria-live="polite" class="text-sm text-sky-400 font-semibold">Cargando juegos… Espera un momento.</p>
         </div>
 
         <!-- Estado Vacío -->
@@ -297,7 +297,9 @@
                 <i class="fa-solid fa-plus"></i>
                 <span>Cargar Más Juegos</span>
             </button>
+            <span id="loadMoreStatus" role="status" aria-live="polite" class="sr-only"></span>
         </div>
+        <p id="catalogEndStatus" class="hidden-el catalog-end-status" role="status">Ya viste los juegos disponibles para esta búsqueda.</p>
     </main>
 
     <!-- 5. MODAL ANALÍTICO: DETECTOR DE MÍNIMO HISTÓRICO + COMPARADOR MULTITIENDA + ALERTAS (FASE 3) -->
@@ -491,9 +493,9 @@
             <div class="px-4 py-2.5 bg-[#121c30] border-b border-white/5 flex items-center justify-between text-xs">
                 <span class="text-gray-300"><strong id="drawerWishlistTotal">0</strong> juegos guardados</span>
                 <div class="flex items-center gap-2">
-                    <button type="button" data-ui-click="export-wishlist-json" class="text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1" title="Exportar respaldo JSON">
+                    <button type="button" data-ui-click="download-wishlist-list" class="text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1" title="Descargar una lista de texto con tus juegos, precios y metas">
                         <i class="fa-solid fa-download"></i>
-                        <span>Descargar copia</span>
+                        <span>Descargar lista</span>
                     </button>
                     <span class="text-gray-600">|</span>
                     <button type="button" data-ui-click="clear-entire-wishlist" class="text-rose-400 hover:text-rose-300 font-semibold">
@@ -525,7 +527,7 @@
     <div id="cloudConfigModal" role="dialog" aria-modal="true" aria-labelledby="authTitle" class="hidden-el auth-overlay">
       <section class="auth-card">
         <button type="button" class="auth-close" aria-label="Cerrar acceso" data-ui-click="close-cloud-config-modal">×</button>
-        <div class="auth-mark"><i class="fa-brands fa-steam"></i></div>
+        <div class="auth-mark radar-auth-mark"><img src="assets/brand/radarplay.svg" width="54" height="54" alt="RadarPlay"></div>
         <p class="auth-eyebrow">TU BIBLIOTECA, CONTIGO</p>
         <h2 id="authTitle">Bienvenido de nuevo</h2>
         <p class="auth-subtitle">Guarda tus favoritos y encuentra el momento de comprar.</p>
@@ -562,13 +564,14 @@
     <!-- Footer -->
     <footer class="bg-[#070a11] border-t border-white/5 py-6 text-center text-xs text-gray-500 mt-auto">
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-            <p><strong class="text-gray-300">SteamPulse Pro (Fase 3 Completa)</strong> — Comparador Oficial + Keys, Consolas, Wishlist Cloud & Alertas de Precio.</p>
+            <p><strong class="radar-footer-name">Radar<span>Play</span></strong> — Compara precios de juegos. Encuentra tu próxima aventura.</p>
             <p>Conectado a CheapShark, GamerPower & Open Exchange Rates API.</p>
         </div>
     </footer>
 
     <!-- LÓGICA JAVASCRIPT -->
     <script src="assets/js/core.js"></script>
+    <script src="assets/js/catalog-loading.js"></script>
     <script src="assets/js/utils.js"></script>
     <script src="assets/js/regional-prices.js"></script>
     <script src="assets/js/accounts.js"></script>

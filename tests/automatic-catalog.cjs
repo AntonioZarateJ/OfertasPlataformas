@@ -58,7 +58,7 @@ test('Varios porcentajes se buscan automáticamente; reintentos, cancelación y 
   await page.evaluate(()=>{queryConfig.onSale='0';queryConfig.sortBy='Savings';document.getElementById('drawerDiscountMode').value='range';document.getElementById('drawerDiscountSlider').value='10';document.getElementById('drawerDiscountEnd').value='25';applyCustomDrawerFilters();});
   await expect(page.locator('#gamesGrid h3')).toHaveText(['Descuento 25','Descuento 20','Descuento 10']);
   await page.evaluate(()=>{predictiveSearchInput.value='lento';applyCustomDrawerFilters();});
-  await expect(page.locator('#loadingText')).toContainText('automáticamente');
+  await expect(page.locator('#loadingText')).toContainText('Cargando');
   await page.evaluate(()=>{predictiveSearchInput.value='nuevo';applyCustomDrawerFilters();});
   await expect(page.locator('#loadingState')).toBeHidden({timeout:10000});
   await expect(page.locator('#gamesGrid .steam-card')).toHaveCount(3);

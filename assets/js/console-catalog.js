@@ -54,7 +54,7 @@ async function loadConsoleCatalog(reset = true) {
             if(discountFilter.mode!=='any'){params.set('discountMin',String(discountFilter.min));params.set('discountMax',String(discountFilter.max));}
             const result = await catalogJSON(`/api/console-catalog?${params}`, { signal: controller.signal, timeout:16000,ttl:0,deadline });
             if (generation !== catalogGeneration || platform !== activeEcosystem || region !== currentRegion) return;
-            if(result.sources?.some(s=>s.status==='unavailable')&&sourceRetries++<2){loadingText.textContent='La tienda está ocupada; reintentamos automáticamente…';await catalogPause(2000,controller.signal);continue;}
+            if(result.sources?.some(s=>s.status==='unavailable')&&sourceRetries++<2){await catalogPause(2000,controller.signal);continue;}
             sourceRetries=0;
             if (!Array.isArray(result.items)) throw Error('Respuesta inválida');
             if (!consoleResult) consoleResult = { ...result, items: [] };
@@ -64,7 +64,6 @@ async function loadConsoleCatalog(reset = true) {
             consoleResult.sources = result.sources;
             consoleResult.checkedAt = result.checkedAt;
             consoleNext = result.next || null;
-            loadingText.textContent=`Buscando en tiendas oficiales y externas… ${scans} lote(s) revisados, ${filteredConsoleItems().length} coincidencias.`;
             if(consoleNext&&filteredConsoleItems().length<consoleVisible)await catalogPause(900,controller.signal);
             if(consoleNext && JSON.stringify(consoleNext)===params.get('cursor')){consoleResult.scope+=' La fuente repitió su página; consulta incompleta.';consoleNext=null;break;}
         }
@@ -92,6 +91,7 @@ function renderConsoleCatalog() {
     const visible = filtered.slice(0, consoleVisible);
     paginationInfo.textContent = `Mostrando ${visible.length} de ${filtered.length} coincidencias cargadas${consoleNext ? ' · hay más páginas por consultar' : ''}`;
     loadMoreContainer.classList.toggle('hidden-el', !(filtered.length > consoleVisible || consoleNext));
+    updateCatalogEndStatus(!!(filtered.length > consoleVisible || consoleNext) || sources.some(s=>s.status==='unavailable'),visible.length);
     document.getElementById('consoleScope').textContent = '';
 
     document.getElementById('consoleScope').textContent = `${scope} Consulta: ${new Date(checkedAt).toLocaleTimeString('es-MX')}. Importes en la moneda publicada por cada tienda.`;
@@ -103,12 +103,17 @@ function renderConsoleCatalog() {
         link.textContent = `${source.name}: ${source.status === 'ok' ? source.count + ' en última página' + (source.total ? ' · ' + source.total + ' disponibles' : '') : 'sin datos disponibles'} ↗`;
         status.appendChild(link);
     });
-    gamesGrid.replaceChildren();
-    const fragment = document.createDocumentFragment();
+    const existingCards = new Map([...gamesGrid.children].map(card => [card.dataset.consoleKey, card]));
+    const orderedCards = [];
     visible.forEach(item => {
         item.checkedAt=checkedAt;
+        const key = [activeEcosystem,currentRegion,item.store,item.id].join(':');
+        const signature = JSON.stringify([item.title,item.price,item.regular,item.discount,item.currency,item.edition,item.image,item.url,item.seller,item.rating,item.ratingCount,item.kind]);
+        const existing = existingCards.get(key);
+        if(existing?.dataset.quoteSignature === signature){orderedCards.push(existing);return;}
         const format = value => new Intl.NumberFormat('es-MX', { style:'currency', currency:item.currency }).format(value);
         const card = document.createElement('article');
+        card.dataset.consoleKey = key; card.dataset.quoteSignature = signature;
         card.className = 'steam-card console-card';
         const platform=ECOSYSTEM_META[activeEcosystem];
         const displayDiscount=Math.round(Number(item.discount)||0);
@@ -124,9 +129,12 @@ function renderConsoleCatalog() {
         card.querySelector('.console-card-actions').prepend(compare);
         card.querySelector('.console-art').addEventListener('click',()=>openConsoleComparison(item));
         card.querySelector('h3').addEventListener('click',()=>openConsoleComparison(item));
-        prepareImages(card); fragment.appendChild(card);
+        prepareImages(card); orderedCards.push(card);
     });
-    gamesGrid.appendChild(fragment);
+    const wanted = new Set(orderedCards);
+    for(const card of [...gamesGrid.children])if(!wanted.has(card))card.remove();
+    let cursor = gamesGrid.firstElementChild;
+    for(const card of orderedCards){if(card!==cursor)gamesGrid.insertBefore(card,cursor);cursor=card.nextElementSibling;}
     refreshConsoleHearts();
     loadedCountBadge.textContent = visible.length;
     const unavailable=sources.some(s=>s.status==='unavailable');

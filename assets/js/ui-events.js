@@ -35,7 +35,7 @@ const uiActions = Object.freeze({
     'switch-modal-comparator-tab-keys': function(event) { switchModalComparatorTab('keys') },
     'change-modal-key-platform-pc': function(event) { changeModalKeyPlatform('pc') },
     'close-wishlist-drawer': function(event) { closeWishlistDrawer() },
-    'export-wishlist-json': function(event) { exportWishlistJson() },
+    'download-wishlist-list': function(event) { downloadWishlistList() },
     'clear-entire-wishlist': function(event) { clearEntireWishlist() },
     'close-cloud-config-modal': function(event) { closeCloudConfigModal() },
     'set-auth-mode-login': function(event) { setAuthMode('login') },

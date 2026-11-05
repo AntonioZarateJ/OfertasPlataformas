@@ -154,7 +154,7 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
             let name;try{name=decodeURIComponent(url.pathname);}catch{reply(res,400,{error:'Ruta inválida'});return;}
             const relative = name === '/' || name === '/index.html' ? 'index.html' : name.slice(1);
             // Publicar sólo la interfaz; nunca exponer el servidor ni node_modules.
-            const isAvatar = name => /^assets\/avatars\/(orbit|nova|pixel|comet|quest|arcade)\.svg$/.test(name);
+            const isAvatar = name => /^assets\/avatars\/(orbit|nova|pixel|comet|quest|arcade)\.svg$/.test(name) || /^assets\/flags\/(MX|US|ES|GB|BR|JP|EU|AR|CO|CL)\.svg$/.test(name) || name === 'assets/brand/radarplay.svg';
             if (relative !== 'index.html' && !/^assets\/(css|js)\/[a-zA-Z0-9_./-]+\.(css|js)$/.test(relative) && !isAvatar(relative)) {
                 reply(res, 404, { error: 'Recurso no encontrado' }); return;
             }

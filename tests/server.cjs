@@ -68,7 +68,7 @@ test('HTML, CSS y JS se entregan con MIME correcto y revalidación ETag', async 
     await withServer(async () => {}, async base => {
         const response = await fetch(base);
         assert.match(response.headers.get('content-type'), /text\/html/);
-        assert.match(await response.text(), /SteamPulse/i);
+        assert.match(await response.text(), /RadarPlay/i);
         assert.equal((await fetch(base, { headers: { 'If-None-Match': response.headers.get('etag') } })).status, 304);
         assert.match((await fetch(`${base}/assets/css/tailwind.css`)).headers.get('content-type'), /text\/css/);
         assert.match((await fetch(`${base}/assets/js/core.js`)).headers.get('content-type'), /javascript/);

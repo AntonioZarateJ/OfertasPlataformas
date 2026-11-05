@@ -127,7 +127,7 @@ test('La interfaz continúa la búsqueda sin barridos y muestra ediciones visibl
   await expect(page.locator('#loadMoreBtn')).not.toContainText('Continuar');
   blocked=true;await apply();
   await expect(page.locator('#loadingState')).toBeVisible();
-  await expect(page.locator('#loadingText')).toContainText('automáticamente');
+  await expect(page.locator('#loadingText')).toContainText('Cargando');
   await expect(page.locator('#loadingState')).toBeHidden({timeout:10000});
   await expect(page.locator('#catalogError')).not.toBeVisible();
   await page.locator('[data-ecosystem="switch"]').click();

@@ -163,15 +163,34 @@
             showToast('Wishlist vaciada correctamente', 'fa-solid fa-trash text-rose-400');
         }
 
-        function exportWishlistJson() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(userWishlist, null, 2));
+        function downloadWishlistList() {
+            const list = Object.values(userWishlist).sort((a,b) => a.title.localeCompare(b.title,'es'));
+            if(!list.length){showToast('Guarda un juego para descargar tu lista.');return;}
+            const singleLine = text => String(text || '').replace(/[\r\n\t\u0000-\u001f\u007f]+/g,' ');
+            const money = (value,currency) => new Intl.NumberFormat('es-MX',{style:'currency',currency}).format(Number(value))+' '+currency;
+            const lines = ['MIS FAVORITOS · RADARPLAY', 'Preparado el '+new Date().toLocaleString('es-MX'), list.length+' juegos guardados', '',
+                'Precios orientativos según la última consulta. Confirma el importe, la edición y la región en la tienda.',
+                'Las referencias de PC se convierten desde USD; no garantizan el precio regional de Steam.', ''];
+            for(const [index,item] of list.entries()){
+                lines.push((index+1)+'. '+singleLine(item.title));
+                lines.push('   Plataforma: '+(item.native?ECOSYSTEM_META[item.platform].name:'PC'));
+                if(item.native) lines.push('   Tienda y región: '+singleLine(item.store)+' · '+purchaseRegions[item.region][0]);
+                lines.push('   Último precio: '+(item.native?money(item.price,item.currency):formatPrice(item.salePrice,true)+' (referencia convertida)'));
+                if(item.targetPrice||item.targetPriceUsd)lines.push('   Mi meta: '+(item.native?money(item.targetPrice,item.currency):formatPrice(item.targetPriceUsd,true)+' (referencia convertida)'));
+                const url=item.native?safeURL(item.url):item.dealID?dealRedirectURL(item.dealID):item.steamAppID?STEAM_APP_URL+item.steamAppID:'';
+                if(url)lines.push('   Ver tienda: '+singleLine(url));
+                lines.push('');
+            }
+            lines.push('Consulta tus favoritos en https://salesplataforms.onrender.com/', 'Los avisos por correo están en preparación.');
+            const dataStr = URL.createObjectURL(new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/plain;charset=utf-8'}));
             const dlAnchor = document.createElement('a');
             dlAnchor.setAttribute("href", dataStr);
-            dlAnchor.setAttribute("download", `steampulse_wishlist_${ currentCurrency.toLowerCase() }.json`);
+            dlAnchor.setAttribute("download", 'mis-favoritos-radarplay.txt');
             document.body.appendChild(dlAnchor);
             dlAnchor.click();
             dlAnchor.remove();
-            showToast('Archivo JSON exportado con éxito');
+            setTimeout(()=>URL.revokeObjectURL(dataStr),1000);
+            showToast('Lista descargada con tus juegos, precios y metas.');
         }
 
         function openCloudConfigModal() {

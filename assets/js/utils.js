@@ -111,7 +111,7 @@ async function catalogJSON(url,{deadline=Date.now()+45000,...options}={}) {
             const wait=error.status===429?Math.max(1,Math.min(300,error.retryAfter||30))*1000:1500*2**attempt;
             if(wait>=deadline-Date.now())throw error;
             for(let remaining=wait;remaining>0;remaining-=1000){
-                loadingText.textContent=`La tienda está ocupada. Reintentamos automáticamente en ${Math.ceil(remaining/1000)} s…`;
+                loadingText.textContent=catalogLoadingMessage();
                 await catalogPause(Math.min(1000,remaining),options.signal);
             }
         }
@@ -131,9 +131,9 @@ function cancelCatalogRequest() {
     catalogController?.abort();
     catalogController = null;
     isLoadingMore = false;
-    loadMoreBtn.disabled = false;
+    finishCatalogLoading();
+    document.getElementById('catalogEndStatus').classList.add('hidden-el');
     loadMoreBtn.classList.remove('hidden-el');
-    loadMoreBtn.innerHTML = '<i class="fa-solid fa-plus"></i><span>Cargar Más Juegos</span>';
 }
 
 function showCatalogError(message) {

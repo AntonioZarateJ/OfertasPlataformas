@@ -310,15 +310,17 @@
         });
 
         function showLoader(msg) {
-            if (msg) loadingText.textContent = msg;
-            loadingState.classList.remove('hidden-el');
+            loadingText.textContent = catalogLoadingMessage();
+            loadingState.classList.toggle('hidden-el', isLoadingMore);
             gamesGrid.classList.toggle('hidden-el',!gamesGrid.children.length);
             let mark=document.getElementById('catalogLoadingMark');
             if(!mark){mark=document.createElement('div');mark.id='catalogLoadingMark';mark.className='catalog-loading-mark';loadingState.prepend(mark);}
-            mark.innerHTML=`<i class="${ECOSYSTEM_META[activeEcosystem].icon}"></i>`;
+            mark.dataset.loadingLogo = ''; mark.setAttribute('aria-hidden', 'true');
+            beginCatalogLoading();
         }
 
         function hideLoader() {
+            finishCatalogLoading();
             loadingState.classList.add('hidden-el');
             gamesGrid.classList.remove('hidden-el');
         }
