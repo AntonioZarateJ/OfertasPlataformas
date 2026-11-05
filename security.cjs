@@ -60,10 +60,11 @@ function securityHeaders(res, secure = false, authDomain = '') {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
     if (secure) res.setHeader('Strict-Transport-Security', 'max-age=31536000');
 }
-function createApiGuard({capacity = 60, refillPerSecond = 3, maxConcurrent = 12, now = Date.now, trustProxy = false} = {}) {
+function createApiGuard({capacity = 60, refillPerSecond = 3, maxConcurrent = 12, maxPending = 128, now = Date.now, trustProxy = false} = {}) {
     const clients = new Map();
-    let active = 0;
-    return req => {
+    const groups = new Map();
+    let pending = 0;
+    return (req, {key = Symbol('request')} = {}) => {
         if (req.headers['sec-fetch-site'] === 'cross-site') return {status: 403};
         let ip = req.socket.remoteAddress || 'unknown';
         // A forwarded header is trusted only when the operator explicitly enables one proxy hop.
@@ -79,10 +80,17 @@ function createApiGuard({capacity = 60, refillPerSecond = 3, maxConcurrent = 12,
         clients.set(ip, client);
         if (client.tokens < 1) return {status: 429, retryAfter: Math.max(1, Math.ceil(1 / (refillPerSecond || 1)))};
         client.tokens--;
-        if (active >= maxConcurrent) return {status: 503, retryAfter: 2};
-        active++;
+        // Identical public queries share one work slot, but every HTTP request still pays its IP quota.
+        if (pending >= maxPending || !groups.has(key) && groups.size >= maxConcurrent) return {status: 503, retryAfter: 2};
+        groups.set(key, (groups.get(key) || 0) + 1);
+        pending++;
         let released = false;
-        return {release: () => {if (!released) {released = true; active--;}}};
+        return {release: () => {
+            if (released) return;
+            released = true; pending--;
+            const remaining = groups.get(key) - 1;
+            if (remaining) groups.set(key, remaining); else groups.delete(key);
+        }};
     };
 }
 function publicFirebaseConfig(env = process.env) {

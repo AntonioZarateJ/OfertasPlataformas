@@ -19,7 +19,7 @@ El selector indica **Ordenar cargados**. No se promete un orden global de juegos
 | Área | Control y comprobación |
 | --- | --- |
 | Parámetros HTTP | Listas permitidas por ruta, límites numéricos y de longitud, rechazo de duplicados y caracteres de control, parámetros canónicos para la caché y cursores con claves conocidas. |
-| Abuso de APIs | Límite por dirección de cliente, 12 solicitudes simultáneas por proceso y cola compartida para CheapShark. Se devuelven estados 429/503 con `Retry-After`. |
+| Abuso de APIs | Límite por dirección de cliente, 12 grupos de consultas diferentes activos por proceso y hasta 128 peticiones HTTP en espera. Cada petición paga su cuota aunque comparta consulta. Una misma consulta pública comparte cupo y trabajo. Cola compartida para CheapShark; se devuelven estados 429/503 con `Retry-After`. |
 | IP tras proxy | Los encabezados reenviados se ignoran por defecto. `TRUST_PROXY=1` habilita explícitamente un salto de proxy confiable; no debe activarse si los clientes pueden conectarse directamente al servidor. |
 | Recursos | URL de hasta 8 KiB, cabeceras HTTP acotadas, tiempos de recepción/conexión, cuerpos de solicitud rechazados y respuestas de proveedores de hasta 6 MiB. Las cachés principales tienen límites de entradas y bytes. |
 | SSRF | Las conexiones del servidor admiten únicamente HTTPS a los proveedores enumerados. Se rechazan credenciales en URLs, puertos distintos de HTTPS y redirecciones fuera del origen. No existe un proxy de URL arbitraria. |
@@ -32,6 +32,14 @@ El selector indica **Ordenar cargados**. No se promete un orden global de juegos
 | Configuración | La ruta pública de configuración solo devuelve los cuatro identificadores públicos del SDK y descarta valores de formato inválido. Se excluyen del seguimiento habitual archivos `.env`, claves privadas y nombres comunes de cuentas de servicio. |
 
 La política permite estilos inline porque existen estilos de presentación dinámicos. Esto no habilita scripts inline. Los controles por proceso no reemplazan protección de red ni una cuota distribuida si se ejecutan varias instancias.
+
+### Optimización de consultas y archivos públicos — 5 de noviembre de 2026
+
+La agrupación utiliza la ruta y parámetros validados y ordenados; no elimina región, ID, plataforma, edición, tienda, página ni filtros. Los errores de proveedores no pasan a ser precios válidos ni se conservan como éxito. Las peticiones compartidas se retiran del registro al terminar y la caché conserva los TTL anteriores.
+
+CheapShark mantiene un acceso serial y al menos 650 ms entre inicios. Se rechazan con pausa las nuevas consultas cuya espera mínima prevista supera 6 segundos; no se acortan los Retry-After del proveedor aunque superen cinco minutos. Los límites no se desactivaron para obtener mejores cifras.
+
+HTML, CSS y JavaScript públicos pueden entregarse con gzip y caché de contenido en memoria de hasta 8 MiB, con validadores distintos por codificación. La comprobación de rutas reales y archivos permitidos permanece antes de la lectura/caché. No se comprimen mediante esta caché las respuestas de Firebase ni los datos privados de cuentas.
 
 ## Validación realizada
 

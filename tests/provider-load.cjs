@@ -26,6 +26,27 @@ test('CheapShark serializa, comparte caché y respeta la pausa del proveedor',as
  time+=11000;limited=false;assert.equal((await client(a+'&pageNumber=4')).status,200);
 });
 
+test('CheapShark rechaza espera previsible excesiva sin aumentar frecuencia ni llamar al proveedor',async()=>{
+ let time=10000,calls=0;const starts=[];
+ let open;const gate=new Promise(resolve=>{open=resolve;});
+ const client=createCheapSharkClient(async()=>{calls++;starts.push(time);if(calls===1)await gate;return Response.json([]);},{now:()=>time,sleep:async ms=>{time+=ms;}});
+ const jobs=Array.from({length:10},(_,i)=>client('https://www.cheapshark.com/api/1.0/deals?title='+i));
+ const rejected=await client('https://www.cheapshark.com/api/1.0/deals?title=overflow');
+ assert.equal(rejected.status,429);assert(Number(rejected.headers.get('Retry-After'))>=6);
+ open();for(const result of await Promise.all(jobs))assert.equal(result.status,200);
+ assert.equal(calls,10);
+ for(let i=1;i<starts.length;i++)assert(starts[i]-starts[i-1]>=650);
+});
+
+test('CheapShark no acorta un Retry-After largo ni reintenta durante la pausa',async()=>{
+ let time=10000,calls=0;
+ const client=createCheapSharkClient(async()=>{calls++;return Response.json({}, {status:429,headers:{'Retry-After':'600'}});},{now:()=>time,sleep:async ms=>{time+=ms;}});
+ assert.equal((await client('https://www.cheapshark.com/api/1.0/deals?title=1')).headers.get('Retry-After'),'600');
+ time+=301000;
+ const response=await client('https://www.cheapshark.com/api/1.0/deals?title=2');
+ assert.equal(response.status,429);assert.equal(calls,1);assert.equal(response.headers.get('Retry-After'),'299');
+});
+
 test('La búsqueda del 20% conserva su avance y limita peticiones por tanda',async()=>{
  const state={};let calls=0,result;
  const fetcher=async url=>{calls++;const page=Number(new URL(url).searchParams.get('pageNumber'));return Response.json([{savings:page<800?90:20}],{headers:{'X-Total-Page-Count':'50'}});};

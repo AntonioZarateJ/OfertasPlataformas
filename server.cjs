@@ -2,6 +2,7 @@ const http = require('node:http');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const {renderLegalPage} = require('./legal.cjs');
+const {acceptsGzip, createStaticAssetCache} = require('./static-assets.cjs');
 const {validateQuery,securityHeaders,createApiGuard,publicFirebaseConfig}=require('./security.cjs');
 const {createPublicFetch}=require('./public-fetch.cjs');
 const {BoundedCache}=require('./bounded-cache.cjs');
@@ -26,12 +27,23 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
     const trustProxy=process.env.TRUST_PROXY==='1';
     const admit=createApiGuard({trustProxy,...limits});
     const cache = new BoundedCache();
+    const staticAsset = createStaticAssetCache();
     const positions=new Map();
     const firebaseConfig=publicFirebaseConfig();
     const cheapsharkFetch=createCheapSharkClient(fetchImpl);
     const pending = new Map();
+    function shared(key, load) {
+        if (!pending.has(key)) {
+            const work = Promise.resolve().then(load).finally(() => {
+                if (pending.get(key) === work) pending.delete(key);
+            });
+            pending.set(key, work);
+        }
+        return pending.get(key);
+    }
     const reply = (res, status, data) => {
         if(res.destroyed||res.writableEnded)return;
+        res.removeHeader('Content-Encoding'); res.removeHeader('Content-Length'); res.removeHeader('ETag');
         if(status===429||status===503&&data.retryAfter)res.setHeader('Retry-After',String(data.retryAfter||30));
         res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify(data));
@@ -51,7 +63,7 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
             }
             if(url.pathname.startsWith('/api/')){
                 if(!validateQuery(url)){reply(res,upstreams[url.pathname]||['/api/deals-position','/api/console-catalog','/api/console-comparison','/api/auth-config','/api/pc-editions'].includes(url.pathname)?400:404,{error:'Parámetros inválidos'});return;}
-                const access=admit(req);if(access.status){reply(res,access.status,{error:'Límite temporal de acceso',retryAfter:access.retryAfter||0});return;}
+                const access=admit(req,{key:url.pathname+'?'+url.searchParams.toString()});if(access.status){reply(res,access.status,{error:'Límite temporal de acceso',retryAfter:access.retryAfter||0});return;}
                 release=access.release;
             }
             if(url.pathname==='/api/pc-editions'){
@@ -59,8 +71,11 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
                 if(!/^\d{1,10}$/.test(appid||'')||!['MX','US','ES','GB','BR','JP'].includes(region)){reply(res,400,{error:'Juego inválido'});return;}
                 const key='steam-editions:'+appid+':'+region;
                 if(cache.get(key)?.expires>Date.now()){reply(res,200,cache.get(key).data);return;}
-                if(!pending.has(key))pending.set(key,loadSteamEditions(appid,region,fetchImpl));
-                try{const data=await pending.get(key);if(cache.size>=200)cache.delete(cache.keys().next().value);cache.set(key,{data,expires:Date.now()+60000});reply(res,200,data);}finally{pending.delete(key);}return;
+                const data = await shared(key, async () => {
+                    const data = await loadSteamEditions(appid,region,fetchImpl);
+                    cache.set(key,{data,expires:Date.now()+60000}); return data;
+                });
+                reply(res,200,data); return;
             }
             if (url.pathname === '/api/deals-position') {
                 if(!url.searchParams.has('storeID'))url.searchParams.set('storeID','1');
@@ -71,16 +86,22 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
                     if(positions.size>=100)positions.delete(positions.keys().next().value);
                     positions.set(key,{state:{},expires:Date.now()+300000});
                 }
-                if(!pending.has(key))pending.set(key,discountPosition(url.searchParams,cheapsharkFetch,positions.get(key).state));
-                try{const data=await pending.get(key);if(cache.size>=200)cache.delete(cache.keys().next().value);if(!data.pending)cache.set(key,{data,expires:Date.now()+60000});reply(res,200,data);}finally{pending.delete(key);}return;
+                const data = await shared(key, async () => {
+                    const data = await discountPosition(url.searchParams,cheapsharkFetch,positions.get(key).state);
+                    if(!data.pending)cache.set(key,{data,expires:Date.now()+60000}); return data;
+                });
+                reply(res,200,data); return;
             }
             if (url.pathname === '/api/console-comparison') {
                 const platform=url.searchParams.get('platform'), region=url.searchParams.get('region'), title=(url.searchParams.get('title')||'').trim();
                 if(!['xbox','ps','switch'].includes(platform)||!['MX','US','ES','GB','BR','JP'].includes(region)||!title||title.length>200){reply(res,400,{error:'Juego inválido'});return;}
                 const key='compare:'+url.searchParams.toString();
                 if(cache.get(key)?.expires>Date.now()){reply(res,200,cache.get(key).data);return;}
-                if(!pending.has(key))pending.set(key,compareGame(platform,region,title,url.searchParams.get('id'),url.searchParams.get('store')));
-                try{const data=await pending.get(key);if(cache.size>=200)cache.delete(cache.keys().next().value);cache.set(key,{data,expires:Date.now()+60000});reply(res,200,data);}finally{pending.delete(key);}return;
+                const data = await shared(key, async () => {
+                    const data = await compareGame(platform,region,title,url.searchParams.get('id'),url.searchParams.get('store'));
+                    cache.set(key,{data,expires:Date.now()+60000}); return data;
+                });
+                reply(res,200,data); return;
             }
             if (url.pathname === '/api/console-catalog') {
                 const platform = url.searchParams.get('platform');
@@ -104,14 +125,13 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
                 if (!validCursor || !['all','official','external'].includes(source) || !['relevance','rating','priceAsc','priceDesc','discountAsc','discountDesc'].includes(sort)) { reply(res,400,{error:'Filtros inválidos'});return; }
                 const key = `console:${platform}:${region}:${query}:${sort}:${source}:${onlyDeals}:${JSON.stringify(discount)}:${JSON.stringify(cursor)}`;
                 if (cache.get(key)?.expires > Date.now()) { rememberCatalog(cache.get(key).data); reply(res,200,cache.get(key).data); return; }
-                if (!pending.has(key)) pending.set(key,consoleCatalog(platform,region,query,{cursor,sort,source,onlyDeals,discount}));
-                try {
-                    const data = await pending.get(key);
+                const data = await shared(key, async () => {
+                    const data = await consoleCatalog(platform,region,query,{cursor,sort,source,onlyDeals,discount});
                     rememberCatalog(data);
-                    if (cache.size >= 200) cache.delete(cache.keys().next().value);
                     if (data.sources.every(s => s.status !== 'unavailable')) cache.set(key,{data,expires:Date.now()+60000});
-                    reply(res,200,data);
-                } finally { pending.delete(key); }
+                    return data;
+                });
+                reply(res,200,data);
                 return;
             }
             if (url.pathname === '/api/auth-config') {
@@ -135,26 +155,21 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
                     if (!['MX', 'US', 'ES', 'GB', 'BR', 'JP'].includes(region)) { reply(res, 400, { error: 'Región inválida' }); return; }
                     target.searchParams.set('cc', region.toLowerCase());
                 }
+                target.searchParams.sort();
                 const key = target.href;
                 const cached = cache.get(key);
                 if (cached?.expires > Date.now()) { reply(res, 200, cached.data); return; }
-                if (!pending.has(key)) {
-                    const work = (async () => {
-                        const response = await (target.hostname==='www.cheapshark.com'?cheapsharkFetch:fetchImpl)(target.href, {
-                            headers: { 'User-Agent': 'SteamPulsePro/1.0 (game price comparison application)', Accept: 'application/json' },
-                            signal: AbortSignal.timeout(6500)
-                        });
-                        if (!response.ok) return { status: response.status, data: { error: `El proveedor respondió HTTP ${response.status}`,retryAfter:Number(response.headers.get('Retry-After'))||0 } };
-                        const data = await response.json();
-                        if (cache.size >= 200) cache.delete(cache.keys().next().value);
-                        cache.set(key, { expires: Date.now() + ttl, data });
-                        return { status: 200, data };
-                    })();
-                    pending.set(key, work);
-                }
-                const work = pending.get(key);
-                try { const result = await work; reply(res, result.status, result.data); }
-                finally { if (pending.get(key) === work) pending.delete(key); }
+                const result = await shared(key, async () => {
+                    const response = await (target.hostname==='www.cheapshark.com'?cheapsharkFetch:fetchImpl)(target.href, {
+                        headers: { 'User-Agent': 'SteamPulsePro/1.0 (game price comparison application)', Accept: 'application/json' },
+                        signal: AbortSignal.timeout(6500)
+                    });
+                    if (!response.ok) return { status: response.status, data: { error: `El proveedor respondió HTTP ${response.status}`,retryAfter:Number(response.headers.get('Retry-After'))||0 } };
+                    const data = await response.json();
+                    cache.set(key, { expires: Date.now() + ttl, data });
+                    return { status: 200, data };
+                });
+                reply(res, result.status, result.data);
                 return;
             }
             let name;try{name=decodeURIComponent(url.pathname);}catch{reply(res,400,{error:'Ruta inválida'});return;}
@@ -170,13 +185,20 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
             const actual=path.relative(root,resolved).replace(/\\/g,'/');
             if(actual!=='index.html'&&!/^assets\/(css|js)\/[a-zA-Z0-9_./-]+\.(css|js)$/.test(actual)&&!isAvatar(actual)){reply(res,403,{error:'Ruta no permitida'});return;}
             const stat = await fs.stat(resolved);
-            const etag = `"${stat.size}-${stat.mtimeMs}"`;
+            const version = `${stat.size}-${stat.mtimeMs}`;
+            const zipped = /\.(html|css|js)$/.test(file) && stat.size >= 1024 && acceptsGzip(req.headers['accept-encoding']);
+            const etag = `"${version}${zipped ? '-gzip' : ''}"`;
             res.setHeader('ETag', etag);
+            res.setHeader('Vary', 'Accept-Encoding');
+            if (zipped) res.setHeader('Content-Encoding', 'gzip');
             res.setHeader('Cache-Control', 'no-cache');
             if (req.headers['if-none-match'] === etag) { res.writeHead(304); res.end(); return; }
             const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml' };
             res.setHeader('Content-Type', mime[path.extname(file)]);
-            res.end(req.method === 'HEAD' ? undefined : await fs.readFile(resolved));
+            if (req.method === 'HEAD') {res.end(); return;}
+            const body = await staticAsset(resolved, version, zipped);
+            res.setHeader('Content-Length', body.length);
+            res.end(body);
         } catch (error) {
             const status = error.upstreamStatus===429?429:error.code === 'ENOENT' ? 404 : error.name === 'TimeoutError' ? 504 : 502;
             reply(res, status, { retryAfter:error.retryAfter||0,error: status === 404 ? 'Recurso no encontrado' : 'No se pudo consultar el proveedor. Inténtalo de nuevo.' });

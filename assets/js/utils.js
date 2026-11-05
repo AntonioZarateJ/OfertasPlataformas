@@ -1,6 +1,22 @@
 // Peticiones acotadas y caché corta: los precios nunca se guardan indefinidamente.
 const responseCache = new Map();
-async function requestJSON(url, { signal, ttl = 60000, timeout = 8000, ...options } = {}) {
+const pendingJSONRequests = new Map();
+async function requestJSON(url, options = {}) {
+    // Only public, cacheable GETs without caller cancellation or custom fetch options are shared.
+    // Searches with AbortSignal retain independent cancellation and Auth config (ttl: 0) stays fresh.
+    const shareable = typeof url === 'string' && url.startsWith('/api/') && !options.signal &&
+        (options.ttl ?? 60000) > 0 && Object.keys(options).every(key => ['ttl', 'timeout'].includes(key));
+    if (!shareable) return fetchJSON(url, options);
+    const key = JSON.stringify([url, options.ttl ?? 60000, options.timeout ?? 8000]);
+    if (pendingJSONRequests.has(key)) return structuredClone(await pendingJSONRequests.get(key));
+    if (pendingJSONRequests.size >= 100) return fetchJSON(url, options);
+    const work = fetchJSON(url, options).finally(() => {
+        if (pendingJSONRequests.get(key) === work) pendingJSONRequests.delete(key);
+    });
+    pendingJSONRequests.set(key, work);
+    return structuredClone(await work);
+}
+async function fetchJSON(url, { signal, ttl = 60000, timeout = 8000, ...options } = {}) {
     const cacheable = !options.method || options.method === 'GET';
     const cached = responseCache.get(url);
     if (cacheable && ttl > 0 && cached && cached.expires > Date.now()) {
@@ -111,7 +127,8 @@ async function catalogJSON(url,{deadline=Date.now()+45000,...options}={}) {
             if(options.signal?.aborted)throw error;
             const transient=[429,500,502,503,504].includes(error.status)||['TimeoutError','TypeError'].includes(error.name);
             if(!transient||attempt>=3)throw error;
-            const wait=error.status===429?Math.max(1,Math.min(300,error.retryAfter||30))*1000:1500*2**attempt;
+            const pause = error.status === 429 ? (error.retryAfter || 30) : error.status === 503 ? error.retryAfter : 0;
+            const wait=pause>0?Math.max(1,pause)*1000:1500*2**attempt;
             if(wait>=deadline-Date.now())throw error;
             for(let remaining=wait;remaining>0;remaining-=1000){
                 loadingText.textContent=catalogLoadingMessage();
