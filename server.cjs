@@ -1,6 +1,7 @@
 const http = require('node:http');
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const {renderLegalPage} = require('./legal.cjs');
 const {validateQuery,securityHeaders,createApiGuard,publicFirebaseConfig}=require('./security.cjs');
 const {createPublicFetch}=require('./public-fetch.cjs');
 const {BoundedCache}=require('./bounded-cache.cjs');
@@ -43,6 +44,11 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
         if (!['GET', 'HEAD'].includes(req.method)) { res.setHeader('Allow', 'GET, HEAD'); reply(res, 405, { error: 'Método no permitido' }); return; }
         try {
             const url = new URL(req.url, 'http://localhost');
+            const legalPage = renderLegalPage(url.pathname);
+            if (legalPage !== null) {
+                res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache'});
+                res.end(req.method === 'HEAD' ? undefined : legalPage); return;
+            }
             if(url.pathname.startsWith('/api/')){
                 if(!validateQuery(url)){reply(res,upstreams[url.pathname]||['/api/deals-position','/api/console-catalog','/api/console-comparison','/api/auth-config','/api/pc-editions'].includes(url.pathname)?400:404,{error:'Parámetros inválidos'});return;}
                 const access=admit(req);if(access.status){reply(res,access.status,{error:'Límite temporal de acceso',retryAfter:access.retryAfter||0});return;}

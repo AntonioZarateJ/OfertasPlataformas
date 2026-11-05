@@ -543,6 +543,7 @@
           <label id="authPasswordLabel">Contraseña<div class="auth-password"><input id="authPassword" type="password" autocomplete="current-password" minlength="8" required placeholder="Tu contraseña"><button type="button" aria-label="Mostrar contraseña" data-ui-click="toggle-account-password"><i class="fa-regular fa-eye"></i></button></div></label>
           <button type="button" class="auth-forgot" data-ui-click="set-auth-mode-reset">¿Olvidaste tu contraseña?</button>
           <p id="authMessage" role="status" aria-live="polite"></p>
+          <p class="text-xs text-gray-400">Usamos tu correo para el acceso y guardamos tus favoritos y metas. Consulta el <a href="/privacidad" target="_blank" rel="noopener noreferrer" class="text-sky-400 underline">aviso de privacidad</a> y las <a href="/eliminar-datos" target="_blank" rel="noopener noreferrer" class="text-sky-400 underline">opciones sobre tus datos</a>.</p>
           <button id="authSubmit" class="auth-submit" type="submit">Entrar a mi cuenta <span>→</span></button>
         </form>
         <div id="accountPanel" class="hidden-el">
@@ -553,6 +554,7 @@
           <button type="button" id="refreshVerificationButton" class="auth-forgot" data-ui-click="refresh-account">Ya verifiqué mi correo · Actualizar</button>
           <form id="profileForm" data-ui-submit="save-account-profile"><label for="profileName">Nombre público<input id="profileName" autocomplete="nickname" maxlength="60" required placeholder="Tu nombre de jugador"></label><fieldset class="profile-avatar-picker"><legend>Elige tu avatar</legend><div id="profileAvatarOptions"></div></fieldset><button type="submit" id="profileSaveButton" class="auth-submit">Guardar perfil <i class="fa-solid fa-check"></i></button></form>
           <div class="profile-security"><div><strong><i class="fa-solid fa-shield-halved"></i> Seguridad de tu cuenta</strong><p>Te enviaremos un enlace para elegir una nueva contraseña.</p></div><button type="button" id="accountPasswordButton" data-ui-click="reset-account-password">Cambiar contraseña <i class="fa-solid fa-arrow-up-right-from-square"></i></button></div>
+          <p class="text-xs text-gray-400"><a href="/eliminar-datos" class="text-sky-400 underline">Solicitar eliminación de mi cuenta y mis datos</a></p>
           <div class="profile-footer"><button type="button" data-ui-click="profile-open-wishlist"><i class="fa-regular fa-heart"></i> Ver mis favoritos</button><button type="button" class="profile-logout" data-ui-click="logout-account">Cerrar sesión</button></div>
         </div>
         <p class="auth-footnote">Tus favoritos locales siguen disponibles mientras navegas como invitado.</p>
@@ -572,6 +574,7 @@
             <p><strong class="radar-footer-name">Radar<span>Play</span></strong> — Compara precios de juegos. Encuentra tu próxima aventura.</p>
             <p>Conectado a CheapShark, GamerPower & Open Exchange Rates API.</p>
         </div>
+        <nav aria-label="Privacidad y contacto" class="flex flex-wrap justify-center gap-4 mt-4 px-4 text-sky-400"><a href="/privacidad" class="hover:underline">Aviso de privacidad</a><a href="/contacto" class="hover:underline">Contacto</a><a href="/eliminar-datos" class="hover:underline">Eliminar mis datos</a></nav>
     </footer>
 
     <!-- LÓGICA JAVASCRIPT -->
