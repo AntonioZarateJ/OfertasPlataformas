@@ -1,6 +1,6 @@
 const {publicFetch}=require('./public-fetch.cjs');
 const { randomBytes } = require('node:crypto');
-const { embedded, xboxData, playstationData, enebaData } = require('./console-sources.cjs');
+const { embedded, xboxData, playstationData, enebaData, nintendoSearchItems } = require('./console-sources.cjs');
 const locales={MX:'es-MX',US:'en-US',ES:'es-ES',GB:'en-GB',BR:'pt-BR',JP:'ja-JP'};
 const currencies={MX:'MXN',US:'USD',ES:'EUR',GB:'GBP',BR:'BRL',JP:'JPY'};
 async function request(url,body,headers={}){
@@ -26,7 +26,8 @@ async function ps(region,q,cursor,onlyDeals){
  const data=await request(url,null,{'x-psn-store-locale-override':locales[region],Accept:'application/json',Origin:'https://store.playstation.com'});
  const result=q?data.data?.universalSearch:data.data?.categoryGridRetrieve;
  if(!result)throw Error('Búsqueda no disponible');
- const products=result.concepts?.length?result.concepts.map(c=>({...c,isConcept:true,platforms:['PlayStation'],localizedStoreDisplayClassification:'Juego / edición disponible'})):result.products||result.results||[];
+ const rows=result.concepts?.length?result.concepts:result.products||result.results||[];
+ const products=rows.map(p=>p.__typename==='Concept'||result.concepts?.includes(p)?{...p,isConcept:true,platforms:p.platforms||['PlayStation'],localizedStoreDisplayClassification:p.localizedStoreDisplayClassification||'Juego / ediciones disponibles'}:p);
  const items=playstationData({data:{categoryStrandRetrieve:{products}}},region);
  const last=result.pageInfo?.isLast ?? products.length<24;
  return {items,next:last?null:{offset:offset+24,token:result.next||''},total:result.pageInfo?.totalCount};
@@ -38,11 +39,7 @@ async function nintendo(region,q,cursor,onlyDeals,sort,discount){
  const params=new URLSearchParams({query:q,hitsPerPage:'60',page:String(cursor||0),filters:filters.join(' AND ')});
  const data=await request('https://u3b6gr4ua3-dsn.algolia.net/1/indexes/*/queries',{requests:[{indexName:'store_game_'+locales[region].replace('-','_').toLowerCase(),params:params.toString()}]},{'x-algolia-api-key':'a29c6927638bfd8cee23993e51e721c9','x-algolia-application-id':'U3B6GR4UA3'});
  const result=data.results?.[0];if(!Array.isArray(result?.hits))throw Error('Catálogo no disponible para esta región');
- const items=result.hits.flatMap(p=>{
- if((p.eshopDetails?.isPurchasable===false||p.isSalableQty===false)&&!p.eshopDetails?.isPreorderable)return [];
- if(!/Nintendo Switch/.test(p.platform||'')||!p.eshopDetails||p.eshopDetails.currency!==currencies[region]||!Number.isFinite(p.price?.finalPrice)||p.dlcType)return [];
- return [{id:p.objectID||p.urlKey,title:p.title,price:p.price.finalPrice,regular:p.price.regPrice,currency:p.eshopDetails.currency,discount:p.price.percentOff||0,image:p.productImageSquare||'https://assets.nintendo.com/image/upload/q_auto/f_auto/'+p.productImage,url:new URL(p.url,'https://www.nintendo.com').href,edition:p.platform,store:'Nintendo eShop',kind:'official'}];
- });
+ const items=nintendoSearchItems(result.hits,region);
  return {items,next:result.page+1<result.nbPages?result.page+1:null,total:result.nbHits};
 }
 async function external(platform,region,q,page,sort){

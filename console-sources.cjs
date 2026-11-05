@@ -23,6 +23,22 @@ function xboxData(state,region){
 }
 function nintendoData(data,region){const found=new Map();walk(data,p=>{if(!p.name||!p.urlKey||p.prices?.currency!==currencies[region])return;const platform=typeof p.platform==='string'?p.platform:p.platform?.label;if(!/Nintendo Switch/.test(platform||''))return;const q=p.prices;if(!Number.isFinite(q.finalPrice))return;found.set(p.nsuid||p.urlKey,{id:p.nsuid||p.urlKey,title:p.name,price:q.finalPrice,regular:q.regularPrice,currency:q.currency,discount:q.percentOff||0,image:p.productImageSquare?.url||(p.productImage?.publicId?'https://assets.nintendo.com/image/upload/q_auto/f_auto/'+p.productImage.publicId:''),url:`https://www.nintendo.com/${locales[region].toLowerCase()}/store/products/${p.urlKey}/`,edition:platform,store:'Nintendo eShop',kind:'official'});});if(!found.size)throw Error('No se encontraron precios regionales');return [...found.values()];}
 function money(text,region){const parts=new Intl.NumberFormat(locales[region]).formatToParts(1234.5);const group=parts.find(p=>p.type==='group')?.value,decimal=parts.find(p=>p.type==='decimal')?.value;let s=String(text||'');if(group)s=s.split(group).join('');if(decimal)s=s.replace(decimal,'.');s=s.replace(/[^0-9.]/g,'');return s?Number(s):NaN;}
+function nintendoSearchItems(hits,region){
+ return hits.flatMap(p=>{
+  const details=p.eshopDetails,type=details?.productType;
+  const preorder=details?.isPreorderable===true;
+  if((details?.isPurchasable===false||p.isSalableQty===false)&&!preorder)return [];
+  // ROM Bundle incluye juegos y ediciones completas; Individual es contenido extra.
+  if(type&&!['TITLE','BUNDLE'].includes(type))return [];
+  if(!type&&p.dlcType&&!/^ROM Bundle$/i.test(p.dlcType))return [];
+  if(!/^Nintendo Switch(?: 2)?$/.test(p.platform||'')||details?.currency!==currencies[region]||!Number.isFinite(p.price?.finalPrice)||p.price.finalPrice<0)return [];
+  let url;try{url=new URL(p.url,'https://www.nintendo.com');if(url.protocol!=='https:'||url.hostname!=='www.nintendo.com')return [];}catch{return [];}
+  const bundle=type==='BUNDLE'||/^ROM Bundle$/i.test(p.dlcType||'');
+  const square=typeof p.productImageSquare==='string'?p.productImageSquare:p.productImageSquare?.url;
+  return [{id:p.objectID||p.urlKey,title:p.title,price:p.price.finalPrice,regular:p.price.regPrice,currency:details.currency,discount:p.price.percentOff||0,
+   image:square||'https://assets.nintendo.com/image/upload/q_auto/f_auto/'+p.productImage,url:url.href,edition:p.platform+(bundle?' · Paquete de juego':''),store:'Nintendo eShop',kind:'official'}];
+ });
+}
 function playstationArtwork(product) {
  const priorities={MASTER:0,PACKSHOT:1,GAMEHUB_COVER_ART:2,PORTRAIT_BANNER:3,HERO:5,BACKGROUND_ART:10,SCREENSHOT:20,LOGO:30,ICON:30};
  const media=[...(Array.isArray(product.media)?product.media:[]),...(Array.isArray(product.images)?product.images:[])];
@@ -40,7 +56,8 @@ function playstationData(data,region){
  const products=data.data?.categoryStrandRetrieve?.products;
  if(!Array.isArray(products))throw Error('Catálogo no disponible');
  return products.flatMap(p=>{
-  if(!p.price||p.price.isTiedToSubscription||p.price.isExclusive||p.storeDisplayClassification==='ADD_ON')return [];
+  const classification=p.storeDisplayClassification;
+  if(!p.price||p.price.isTiedToSubscription||p.price.isExclusive||['ADD_ON','ADD_ON_CONTENT','TRACK','CHARACTER','COSTUME','ITEM','LEVEL','MAP','AVATAR','THEME','SERVICE','SUBSCRIPTION','SEASON_PASS','EXPANSION'].includes(classification))return [];
   const price=p.price.isFree?0:money(p.price.discountedPrice,region),regular=money(p.price.basePrice,region);
   if(!Number.isFinite(price))return [];
   const images=playstationArtwork(p);
@@ -58,4 +75,4 @@ function enebaData(data,platform,region){return Object.values(data).flatMap(p=>{
  return [{id:p.slug,title:p.name,price:q.amount/100,regular:regular?.amount/100||null,currency:q.currency,discount:regular?.amount>q.amount?Math.round((1-q.amount/regular.amount)*100):0,image:p['cover({"width":300})']?.src,url:'https://www.eneba.com/'+p.slug,edition:drm+' · '+p.regions.map(r=>r.name).join(', '),store:'Eneba',kind:'external',seller:a.merchant?.displayname}];
 });}
 async function consoleCatalog(...args){ return require('./console-paged.cjs').catalog(...args); }
-module.exports={consoleCatalog,xboxData,nintendoData,playstationData,enebaData,embedded};
+module.exports={consoleCatalog,xboxData,nintendoData,nintendoSearchItems,playstationData,enebaData,embedded};
