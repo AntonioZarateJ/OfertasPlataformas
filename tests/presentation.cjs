@@ -119,6 +119,24 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         }
         await page.setViewportSize({width:390,height:844});
         await page.screenshot({path:'test-results/header-refined-mobile.png'});
+        await expect(page.locator('#mobileFilterContent #pcStoreSelect')).toBeVisible();
+        await expect(page.locator('#mobileFilterContent #sortSelect')).toBeVisible();
+        await page.locator('#closeMobileFilters').click();
+        await expect(page.locator('#pcStoreSelect')).toBeHidden();
+        await expect(page.locator('#mobileExchangeRate')).toHaveText(await page.locator('#exchangeRateBadge').textContent());
+        await page.evaluate(() => scrollTo(0, 0));
+        const firstMobileCard = await page.locator('#gamesGrid .steam-card').first().boundingBox();
+        assert(firstMobileCard && firstMobileCard.y < 430, 'El catálogo debe empezar en la primera pantalla móvil');
+        await page.screenshot({path:'test-results/catalog-mobile-closed.png'});
+        await page.locator('[data-ecosystem="xbox"]').click();
+        await expect(page.locator('#consoleTools')).toBeHidden();
+        await page.locator('#mobileFilterPanel > summary').click();
+        await expect(page.locator('#mobileFilterContent #consoleSource')).toBeVisible();
+        await expect(page.locator('#pcStoreSelect')).toBeHidden();
+        await page.setViewportSize({width:1366,height:900});
+        await expect(page.locator('main #consoleSource')).toBeVisible();
+        await page.locator('[data-ecosystem="pc"]').click();
+        await expect(page.locator('#pcStoreSelect')).toBeVisible();
         await page.emulateMedia({reducedMotion:'reduce'});
         await page.evaluate(()=>{selectSmartChip('all')});
         await expect(page.locator('#loadingText')).toContainText('Cargando juegos');

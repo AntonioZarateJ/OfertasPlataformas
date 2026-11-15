@@ -114,15 +114,20 @@
 
             const currentLowestUsd = parseFloat(bestDeal.price || 0);
             const retailUsd = parseFloat(bestDeal.retailPrice || dealContext.normalPrice || currentLowestUsd);
-            const cheapestEver = gameData.cheapestPriceEver || { price: currentLowestUsd, date: Date.now() / 1000 };
-            const historicalLowUsd = parseFloat(cheapestEver.price ?? currentLowestUsd);
-            const histDate = new Date((cheapestEver.date || Date.now() / 1000) * 1000).toLocaleDateString('es-MX', {
+            const historicalLowUsd = parseFloat(gameData.cheapestPriceEver?.price);
+            const hasHistoricalLow = Number.isFinite(historicalLowUsd) && historicalLowUsd >= 0;
+            const date = new Date(Number(gameData.cheapestPriceEver?.date) * 1000);
+            const histDate = date.getTime() > 0 ? date.toLocaleDateString('es-MX', {
                 year: 'numeric', month: 'long', day: 'numeric'
-            });
+            }) : '';
+            const dateLabel = histDate ? `Registrado el ${histDate}.` : 'Fecha de registro no disponible.';
 
-            const isHistoricalLow = currentLowestUsd <= (historicalLowUsd + 0.05);
+            const isHistoricalLow = hasHistoricalLow && dealsList.length > 0 && currentLowestUsd <= historicalLowUsd;
 
-            if (isHistoricalLow) {
+            if (!hasHistoricalLow) {
+                historicalLowBanner.className = 'rounded-xl p-4 border bg-[#152033] border-white/10 text-sm text-gray-300';
+                historicalLowBanner.textContent = 'CheapShark no devolvió un mínimo histórico para este juego.';
+            } else if (isHistoricalLow) {
                 historicalLowBanner.className = "rounded-xl p-4 border bg-gradient-to-r from-amber-500/20 via-orange-500/10 to-transparent border-amber-400/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
                 historicalLowBanner.innerHTML = `
                     <div class="flex items-center gap-3.5">
@@ -130,9 +135,9 @@
                             <i class="fa-solid fa-fire-flame-curved"></i>
                         </div>
                         <div>
-                            <span class="text-[11px] font-black uppercase tracking-wider text-amber-400 block">¡Mínimo Histórico Detectado!</span>
-                            <h4 class="text-white font-bold text-sm">Hoy está en su precio más bajo registrado en tiendas oficiales.</h4>
-                            <p class="text-xs text-gray-300 mt-0.5">Récord registrado el ${histDate}.</p>
+                            <span class="text-[11px] font-black uppercase tracking-wider text-amber-400 block">Historial de CheapShark</span>
+                            <h4 class="text-white font-bold text-sm">La mejor oferta de CheapShark iguala o mejora su mínimo registrado en USD.</h4>
+                            <p class="text-xs text-gray-300 mt-0.5">${dateLabel}</p>
                         </div>
                     </div>
                     <div class="bg-black/40 px-3.5 py-2 rounded-lg border border-amber-400/30 text-right">
@@ -149,16 +154,16 @@
                         </div>
                         <div>
                             <span class="text-[11px] font-bold uppercase tracking-wider text-sky-400 block">Registro Histórico</span>
-                            <h4 class="text-white font-semibold text-sm">Su mínimo histórico oficial fue de <strong class="text-emerald-400">${formatPrice(historicalLowUsd, true)}</strong></h4>
-                            <p class="text-xs text-gray-400 mt-0.5">Alcanzado el ${histDate}.</p>
+                            <h4 class="text-white font-semibold text-sm">Mínimo de CheapShark convertido: <strong class="text-emerald-400">${formatPrice(historicalLowUsd, true)}</strong></h4>
+                            <p class="text-xs text-gray-400 mt-0.5">${dateLabel}</p>
                         </div>
                     </div>
                 `;
             }
 
-            const maxRef = Math.max(retailUsd, currentLowestUsd, historicalLowUsd, 1);
+            const maxRef = Math.max(retailUsd, currentLowestUsd, hasHistoricalLow ? historicalLowUsd : 0, 1);
             const curPct = Math.max(12, Math.round((currentLowestUsd / maxRef) * 100));
-            const histPct = Math.max(12, Math.round((historicalLowUsd / maxRef) * 100));
+            const histPct = hasHistoricalLow ? Math.max(12, Math.round((historicalLowUsd / maxRef) * 100)) : 0;
 
             priceComparisonBars.innerHTML = `
                 <div class="bg-[#121a2a] p-3.5 rounded-xl border border-white/5">
@@ -181,8 +186,8 @@
                 </div>
                 <div class="bg-[#121a2a] p-3.5 rounded-xl border border-amber-400/30">
                     <div class="flex justify-between text-xs mb-1">
-                        <span class="text-amber-400 font-semibold">Mínimo Histórico</span>
-                        <span class="text-amber-400 font-black">${formatPrice(historicalLowUsd, true)}</span>
+                        <span class="text-amber-400 font-semibold">Mínimo de CheapShark</span>
+                        <span class="text-amber-400 font-black">${hasHistoricalLow ? formatPrice(historicalLowUsd, true) : 'Sin registro'}</span>
                     </div>
                     <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden mt-2">
                         <div class="bg-amber-400 h-full rounded-full" style="width: ${histPct}%"></div>

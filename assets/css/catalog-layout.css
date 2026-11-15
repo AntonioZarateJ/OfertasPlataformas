@@ -1,0 +1,113 @@
+.mobile-catalog-tools { display: none; }
+
+.catalog-context {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    max-width: 1280px;
+    margin: 12px auto 0;
+    padding: 0 16px;
+}
+
+.catalog-context .catalog-scope-note { padding: 0; margin: 0; }
+.catalog-context > a { color: #7dd3fc; font-size: 11px; flex-shrink: 0; }
+.catalog-context > a:hover { text-decoration: underline; }
+
+.catalog-guide {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 24px;
+    margin-top: 32px;
+    padding: 20px;
+    border: 1px solid #263a50;
+    border-radius: 16px;
+    background: #111b2a;
+}
+
+.catalog-guide h2 { color: #f1f5f9; font-size: 16px; font-weight: 800; }
+.catalog-guide p { margin-top: 4px; color: #b1c2d6; font-size: 13px; }
+.catalog-guide a { color: #7dd3fc; font-size: 13px; font-weight: 700; }
+.catalog-guide a:hover { text-decoration: underline; }
+
+@media (max-width: 767px) {
+    .catalog-context, #activeEcosystemBadge { display: none; }
+    .mobile-catalog-tools { display: block; margin-top: 8px; }
+
+    .catalog-mode-tabs { padding-bottom: 0; }
+    #mobileFilterPanel {
+        padding: 0 12px;
+        border: 1px solid #2b3f57;
+        border-radius: 12px;
+        background: #111d2e;
+    }
+
+    #mobileFilterPanel > summary {
+        min-height: 44px;
+        padding: 8px 0;
+        gap: 8px;
+        line-height: 1.35;
+    }
+
+    #mobileFilterPanel > summary > i { color: #7dd3fc; }
+    #mobileRegionLabel { text-align: right; }
+
+    .filter-chevron {
+        width: 7px;
+        height: 7px;
+        flex: 0 0 7px;
+        border-right: 2px solid #94acc7;
+        border-bottom: 2px solid #94acc7;
+        transform: rotate(45deg);
+        margin: -3px 3px 0 1px;
+    }
+
+    #mobileFilterPanel[open] .filter-chevron { transform: rotate(225deg); margin-top: 3px; }
+
+    .mobile-catalog-info {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px 10px;
+        margin: 4px 2px 0;
+        color: #b1c2d6;
+        font-size: 11px;
+    }
+
+    .mobile-catalog-info > span { padding: 5px 0; font-variant-numeric: tabular-nums; }
+    .mobile-catalog-info i, .mobile-catalog-info a { color: #7dd3fc; }
+    .mobile-catalog-info a { padding: 5px 0; font-weight: 700; }
+    .mobile-catalog-info a:focus-visible, #mobileFilterPanel :focus-visible { outline: 2px solid #7dd3fc; outline-offset: 2px; }
+
+    #mobileFilterContent { padding-top: 8px; border-top: 1px solid #293c52; }
+    #mobileFilterContent select { min-height: 40px; }
+    #mobileFilterContent #sortContainer { flex-direction: column; align-items: stretch; }
+    #mobileFilterContent #sortContainer label { color: #b5c7da; }
+    #mobileFilterContent #pcStoreBar, #mobileFilterContent #freeGamesSubBar { margin: 0; padding-top: 0; border-top: 0; }
+    #mobileFilterContent #pcStoreBar > label { width: 100%; display: grid; grid-template-columns: auto 1fr; gap: 6px 8px; }
+    #mobileFilterContent #pcStoreSelect { grid-column: 1 / -1; }
+    #mobileFilterContent .pc-external-links { gap: 6px; }
+    #mobileFilterContent .pc-external-links > span { width: 100%; }
+    #mobileFilterContent #toggleFineTuneBtn { min-height: 42px; justify-content: center; }
+    #mobileFilterContent #catalogScopeNote { margin: 0; padding: 0; font-size: 11px; }
+
+    #closeMobileFilters {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+        margin-bottom: 12px;
+        border: 1px solid #357399;
+        border-radius: 9px;
+        background: #15334b;
+        color: #d5f2ff;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    main { padding-top: 12px !important; }
+    main > div:first-child { margin-bottom: 12px; }
+    #catalogHeaderTitle { font-size: 15px; }
+}

@@ -74,3 +74,17 @@ test('HTML, CSS y JS se entregan con MIME correcto y revalidación ETag', async 
         assert.match((await fetch(`${base}/assets/js/core.js`)).headers.get('content-type'), /javascript/);
     });
 });
+
+test('La guía de precios es accesible desde el catálogo y se sirve en HTML sin iniciar sesión', async () => {
+    await withServer(async () => { throw new Error('La guía no consulta proveedores'); }, async base => {
+        const home = await fetch(base);
+        assert.match(await home.text(), /href="\/como-comparamos"/);
+        const guide = await fetch(`${base}/como-comparamos`);
+        assert.equal(guide.status, 200);
+        assert.match(guide.headers.get('content-type'), /text\/html/);
+        const html = await guide.text();
+        assert.match(html, /<h1>Cómo comparamos precios<\/h1>/);
+        assert.match(html, /<meta name="google-adsense-account"/);
+        assert.match(html, /href="\/contacto"/);
+    });
+});

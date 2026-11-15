@@ -18,11 +18,9 @@
         }
 
         function updateExchangeBadge() {
-            if (currentCurrency === 'USD') {
-                exchangeRateBadge.textContent = `Base: 1.00 USD`;
-            } else {
-                exchangeRateBadge.textContent = `1 USD ≈ ${formatPrice(1, true)}`;
-            }
+            const rateText = currentCurrency === 'USD' ? 'Base: 1.00 USD' : `1 USD ≈ ${formatPrice(1, true)}`;
+            exchangeRateBadge.textContent = rateText;
+            document.getElementById('mobileExchangeRate').textContent = rateText;
         }
 
         currencySelect.addEventListener('change', (e) => {

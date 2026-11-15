@@ -19,6 +19,7 @@
     
 
     <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/catalog-layout.css">
 </head>
 <body class="min-h-screen flex flex-col selection:bg-steam-blue selection:text-steam-bg">
 
@@ -139,10 +140,12 @@
         </div>
     </header>
 
-    <details id="mobileFilterPanel"><summary>Filtros y región <span id="mobileRegionLabel">México</span><i class="fa-solid fa-sliders"></i></summary><div id="mobileFilterContent"></div></details>
     <p id="platformPriceNotice" class="hidden-el text-center text-xs text-amber-300 px-4 py-2">Los precios del catálogo corresponden a PC. Los enlaces de consola buscan keys; confirma el precio y la plataforma en la tienda.</p>
 
-    <p id="catalogScopeNote" class="catalog-scope-note">Solo ofertas: juegos con descuento. Puedes elegir un porcentaje exacto o un rango en Filtros.</p>
+    <div class="catalog-context">
+        <p id="catalogScopeNote" class="catalog-scope-note">Solo ofertas: juegos con descuento. Puedes elegir un porcentaje exacto o un rango en Filtros.</p>
+        <a href="/como-comparamos">Cómo comparamos precios <span aria-hidden="true">→</span></a>
+    </div>
     <!-- 3. BARRA HORIZONTAL DE PÍLDORAS INTELIGENTES (REEMPLAZA A LA BARRA LATERAL CONFUSA) -->
     <section class="bg-[#101726]/90 border-b border-white/10 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 py-3">
@@ -150,7 +153,7 @@
             <div class="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
                 
                 <!-- Fila de Píldoras de 1 Clic -->
-                <div class="flex items-center gap-2 overflow-x-auto pb-1 xl:pb-0 no-scrollbar">
+                <div class="catalog-mode-tabs flex items-center gap-2 overflow-x-auto pb-1 xl:pb-0 no-scrollbar">
                     <button type="button" data-chip="top" data-ui-click="select-smart-chip-top"
                         class="smart-chip active px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-white/10 bg-steam-base text-gray-200 flex items-center gap-2">
                         <span>🔥 Solo ofertas</span>
@@ -188,11 +191,23 @@
                     <button type="button" id="toggleFineTuneBtn"
                         class="bg-steam-base hover:bg-steam-light text-sky-400 border border-sky-500/30 rounded-xl py-2 px-3.5 text-xs font-bold transition flex items-center gap-2">
                         <i class="fa-solid fa-sliders"></i>
-                        <span>Filtros</span>
+                        <span class="desktop-label">Filtros</span><span class="mobile-label">Descuento y reseñas</span>
                         <span id="activeCustomFiltersDot" class="hidden-el w-2 h-2 rounded-full bg-amber-400"></span>
                     </button>
                 </div>
 
+            </div>
+
+            <div class="mobile-catalog-tools">
+                <details id="mobileFilterPanel">
+                    <summary><i class="fa-solid fa-sliders" aria-hidden="true"></i> Filtros del catálogo <span id="mobileRegionLabel">México</span><span class="filter-chevron" aria-hidden="true"></span></summary>
+                    <div id="mobileFilterContent"></div>
+                    <button id="closeMobileFilters" type="button">Ver juegos</button>
+                </details>
+                <div class="mobile-catalog-info">
+                    <span><i class="fa-solid fa-coins" aria-hidden="true"></i> <span id="mobileExchangeRate">Tipo de cambio estimado</span></span>
+                    <a href="/como-comparamos">Cómo comparamos <span aria-hidden="true">→</span></a>
+                </div>
             </div>
 
             <!-- CAJÓN DESPLEGABLE OCULTO: "AJUSTES FINOS" (SOLO SE VE SI EL USUARIO LO ABRE) -->
@@ -305,6 +320,10 @@
             <span id="loadMoreStatus" role="status" aria-live="polite" class="sr-only"></span>
         </div>
         <p id="catalogEndStatus" class="hidden-el catalog-end-status" role="status">Ya viste los juegos disponibles para esta búsqueda.</p>
+        <section class="catalog-guide" aria-labelledby="catalogGuideTitle">
+            <div><h2 id="catalogGuideTitle">Cómo comparamos precios</h2><p>Consulta qué significa cada precio, cómo distinguimos regiones y ediciones y qué puedes comprobar en el historial.</p></div>
+            <a href="/como-comparamos">Leer la guía <span aria-hidden="true">→</span></a>
+        </section>
     </main>
 
     <!-- 5. MODAL ANALÍTICO: DETECTOR DE MÍNIMO HISTÓRICO + COMPARADOR MULTITIENDA + ALERTAS (FASE 3) -->
@@ -575,7 +594,7 @@
             <p><strong class="radar-footer-name">Radar<span>Play</span></strong> — Compara precios de juegos. Encuentra tu próxima aventura.</p>
             <p>Conectado a CheapShark, GamerPower & Open Exchange Rates API.</p>
         </div>
-        <nav aria-label="Privacidad y contacto" class="flex flex-wrap justify-center gap-4 mt-4 px-4 text-sky-400"><a href="/privacidad" class="hover:underline">Aviso de privacidad</a><a href="/contacto" class="hover:underline">Contacto</a><a href="/eliminar-datos" class="hover:underline">Eliminar mis datos</a></nav>
+        <nav aria-label="Información de RadarPlay" class="flex flex-wrap justify-center gap-4 mt-4 px-4 text-sky-400"><a href="/como-comparamos" class="hover:underline">Cómo comparamos</a><a href="/privacidad" class="hover:underline">Aviso de privacidad</a><a href="/contacto" class="hover:underline">Contacto</a><a href="/eliminar-datos" class="hover:underline">Eliminar mis datos</a></nav>
     </footer>
 
     <!-- LÓGICA JAVASCRIPT -->
