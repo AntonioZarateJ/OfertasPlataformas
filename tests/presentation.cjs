@@ -162,6 +162,7 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         assert.match(await page.evaluate(() => consolePriceDecision({store:'Nintendo eShop', currency:'MXN', price:249, history:{min:199, days:3}}, 'México')), /por encima de ese mínimo/);
         assert.match(await page.evaluate(() => consolePriceDecision({store:'Nintendo eShop', currency:'MXN', price:249, history:{min:199, days:2}}, 'México')), /Historial insuficiente/);
         await page.setViewportSize({width:390,height:844});
+        await page.clock.setFixedTime(new Date('2026-11-16T05:59:59Z'));
         await page.locator('.mobile-catalog-info a[href="/radar-mexico"]').click();
         await expect(page.getByRole('heading', {name:'Radar de México'})).toBeVisible();
         await expect(page.locator('.pick-platform strong')).toHaveText(['PC', 'Xbox', 'PlayStation', 'Nintendo Switch']);
@@ -171,6 +172,23 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         await expect(page.locator('[data-platform="ps"] .pick-price')).toContainText('Precio regular');
         await expect(page.locator('[data-platform="switch"] .pick-price')).toHaveText('Consulta el precio en la tienda');
         await expect(page.getByRole('status')).toContainText('precios que pudimos comprobar');
+        await expect(page.locator('#edition-date')).toContainText('15 de noviembre');
+        await expect(page.locator('.edition-history')).toBeHidden();
+        assert.equal(await page.locator('.edition-pick').first().evaluate(card => getComputedStyle(card, '::after').animationName), 'none');
+
+        await page.clock.setFixedTime(new Date('2026-11-16T06:00:00Z'));
+        await page.reload();
+        await expect(page.locator('.edition-pick h2')).toHaveText(['Portal 2', 'Rocket League®', 'God of War Ragnarök', 'Mario Kart™ 8 Deluxe']);
+        await expect(page.locator('.pick-reason').first()).toContainText('los niveles cooperativos');
+        await expect(page.locator('#edition-date')).toContainText('16 de noviembre');
+        await page.locator('.edition-history summary').click();
+        await expect(page.locator('.edition-history').getByRole('link', {name:'Gunpoint'})).toBeVisible();
+
+        await page.clock.setFixedTime(new Date('2026-11-22T06:00:00Z'));
+        await page.reload();
+        await expect(page.locator('.edition-history details')).toHaveCount(6);
+        await expect(page.locator('.edition-pick h2').first()).toHaveText('Gunpoint');
+        await expect(page.locator('.edition-history summary').last()).toContainText('16 de noviembre');
         assert.deepEqual(errors, []);
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     } finally { await browser.close();await new Promise(resolve=>server.close(resolve)); }

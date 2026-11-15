@@ -20,16 +20,18 @@
         <div class="edition-intro">
             <p class="edition-region"><img src="/assets/flags/MX.svg" width="24" height="18" alt=""> Selección para México</p>
             <h1>Radar de México</h1>
-            <p>¿Qué jugar este fin de semana? Elegimos un juego para cada plataforma y te contamos qué lo hace interesante. Busca la consola o PC que usas y revisa el precio de esa edición en su tienda oficial.</p>
+            <p>Descubre una recomendación diaria para PC, Xbox, PlayStation y Nintendo Switch. Elegimos juegos para distintos gustos y te contamos qué los hace interesantes. Los precios de las tiendas oficiales se consultan en pesos mexicanos.</p>
+            <p class="edition-date" id="edition-date" hidden></p>
             <p id="edition-price-status" class="edition-price-status" role="status">Consulta el precio de cada recomendación desde su enlace a la tienda.</p>
         </div>
         <div class="edition-picks">
             <article class="edition-pick" data-platform="pc" data-product="206190" data-store="Steam">
                 <img class="pick-cover" src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/206190/header.jpg" width="460" height="215" alt="" decoding="async">
                 <div class="pick-body">
-                    <p class="pick-platform"><strong>PC</strong> <span>Steam · Juego base</span></p>
+                    <p class="pick-platform"><strong>PC</strong> <span>Steam</span></p>
                     <h2>Gunpoint</h2>
-                    <p>Lo elegimos para quien disfruta el sigilo en niveles cortos. Reconfigurar luces y puertas te deja preparar un plan y probar otra ruta si falla.</p>
+                    <p class="pick-reason">Lo elegimos para quien disfruta el sigilo en niveles cortos. Reconfigurar luces y puertas te deja preparar un plan y probar otra ruta si falla.</p>
+                    <p class="pick-edition">Juego base</p>
                     <div class="pick-price" aria-label="Precio del juego base"><strong>Consulta el precio en Steam</strong><span hidden></span></div>
                     <a class="pick-link" href="https://store.steampowered.com/app/206190/Gunpoint/?cc=mx">Ver Gunpoint en Steam <span aria-hidden="true">↗</span></a>
                 </div>
@@ -39,7 +41,7 @@
                 <div class="pick-body">
                     <p class="pick-platform"><strong>Xbox</strong> <span>Xbox One y Series X|S · Xbox Store</span></p>
                     <h2>Forza Horizon 5</h2>
-                    <p>Una buena opción si alternas entre carreras y paseos libres. Lo elegimos por sus rutas inspiradas en México y la libertad de cambiar de actividad a mitad del recorrido.</p>
+                    <p class="pick-reason">Una buena opción si alternas entre carreras y paseos libres. Lo elegimos por sus rutas inspiradas en México y la libertad de cambiar de actividad a mitad del recorrido.</p>
                     <p class="pick-edition">Edición Estándar</p>
                     <div class="pick-price" aria-label="Precio de esta edición"><strong>Consulta el precio en la tienda</strong><span hidden></span></div>
                     <a class="pick-link" href="https://www.xbox.com/es-MX/games/store/forza-horizon-5-edicion-estandar/9NKX70BBCDRN">Ver en Xbox Store <span aria-hidden="true">↗</span></a>
@@ -50,7 +52,7 @@
                 <div class="pick-body">
                     <p class="pick-platform"><strong>PlayStation</strong> <span>PS5 · PlayStation Store</span></p>
                     <h2>ASTRO BOT</h2>
-                    <p>Lo elegimos para partidas cortas de plataformas. Cada planeta cambia las herramientas que usas y el DualSense añade detalles al movimiento.</p>
+                    <p class="pick-reason">Lo elegimos para partidas cortas de plataformas. Cada planeta cambia las herramientas que usas y el DualSense añade detalles al movimiento.</p>
                     <p class="pick-edition">Edición Estándar</p>
                     <div class="pick-price" aria-label="Precio de esta edición"><strong>Consulta el precio en la tienda</strong><span hidden></span></div>
                     <a class="pick-link" href="https://store.playstation.com/es-mx/product/UP9000-PPSA21564_00-0000000000000000">Ver en PlayStation Store <span aria-hidden="true">↗</span></a>
@@ -61,13 +63,18 @@
                 <div class="pick-body">
                     <p class="pick-platform"><strong>Nintendo Switch</strong> <span>Nintendo eShop</span></p>
                     <h2>PICO PARK 2</h2>
-                    <p>Lo elegimos para jugar en grupo. Los puzles hacen que coordinar saltos, esperar a los demás y ponerse de acuerdo sea parte de la diversión.</p>
+                    <p class="pick-reason">Lo elegimos para jugar en grupo. Los puzles hacen que coordinar saltos, esperar a los demás y ponerse de acuerdo sea parte de la diversión.</p>
                     <p class="pick-edition">Juego base</p>
                     <div class="pick-price" aria-label="Precio de esta edición"><strong>Consulta el precio en la tienda</strong><span hidden></span></div>
                     <a class="pick-link" href="https://www.nintendo.com/es-mx/store/products/pico-park-2-switch/">Ver en Nintendo eShop <span aria-hidden="true">↗</span></a>
                 </div>
             </article>
         </div>
+        <section class="edition-history" aria-labelledby="history-title" hidden>
+            <h2 id="history-title">Historial de recomendaciones</h2>
+            <p>Revisa hasta seis selecciones anteriores. Los enlaces abren cada edición en su tienda con el precio vigente.</p>
+            <div id="edition-history-list"></div>
+        </section>
     </main>
     <footer>
         <a href="/como-comparamos">Cómo comparamos precios</a>
