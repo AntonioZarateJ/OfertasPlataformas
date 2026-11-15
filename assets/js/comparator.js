@@ -33,6 +33,7 @@
         }
 
         async function openAnalyticalModal(dealItem) {
+            dealItem = {...dealItem};
             modalController?.abort();
             const controller = new AbortController();
             modalController = controller;
@@ -244,10 +245,12 @@
                 }
             });
 
-            // Guardar una alerta desde el modal debe usar el precio comparado actual.
-            dealContext.salePrice = currentLowestUsd.toFixed(2);
-            dealContext.normalPrice = retailUsd.toFixed(2);
-            updateSavedPrices([dealContext]);
+            const favoriteOffer = wishlistPCOffer(userWishlist[String(dealContext.gameID)] || dealContext, dealsList);
+            if (favoriteOffer) {
+                Object.assign(dealContext, {salePrice:favoriteOffer.price, normalPrice:favoriteOffer.retailPrice,
+                    storeID:favoriteOffer.storeID, dealID:favoriteOffer.dealID, savings:favoriteOffer.savings});
+                updateSavedPrices([dealContext]);
+            }
             syncModalWishlistAndAlertUI(dealContext);
 
             // Renderizar Pestaña 2: Mercados de Keys (Eneba, CDKeys, G2A, Instant Gaming, Kinguin)

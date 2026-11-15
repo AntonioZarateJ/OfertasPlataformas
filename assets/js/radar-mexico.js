@@ -1,4 +1,3 @@
-const mexicoPrice = new Intl.NumberFormat('es-MX', {style: 'currency', currency: 'MXN'});
 const mexicoDate = new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Mexico_City', year: 'numeric', month: 'numeric', day: 'numeric'});
 const dayLabel = new Intl.DateTimeFormat('es-MX', {dateStyle: 'full', timeZone: 'UTC'});
 const dayMs = 86_400_000;
@@ -9,9 +8,15 @@ function mexicoCalendarDate(now) {
 }
 
 function readOriginalPick(card) {
+    const source = card.querySelector('.pick-platform span').textContent;
     return {
+        product: card.dataset.product,
+        search: card.dataset.search,
+        system: source === card.dataset.store ? '' : source.split(' · ')[0],
         title: card.querySelector('h2').textContent,
         reason: card.querySelector('.pick-reason').textContent,
+        edition: card.querySelector('.pick-edition').textContent,
+        image: card.querySelector('.pick-cover').src,
         url: card.querySelector('.pick-link').href
     };
 }
@@ -27,11 +32,16 @@ function showEditionPick(card, pick) {
     const link = card.querySelector('.pick-link');
     link.href = pick.url;
     link.firstChild.textContent = `Ver en ${card.dataset.store} `;
+    card.querySelector('.pick-price strong').textContent = 'Consulta el precio en la tienda';
+    card.querySelector('.pick-price span').hidden = true;
 }
 
 function showEditionHistory(cards, previousDays, today, picksAt) {
-    if (previousDays === 0) return;
+    const empty = document.getElementById('edition-history-empty');
+    empty.hidden = previousDays > 0;
+    empty.textContent = 'Todavía no hay selecciones anteriores esta semana.';
     const list = document.getElementById('edition-history-list');
+    list.replaceChildren();
     for (let offset = 1; offset <= previousDays; offset++) {
         const date = today - offset * dayMs;
         const picks = picksAt(date);
@@ -55,67 +65,48 @@ function showEditionHistory(cards, previousDays, today, picksAt) {
         day.append(summary, games);
         list.append(day);
     }
-    list.closest('section').hidden = false;
 }
 
-async function loadDailyEdition(cards) {
-    const response = await fetch('/assets/radar-mexico-rotation.json', {signal: AbortSignal.timeout(4000)});
-    if (!response.ok) return;
-    const {startsOn, rotation, scheduled = {}} = await response.json();
+function loadDailyEdition(cards, {startsOn, rotation, scheduled = {}}) {
     const original = Object.fromEntries(cards.map(card => [card.dataset.platform, readOriginalPick(card)]));
     const week = [original, ...rotation];
     const start = Date.parse(startsOn);
-    const today = mexicoCalendarDate(new Date());
-    const elapsed = (today - start) / dayMs;
-    if (elapsed < 0) return;
-
+    const firstMonday = start + ((8 - new Date(start).getUTCDay()) % 7) * dayMs;
     function picksAt(date) {
         const dateKey = new Date(date).toISOString().slice(0, 10);
-        return scheduled[dateKey] ?? week[((date - start) / dayMs) % week.length];
+        const weeksSinceStart = Math.max(0, Math.floor((date - firstMonday) / (7 * dayMs)));
+        return scheduled[dateKey] ?? week[((date - start) / dayMs + weeksSinceStart) % week.length];
     }
-    const picks = picksAt(today);
-    if (picks !== original) cards.forEach(card => showEditionPick(card, picks[card.dataset.platform]));
-    const date = document.getElementById('edition-date');
-    date.textContent = `Selección de hoy · ${dayLabel.format(today)}`;
-    date.hidden = false;
-    showEditionHistory(cards, Math.min(6, elapsed), today, picksAt);
+    function updateDay() {
+        const today = mexicoCalendarDate(new Date());
+        if (today === displayedDay) return;
+        const elapsed = (today - start) / dayMs;
+        if (elapsed < 0) {
+            document.getElementById('edition-history-empty').textContent = 'El historial estará disponible cuando comience el calendario.';
+            if (displayedDay === undefined) void loadEditionPrices(cards, today);
+            displayedDay = today;
+            return;
+        }
+        const picks = picksAt(today);
+        if (picks !== original || displayedDay !== undefined) cards.forEach(card => showEditionPick(card, picks[card.dataset.platform]));
+        displayedDay = today;
+        const date = document.getElementById('edition-date');
+        date.textContent = `Selección de hoy · ${dayLabel.format(today)}`;
+        date.hidden = false;
+        const sinceMonday = (new Date(today).getUTCDay() + 6) % 7;
+        showEditionHistory(cards, Math.min(sinceMonday, elapsed), today, picksAt);
+        void loadEditionPrices(cards, today);
+    }
+    updateDay();
+    window.setInterval(() => { if (!document.hidden) updateDay(); }, 30_000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) updateDay(); });
 }
 
-async function readRadarQuote(card) {
-    const {platform, product, store, search} = card.dataset;
-    const params = new URLSearchParams({region: 'MX'});
-    let endpoint;
-    if (platform === 'pc') {
-        endpoint = '/api/steam-prices';
-        params.set('appids', product);
-    } else {
-        endpoint = '/api/console-catalog';
-        params.set('platform', platform);
-        params.set('q', search);
-        params.set('source', 'official');
-    }
+async function showRadarPrice(card, day) {
+    const quote = await readOfficialMxQuote(card.dataset);
+    if (!quote || day !== displayedDay) return false;
 
-    const response = await fetch(`${endpoint}?${params}`, {signal: AbortSignal.timeout(12000)});
-    if (!response.ok) return null;
-    const data = await response.json();
-
-    if (platform === 'pc') {
-        const result = data?.[product];
-        const quote = result?.data?.price_overview;
-        if (!result?.success || quote?.currency !== 'MXN' || !Number.isSafeInteger(quote.final) || quote.final < 0) return null;
-        return {price: quote.final / 100, regular: quote.initial / 100, discount: quote.discount_percent};
-    }
-
-    if (data?.platform !== platform || data.region !== 'MX' || !Array.isArray(data.items)) return null;
-    return data.items.find(item => String(item.id) === product && item.kind === 'official' && item.store === store &&
-        item.currency === 'MXN' && Number.isFinite(item.price) && item.price >= 0) ?? null;
-}
-
-async function showRadarPrice(card) {
-    const quote = await readRadarQuote(card);
-    if (!quote) return false;
-
-    card.querySelector('.pick-price strong').textContent = `${mexicoPrice.format(quote.price)} MXN`;
+    card.querySelector('.pick-price strong').textContent = formatMxQuote(quote.price);
     const label = card.querySelector('.pick-price span');
     const percent = Math.round(quote.discount);
     if (Number.isFinite(quote.regular) && quote.regular > quote.price && percent > 0 && percent <= 100) {
@@ -131,10 +122,11 @@ async function showRadarPrice(card) {
     return true;
 }
 
-async function loadEditionPrices(cards) {
+async function loadEditionPrices(cards, day) {
     const status = document.getElementById('edition-price-status');
     status.textContent = 'Consultando las tiendas oficiales de México…';
-    const results = await Promise.allSettled(cards.map(showRadarPrice));
+    const results = await Promise.allSettled(cards.map(card => showRadarPrice(card, day)));
+    if (day !== displayedDay) return;
     const checks = results.filter(result => result.status === 'fulfilled' && result.value).length;
     if (checks === cards.length) {
         status.textContent = 'Precios consultados en tiendas oficiales de México. Confirma el total en la tienda antes de comprar.';
@@ -146,4 +138,16 @@ async function loadEditionPrices(cards) {
 }
 
 const editionCards = [...document.querySelectorAll('.edition-pick')];
-void loadDailyEdition(editionCards).catch(() => {}).then(() => loadEditionPrices(editionCards));
+let displayedDay;
+const motionButton = document.getElementById('edition-motion');
+motionButton.hidden = false;
+motionButton.addEventListener('click', () => {
+    const paused = document.querySelector('.edition-picks').classList.toggle('is-paused');
+    motionButton.textContent = paused ? 'Reanudar animación de los bordes' : 'Pausar animación de los bordes';
+});
+if (typeof radarMexicoRotation === 'undefined') {
+    document.getElementById('edition-history-empty').textContent = 'El historial no está disponible en este momento. Vuelve a abrir el Radar para reintentar.';
+    void loadEditionPrices(editionCards, displayedDay);
+} else {
+    loadDailyEdition(editionCards, radarMexicoRotation);
+}

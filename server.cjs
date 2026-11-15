@@ -2,6 +2,7 @@ const http = require('node:http');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const {renderLegalPage} = require('./legal.cjs');
+const {renderDiscoverPage} = require('./discover.cjs');
 const {acceptsGzip, createStaticAssetCache} = require('./static-assets.cjs');
 const {validateQuery,securityHeaders,createApiGuard,publicFirebaseConfig}=require('./security.cjs');
 const {createPublicFetch}=require('./public-fetch.cjs');
@@ -57,10 +58,10 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
         if (!['GET', 'HEAD'].includes(req.method)) { res.setHeader('Allow', 'GET, HEAD'); reply(res, 405, { error: 'Método no permitido' }); return; }
         try {
             const url = new URL(req.url, 'http://localhost');
-            const legalPage = renderLegalPage(url.pathname);
-            if (legalPage !== null) {
+            const publicPage = renderLegalPage(url.pathname) ?? renderDiscoverPage(url.pathname);
+            if (publicPage !== null) {
                 res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache'});
-                res.end(req.method === 'HEAD' ? undefined : legalPage); return;
+                res.end(req.method === 'HEAD' ? undefined : publicPage); return;
             }
             if(url.pathname.startsWith('/api/')){
                 if(!validateQuery(url)){reply(res,upstreams[url.pathname]||['/api/deals-position','/api/console-catalog','/api/console-comparison','/api/auth-config','/api/pc-editions'].includes(url.pathname)?400:404,{error:'Parámetros inválidos'});return;}
@@ -176,7 +177,7 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
             let name;try{name=decodeURIComponent(url.pathname);}catch{reply(res,400,{error:'Ruta inválida'});return;}
             const relative = name === '/' ? 'index.html' : ['/como-comparamos', '/radar-mexico'].includes(name) ? name.slice(1) + '.html' : name.slice(1);
             // Publicar sólo la interfaz; nunca exponer el servidor ni node_modules.
-            const isPublicAsset = name => /^assets\/(css|js)\/[a-zA-Z0-9_./-]+\.(css|js)$/.test(name) || /^assets\/avatars\/(orbit|nova|pixel|comet|quest|arcade)\.svg$/.test(name) || /^assets\/flags\/(MX|US|ES|GB|BR|JP|EU|AR|CO|CL)\.svg$/.test(name) || name === 'assets/brand/radarplay.svg' || name === 'assets/radar-mexico-rotation.json';
+            const isPublicAsset = name => /^assets\/(css|js)\/[a-zA-Z0-9_./-]+\.(css|js)$/.test(name) || /^assets\/avatars\/(orbit|nova|pixel|comet|quest|arcade)\.svg$/.test(name) || /^assets\/flags\/(MX|US|ES|GB|BR|JP|EU|AR|CO|CL)\.svg$/.test(name) || name === 'assets/brand/radarplay.svg';
             if (!publicPages.has(relative) && !isPublicAsset(relative)) {
                 reply(res, 404, { error: 'Recurso no encontrado' }); return;
             }
@@ -187,14 +188,14 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
             if(!publicPages.has(actual)&&!isPublicAsset(actual)){reply(res,403,{error:'Ruta no permitida'});return;}
             const stat = await fs.stat(resolved);
             const version = `${stat.size}-${stat.mtimeMs}`;
-            const zipped = /\.(html|css|js|json)$/.test(file) && stat.size >= 1024 && acceptsGzip(req.headers['accept-encoding']);
+            const zipped = /\.(html|css|js)$/.test(file) && stat.size >= 1024 && acceptsGzip(req.headers['accept-encoding']);
             const etag = `"${version}${zipped ? '-gzip' : ''}"`;
             res.setHeader('ETag', etag);
             res.setHeader('Vary', 'Accept-Encoding');
             if (zipped) res.setHeader('Content-Encoding', 'gzip');
             res.setHeader('Cache-Control', 'no-cache');
             if (req.headers['if-none-match'] === etag) { res.writeHead(304); res.end(); return; }
-            const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml' };
+            const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml' };
             res.setHeader('Content-Type', mime[path.extname(file)]);
             if (req.method === 'HEAD') {res.end(); return;}
             const body = await staticAsset(resolved, version, zipped);

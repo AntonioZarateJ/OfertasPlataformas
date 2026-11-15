@@ -144,8 +144,6 @@
 
     <div class="catalog-context">
         <p id="catalogScopeNote" class="catalog-scope-note">Solo ofertas: juegos con descuento. Puedes elegir un porcentaje exacto o un rango en Filtros.</p>
-        <a class="radar-edition-link" href="/radar-mexico">Radar de México <span aria-hidden="true">→</span></a>
-        <a href="/como-comparamos">Cómo comparamos precios <span aria-hidden="true">→</span></a>
     </div>
     <!-- 3. BARRA HORIZONTAL DE PÍLDORAS INTELIGENTES (REEMPLAZA A LA BARRA LATERAL CONFUSA) -->
     <section class="bg-[#101726]/90 border-b border-white/10 shadow-lg">
@@ -205,10 +203,6 @@
                     <div id="mobileFilterContent"></div>
                     <button id="closeMobileFilters" type="button">Ver juegos</button>
                 </details>
-                <div class="mobile-catalog-info">
-                    <span><i class="fa-solid fa-coins" aria-hidden="true"></i> <span id="mobileExchangeRate">Tipo de cambio estimado</span></span>
-                    <a class="radar-edition-link" href="/radar-mexico">Radar de México <span aria-hidden="true">→</span></a>
-                </div>
             </div>
 
             <!-- CAJÓN DESPLEGABLE OCULTO: "AJUSTES FINOS" (SOLO SE VE SI EL USUARIO LO ABRE) -->
@@ -263,6 +257,7 @@
                         </span>
                     </div>
                     <p id="resultsSummary" class="text-xs text-gray-400 mt-0.5">Juegos con la mejor relación descuento/calidad en este momento.</p>
+                    <p class="mobile-catalog-info"><i class="fa-solid fa-coins" aria-hidden="true"></i> <span id="mobileExchangeRate">Tipo de cambio estimado</span></p>
                 </div>
             </div>
             <div class="flex items-center gap-2 self-start sm:self-center bg-[#0b101b] px-3.5 py-2 rounded-xl border border-white/10">
@@ -270,6 +265,19 @@
                 <span id="loadedCountBadge" class="text-sm font-black text-sky-400">0</span>
             </div>
         </div>
+
+        <nav class="catalog-discovery" aria-label="Descubre juegos">
+            <a class="catalog-discovery-card catalog-discovery-radar" href="/radar-mexico">
+                <span class="catalog-discovery-icon" aria-hidden="true"><i class="fa-solid fa-satellite-dish"></i></span>
+                <span class="catalog-discovery-copy"><strong>Radar de México</strong><small>Selección de hoy</small></span>
+                <i class="fa-solid fa-arrow-right catalog-discovery-arrow" aria-hidden="true"></i>
+            </a>
+            <a class="catalog-discovery-card catalog-discovery-collection" href="/descubre">
+                <span class="catalog-discovery-icon" aria-hidden="true"><i class="fa-solid fa-layer-group"></i></span>
+                <span class="catalog-discovery-copy"><strong>Colección de juegos</strong><small>Hasta $300 MXN</small></span>
+                <i class="fa-solid fa-arrow-right catalog-discovery-arrow" aria-hidden="true"></i>
+            </a>
+        </nav>
 
         <!-- Estado de Carga -->
         <div id="loadingState" class="hidden-el flex flex-col items-center justify-center py-20">
@@ -531,9 +539,18 @@
             </div>
 
             <div class="wish-discovery">
-              <div class="wish-stats"><span><strong id="wishGoalsCount">0</strong> con meta</span><span><strong id="wishReachedCount">0</strong> metas alcanzadas*</span></div>
+              <details class="wish-review">
+                <summary>Qué cambió en tus favoritos <span id="wishChangeCount"></span></summary>
+                <div class="wish-stats">
+                  <span><strong id="wishLowerCount">0</strong> bajaron</span>
+                  <span><strong id="wishHigherCount">0</strong> subieron</span>
+                  <span><strong id="wishReachedCount">0</strong> metas alcanzadas*</span>
+                </div>
+                <p><span id="wishGoalsCount">0</span> juegos con meta. Mostramos la última variación detectada por juego.</p>
+              </details>
               <label class="wish-search"><i class="fa-solid fa-magnifying-glass"></i><input id="wishSearch" type="search" placeholder="Buscar en tus favoritos" aria-label="Buscar en favoritos" data-ui-input="filter-wishlist"></label>
-              <div class="wish-selects"><select id="wishPlatform" aria-label="Plataforma de favoritos" data-ui-change="filter-wishlist"><option value="all">Todas las plataformas</option><option value="pc">PC</option><option value="xbox">Xbox</option><option value="ps">PlayStation</option><option value="switch">Nintendo Switch</option></select><select id="wishOrder" aria-label="Orden de favoritos" data-ui-change="filter-wishlist"><option value="recent">Más recientes</option><option value="title">Nombre A–Z</option><option value="goals">Con meta de precio</option><option value="reached">Meta alcanzada</option></select></div>
+              <div class="wish-selects"><select id="wishPlatform" aria-label="Plataforma de favoritos" data-ui-change="filter-wishlist"><option value="all">Todas las plataformas</option><option value="pc">PC</option><option value="xbox">Xbox</option><option value="ps">PlayStation</option><option value="switch">Nintendo Switch</option></select><select id="wishOrder" aria-label="Orden o filtro de favoritos" data-ui-change="filter-wishlist"><option value="recent">Más recientes</option><option value="title">Nombre A–Z</option><option value="changed">Solo cambios de precio</option><option value="goals">Con meta de precio</option><option value="reached">Meta alcanzada</option></select></div>
+              <label class="wish-hide-owned"><input id="wishHideOwned" type="checkbox" data-ui-change="filter-wishlist"> Ocultar juegos que ya tengo</label>
             </div>
             <!-- Lista de juegos en Wishlist -->
             <div id="wishlistItemsContainer" class="p-4 overflow-y-auto flex-1 space-y-3"></div>

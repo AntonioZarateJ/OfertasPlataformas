@@ -7,13 +7,13 @@ function consoleWishItem(item, platform = activeEcosystem, region = currentRegio
         image:item.image||item.thumb||'',thumb:item.image||item.thumb||'',checkedAt:item.checkedAt??null,salePrice:String(item.price), savings:Math.round(item.discount||0) };
 }
 function nativeMoney(amount,currency) {
-    return new Intl.NumberFormat('es-MX',{style:'currency',currency}).format(amount)+' '+currency;
+    return new Intl.NumberFormat('es-MX',{style:'currency',currency,currencyDisplay:'narrowSymbol'}).format(amount)+' '+currency;
 }
 function saveConsoleWish(item, platform, region, target = null) {
     const saved=consoleWishItem(item,platform,region), key=saved.gameID, old=userWishlist[key];
     if(!old&&Object.keys(userWishlist).length>=300){showToast('Puedes guardar hasta 300 favoritos.');return;}
     if(old && target===null) delete userWishlist[key];
-    else userWishlist[key]={...saved, targetPrice:target??old?.targetPrice??null, addedAt:old?.addedAt||Date.now()};
+    else userWishlist[key]={...(old || saved), targetPrice:target??old?.targetPrice??null, addedAt:old?.addedAt||Date.now()};
     persistWishlistState(); refreshConsoleHearts();
     showToast(userWishlist[key] ? target!==null?'Precio objetivo guardado. Revísalo en tu Wishlist.':'Juego guardado en tu Wishlist':'Juego eliminado de tu Wishlist');
 }
@@ -43,27 +43,40 @@ function addConsoleSaveControls(container,item,platform,region) {
     if(metrics)metrics.after(panel);else container.prepend(panel);
     refreshConsoleHearts();
 }
-async function refreshConsoleWishlistPrices() {
-    const owner=window.accountStorageKey;
-    for(const saved of Object.values(userWishlist).filter(item=>item.native)) {
-        try {
-            const params=new URLSearchParams({platform:saved.platform,region:saved.region,title:saved.title,id:saved.id,store:saved.store});
-            const data=await requestJSON('/api/console-comparison?'+params,{timeout:18000});
-            if(owner!==window.accountStorageKey)return;
-            if(data.platform!==saved.platform||data.region!==saved.region)continue;
-            const quote=data.offers.find(q=>String(q.id)===String(saved.id)&&q.store===saved.store&&q.currency===saved.currency);
-            if(!quote || !userWishlist[saved.gameID])continue;
-            Object.assign(userWishlist[saved.gameID],{price:quote.price,salePrice:String(quote.price),checkedAt:data.checkedAt});
-            persistWishlistState();
-            if(!document.getElementById('wishlistDrawerModal').classList.contains('hidden-el'))renderWishlistDrawerItems();
-        } catch { /* Conservar el último precio observado, sin marcarlo como actualizado. */ }
-    }
+let consoleWishlistRefresh = null;
+function refreshConsoleWishlistPrices() {
+    const epoch = accountEpoch;
+    if (consoleWishlistRefresh?.epoch === epoch) return consoleWishlistRefresh.promise;
+    const promise = (async () => {
+        const items = Object.values(userWishlist).filter(item => item.native && !item.owned);
+        for (const saved of items) {
+            if (epoch !== accountEpoch) return;
+            try {
+                const params = new URLSearchParams({platform:saved.platform, region:saved.region, title:saved.title, id:saved.id, store:saved.store});
+                const data = await requestJSON('/api/console-comparison?' + params, {timeout:18000});
+                if (epoch !== accountEpoch) return;
+                if (data.platform !== saved.platform || data.region !== saved.region || !Number.isFinite(data.checkedAt)) continue;
+                const quote = data.offers.find(offer => String(offer.id) === String(saved.id) &&
+                    offer.store === saved.store && offer.currency === saved.currency && offer.kind === saved.kind);
+                const current = userWishlist[saved.gameID];
+                if (!quote || !current || current.owned || current.addedAt !== saved.addedAt || !validWishlistAmount(quote.price) ||
+                    !validWishlistTimestamp(data.checkedAt) || data.checkedAt <= Math.max(current.checkedAt || 0, current.priceCheckedAt || 0)) continue;
+                const changed = recordWishlistPrice(current, quote.price, data.checkedAt);
+                current.checkedAt = data.checkedAt;
+                persistWishlistState({sync:changed});
+                if (!document.getElementById('wishlistDrawerModal').classList.contains('hidden-el')) renderWishlistDrawerItems();
+            } catch { /* Conservar el último precio observado. */ }
+        }
+    })().finally(() => { if (consoleWishlistRefresh?.promise === promise) consoleWishlistRefresh = null; });
+    consoleWishlistRefresh = {epoch, promise};
+    return promise;
 }
 function renderConsoleWishCard(item) {
     const card=document.createElement('article');card.className='native-wish-card';
-    const met=item.targetPrice>0&&item.price<=item.targetPrice;
-    card.innerHTML=`<button class="native-wish-open" type="button"><img src="${escapeHTML(safeURL(item.image||item.thumb))}" alt=""><span><strong>${escapeHTML(item.title)}</strong><small>${escapeHTML(ECOSYSTEM_META[item.platform].name)} · ${escapeHTML(purchaseRegions[item.region][0])} · ${escapeHTML(item.store)}</small><b>${escapeHTML(nativeMoney(item.price,item.currency))}</b></span></button><button type="button" class="native-wish-remove" aria-label="Eliminar de Wishlist"><i class="fa-solid fa-trash-can"></i></button><p>${item.targetPrice?'Meta: '+escapeHTML(nativeMoney(item.targetPrice,item.currency))+(met?' · Meta alcanzada según el último precio':' · Pendiente'):'Pulsa el juego para comparar o guardar una meta.'}</p><small>Última consulta: ${item.checkedAt?escapeHTML(new Date(item.checkedAt).toLocaleString('es-MX')):'fecha no disponible'}</small>`;
+    const met=wishlistGoalReached(item);
+    card.innerHTML=`<button class="native-wish-open" type="button"><img src="${escapeHTML(safeURL(item.image||item.thumb))}" alt=""><span><strong>${escapeHTML(item.title)}</strong><small>${escapeHTML(ECOSYSTEM_META[item.platform].name)} · ${escapeHTML(purchaseRegions[item.region][0])} · ${escapeHTML(item.store)}</small><b>${escapeHTML(nativeMoney(item.price,item.currency))}</b></span></button><button type="button" class="native-wish-remove" aria-label="Eliminar de Wishlist"><i class="fa-solid fa-trash-can"></i></button><p>${item.owned?'':item.targetPrice?'Meta: '+escapeHTML(nativeMoney(item.targetPrice,item.currency))+(met?' · Meta alcanzada según el último precio':' · Pendiente'):'Pulsa el juego para comparar o guardar una meta.'}</p><small>Última consulta: ${item.checkedAt?escapeHTML(new Date(item.checkedAt).toLocaleString('es-MX')):'fecha no disponible'}</small>`;
     card.querySelector('.native-wish-open').onclick=()=>{closeWishlistDrawer();openConsoleComparison(item,item.platform,item.region);};
     card.querySelector('.native-wish-remove').onclick=()=>{delete userWishlist[item.gameID];persistWishlistState();refreshConsoleHearts();renderWishlistDrawerItems();};
+    appendWishlistReview(card,item);
     setGameArtwork(card.querySelector('img'),item);return card;
 }

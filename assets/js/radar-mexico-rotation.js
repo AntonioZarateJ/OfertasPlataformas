@@ -1,4 +1,4 @@
-{
+const radarMexicoRotation = {
     "startsOn": "2026-11-15",
     "rotation": [
         {
@@ -242,4 +242,4 @@
             }
         }
     ]
-}
+};

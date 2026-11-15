@@ -9,6 +9,8 @@
     <link rel="icon" href="/assets/brand/radarplay.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/legal.css">
     <link rel="stylesheet" href="/assets/css/radar-mexico.css">
+    <script src="/assets/js/radar-mexico-rotation.js" defer></script>
+    <script src="/assets/js/official-mx-quote.js" defer></script>
     <script src="/assets/js/radar-mexico.js" defer></script>
 </head>
 <body class="radar-edition">
@@ -24,6 +26,7 @@
             <p class="edition-date" id="edition-date" hidden></p>
             <p id="edition-price-status" class="edition-price-status" role="status">Consulta el precio de cada recomendación desde su enlace a la tienda.</p>
         </div>
+        <button class="edition-motion" id="edition-motion" type="button" hidden>Pausar animación de los bordes</button>
         <div class="edition-picks">
             <article class="edition-pick" data-platform="pc" data-product="206190" data-store="Steam">
                 <img class="pick-cover" src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/206190/header.jpg" width="460" height="215" alt="" decoding="async">
@@ -70,10 +73,12 @@
                 </div>
             </article>
         </div>
-        <section class="edition-history" aria-labelledby="history-title" hidden>
-            <h2 id="history-title">Historial de recomendaciones</h2>
-            <p>Revisa hasta seis selecciones anteriores. Los enlaces abren cada edición en su tienda con el precio vigente.</p>
+        <section class="edition-history" aria-labelledby="history-title">
+            <h2 id="history-title">Historial de esta semana</h2>
+            <p>Revisa las selecciones anteriores, del lunes al domingo. Empieza de nuevo cada lunes a medianoche, hora de Ciudad de México.</p>
+            <p id="edition-history-empty">Cargando el historial…</p>
             <div id="edition-history-list"></div>
+            <noscript><p>Activa JavaScript para consultar el historial.</p></noscript>
         </section>
     </main>
     <footer>

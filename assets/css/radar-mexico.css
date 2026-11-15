@@ -3,8 +3,9 @@
 .edition-region { display: flex; align-items: center; gap: 8px; color: #a1eed7; font-size: .8125rem; font-weight: 700; }
 .edition-region img { border-radius: 3px; }
 .edition-price-status { color: #a8bfd4; font-size: .8125rem; }
+.edition-motion { display: none; }
 .edition-picks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
-.edition-pick { --platform-accent: #5bd7ff; position: relative; display: flex; flex-direction: column; overflow: hidden; border: 1px solid color-mix(in srgb, var(--platform-accent) 55%, #111d2d); border-radius: 16px; background: #111d2d; }
+.edition-pick { --platform-accent: #5bd7ff; position: relative; display: flex; flex-direction: column; overflow: hidden; border: 1px solid color-mix(in srgb, var(--platform-accent) 76%, #111d2d); border-radius: 16px; background: #111d2d; }
 .edition-pick[data-platform="xbox"] { --platform-accent: #79e08a; }
 .edition-pick[data-platform="ps"] { --platform-accent: #789eff; }
 .edition-pick[data-platform="switch"] { --platform-accent: #ff697e; }
@@ -17,22 +18,26 @@
     content: "";
     position: absolute;
     inset: 0;
-    padding: 2px;
+    padding: 3px;
     border-radius: inherit;
     pointer-events: none;
-    background: conic-gradient(from var(--pick-sweep), transparent 78%, color-mix(in srgb, var(--platform-accent) 60%, transparent) 94%, var(--platform-accent) 98%, transparent 100%);
+    background: conic-gradient(from var(--pick-sweep), transparent 68%, var(--platform-accent) 91%, color-mix(in srgb, var(--platform-accent) 40%, #fff) 97%, transparent 100%);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask-composite: exclude;
     opacity: 0;
 }
 @media (prefers-reduced-motion: no-preference) {
-    .edition-pick::after { animation: pick-orbit 4.5s ease-in-out; }
+    .edition-motion:not([hidden]) { display: block; margin: 0 0 10px auto; padding: 4px 9px; color: #b9ecff; background: #132135; border: 1px solid #345975; border-radius: 6px; cursor: pointer; }
+    .edition-pick::after { opacity: 1; animation: pick-orbit 5s linear infinite; }
+    .edition-picks.is-paused .edition-pick::after { animation-play-state: paused; }
+    .edition-pick:nth-child(2)::after { animation-delay: -1.25s; }
+    .edition-pick:nth-child(3)::after { animation-delay: -2.5s; }
+    .edition-pick:nth-child(4)::after { animation-delay: -3.75s; }
     @keyframes pick-orbit {
-        0% { --pick-sweep: 0deg; opacity: 0; }
-        15%, 80% { opacity: 1; }
-        100% { --pick-sweep: 360deg; opacity: 0; }
+        to { --pick-sweep: 360deg; }
     }
 }
+.edition-history [hidden] { display: none; }
 .pick-cover { display: block; width: 100%; height: auto; aspect-ratio: 460 / 215; object-fit: cover; background: #192c43; }
 .pick-body { display: flex; flex: 1; flex-direction: column; padding: 18px; }
 .pick-body h2 { margin: 4px 0 0; font-size: 1.3rem; }

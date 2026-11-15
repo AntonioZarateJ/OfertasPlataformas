@@ -1,5 +1,14 @@
+param(
+    [ValidateRange(1024, 65535)]
+    [int]$Port = 3000
+)
+
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
+$listener = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($listener) {
+    throw "El puerto $Port ya esta ocupado. Cierra el servidor anterior con Ctrl+C o vuelve a ejecutar este script con -Port 3001 para abrir otra instancia."
+}
 $nodeCommand = Get-Command node -ErrorAction SilentlyContinue
 $nodePath = if ($nodeCommand) { $nodeCommand.Source } else { $null }
 if (-not $nodePath) {
@@ -26,7 +35,7 @@ $localSettings = @{
     FIREBASE_APPCHECK_SITE_KEY = [string]$config.appCheckSiteKey
     TRUST_PROXY = '0'
     HOST = '127.0.0.1'
-    PORT = '3000'
+    PORT = [string]$Port
 }
 $previousSettings = @{}
 try {
@@ -34,9 +43,9 @@ try {
         $previousSettings[$setting.Key] = [Environment]::GetEnvironmentVariable($setting.Key, 'Process')
         [Environment]::SetEnvironmentVariable($setting.Key, $setting.Value, 'Process')
     }
-    Write-Host 'Abre http://localhost:3000/ en tu navegador. Para detener el servidor: Ctrl+C.'
+    Write-Host "Abre http://localhost:$Port/ en tu navegador. Para detener el servidor: Ctrl+C."
     Write-Host 'Usa una cuenta de prueba: los favoritos se guardan en el Firebase real.'
-    & $nodePath (Join-Path $projectRoot 'server.cjs')
+    & $nodePath --watch (Join-Path $projectRoot 'server.cjs')
 } finally {
     foreach ($settingName in $previousSettings.Keys) {
         [Environment]::SetEnvironmentVariable($settingName, $previousSettings[$settingName], 'Process')

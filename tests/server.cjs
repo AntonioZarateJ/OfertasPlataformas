@@ -88,3 +88,28 @@ test('La guía de precios es accesible desde el catálogo y se sirve en HTML sin
         assert.match(html, /href="\/contacto"/);
     });
 });
+
+test('El calendario usa un recurso público y las fichas de la colección entregan su contenido en HTML', async () => {
+    await withServer(async () => { throw new Error('El servidor no consulta proveedores para renderizar fichas'); }, async base => {
+        const radar = await (await fetch(base + '/radar-mexico')).text();
+        const script = radar.match(/src="([^"]+radar-mexico-rotation\.js)"/)?.[1];
+        assert.ok(script);
+        const calendar = await fetch(base + script);
+        assert.equal(calendar.status, 200);
+        assert.match(calendar.headers.get('content-type'), /javascript/);
+
+        const collection = await (await fetch(base + '/descubre')).text();
+        assert.match(collection, /Juegos hasta \$300 MXN/);
+        assert.match(collection, /Cómo elegir una edición/);
+        for (const slug of ['gunpoint', 'rocket-league', 'apex-legends', 'stardew-valley']) {
+            assert.ok(collection.includes('href="/descubre/' + slug + '"'));
+            const response = await fetch(base + '/descubre/' + slug);
+            assert.equal(response.status, 200);
+            const body = await response.text();
+            assert.ok(body.includes('https://salesplataforms.onrender.com/descubre/' + slug));
+            assert.match(body, /property="og:image"/);
+            assert.match(body, /Por qué lo elegimos/);
+        }
+        assert.equal((await fetch(base + '/descubre/desconocido')).status, 404);
+    });
+});

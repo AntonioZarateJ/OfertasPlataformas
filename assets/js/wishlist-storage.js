@@ -24,22 +24,71 @@
         function normalizeWishlist(value) {
             const result=Object.create(null);
             if(!value||typeof value!=='object'||Array.isArray(value))return result;
-            const money=value=>['string','number'].includes(typeof value)&&value!==''&&Number.isFinite(Number(value))&&Number(value)>=0&&Number(value)<=1e12;
+            const money=validWishlistAmount;
             for(const [key,item]of Object.entries(value).slice(0,300)){
                 if(['__proto__','constructor','prototype'].includes(key)||key.length>600)continue;
                 if(!item||typeof item!=='object'||typeof item.title!=='string'||!money(item.salePrice))continue;
                 const native=item.native===true;
                 if(native&&(!['xbox','ps','switch'].includes(item.platform)||!purchaseRegions[item.region]||item.currency!==purchaseRegions[item.region][1]||!money(item.price)))continue;
-                const clean={gameID:key,title:item.title.slice(0,240),salePrice:Number(item.salePrice).toFixed(2),normalPrice:money(item.normalPrice)?Number(item.normalPrice).toFixed(2):Number(item.salePrice).toFixed(2),savings:Math.max(0,Math.min(100,Number(item.savings)||0)),targetPriceUsd:!native&&money(item.targetPriceUsd)&&Number(item.targetPriceUsd)>0?Number(item.targetPriceUsd).toFixed(2):null,addedAt:money(item.addedAt)?Number(item.addedAt):Date.now()};
+                const clean={gameID:key,title:item.title.slice(0,240),salePrice:Number(item.salePrice).toFixed(2),normalPrice:money(item.normalPrice)?Number(item.normalPrice).toFixed(2):Number(item.salePrice).toFixed(2),savings:Math.max(0,Math.min(100,Number(item.savings)||0)),targetPriceUsd:!native&&money(item.targetPriceUsd)&&Number(item.targetPriceUsd)>0?Number(item.targetPriceUsd).toFixed(2):null,addedAt:validWishlistTimestamp(item.addedAt)?Number(item.addedAt):Date.now()};
                 for(const field of ['dealID','id','edition','store','seller','platform','region','currency'])if(typeof item[field]==='string'||typeof item[field]==='number')clean[field]=String(item[field]).slice(0,350);
                 for(const field of ['thumb','image','url','artwork'])if(typeof item[field]==='string')clean[field]=safeURL(item[field].slice(0,4096));
                 if(Array.isArray(item.imageAlternatives))clean.imageAlternatives=[...new Set(item.imageAlternatives.slice(0,8).filter(url=>typeof url==='string').map(url=>safeURL(url.slice(0,4096))).filter(Boolean))];
                 clean.steamAppID=/^\d{1,12}$/.test(String(item.steamAppID))?String(item.steamAppID):null;
                 if(native){clean.native=true;clean.price=Number(item.price);clean.regular=money(item.regular)?Number(item.regular):null;clean.discount=Number(item.discount)||0;clean.kind=item.kind==='external'?'external':'official';clean.targetPrice=money(item.targetPrice)&&Number(item.targetPrice)>0?Number(item.targetPrice):null;}
-                for(const field of ['checkedAt','priceCheckedAt','rating','ratingCount'])if(money(item[field]))clean[field]=Number(item[field]);
+                if(!native && /^\d{1,6}$/.test(String(item.storeID))) clean.storeID=String(item.storeID);
+                if(item.owned===true) clean.owned=true;
+                if((native||clean.storeID)&&money(item.previousPrice)&&validWishlistTimestamp(item.priceChangedAt)){
+                    clean.previousPrice=Number(item.previousPrice);
+                    clean.priceChangedAt=Number(item.priceChangedAt);
+                }
+                for(const field of ['checkedAt','priceCheckedAt'])if(validWishlistTimestamp(item[field]))clean[field]=Number(item[field]);
+                for(const field of ['rating','ratingCount'])if(money(item[field]))clean[field]=Number(item[field]);
                 result[key]=clean;
             }
             return result;
+        }
+
+        function validWishlistAmount(value) {
+            return (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '')) &&
+                Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 1e12;
+        }
+
+        function validWishlistTimestamp(value) {
+            const time = Number(value);
+            return ['number','string'].includes(typeof value) && Number.isSafeInteger(time) && time > 0 && time <= 8.64e15;
+        }
+
+        function wishlistCurrentPrice(item) {
+            return Number(item.native ? item.price : item.salePrice);
+        }
+
+        function wishlistHasGoal(item) {
+            return !item.owned && Number(item.native ? item.targetPrice : item.targetPriceUsd) > 0;
+        }
+
+        function wishlistGoalReached(item) {
+            return wishlistHasGoal(item) && wishlistCurrentPrice(item) <= Number(item.native ? item.targetPrice : item.targetPriceUsd);
+        }
+
+        function wishlistPriceDifference(item) {
+            return !item.owned && item.priceChangedAt ? Math.round((wishlistCurrentPrice(item) - item.previousPrice) * 100) / 100 : 0;
+        }
+
+        function recordWishlistPrice(item, price, checkedAt, comparable = true) {
+            if (item.owned || !validWishlistAmount(price) || !validWishlistTimestamp(checkedAt) ||
+                checkedAt < Math.max(item.priceCheckedAt || 0, item.checkedAt || 0)) return false;
+            const next = Math.round(Number(price) * 100) / 100;
+            const previous = wishlistCurrentPrice(item);
+            if (next === previous) return false;
+            if (comparable) {
+                item.previousPrice = previous;
+                item.priceChangedAt = checkedAt;
+            }
+            if (item.native) item.price = next;
+            item.salePrice = next.toFixed(2);
+            item.priceCheckedAt = checkedAt;
+            return true;
         }
 
         function refreshCloudProfileHeader() {
@@ -74,14 +123,16 @@
             } else {
                 const existing = userWishlist[gId] || {};
                 userWishlist[gId] = {
+                    ...existing,
                     gameID: gId,
-                    dealID: gameObj.dealID || existing.dealID || '',
+                    dealID: existing.dealID || gameObj.dealID || '',
+                    storeID: existing.storeID || gameObj.storeID,
                     steamAppID: gameObj.steamAppID || existing.steamAppID || null,
                     title: gameObj.title || existing.title || 'Juego',
                     thumb: gameObj.thumb || existing.thumb || '',
-                    salePrice: parseFloat(gameObj.salePrice ?? existing.salePrice ?? 0).toFixed(2),
-                    normalPrice: parseFloat(gameObj.normalPrice ?? existing.normalPrice ?? 0).toFixed(2),
-                    savings: Math.round(parseFloat(gameObj.savings ?? existing.savings ?? 0)),
+                    salePrice: parseFloat(existing.salePrice ?? gameObj.salePrice ?? 0).toFixed(2),
+                    normalPrice: parseFloat(existing.normalPrice ?? gameObj.normalPrice ?? 0).toFixed(2),
+                    savings: Math.round(parseFloat(existing.savings ?? gameObj.savings ?? 0)),
                     targetPriceUsd: customTargetUsd !== null ? customTargetUsd : (existing.targetPriceUsd || null),
                     addedAt: existing.addedAt || Date.now()
                 };
@@ -126,7 +177,7 @@
             if (drawerTotal) drawerTotal.textContent = total;
 
             // Evaluar cuántas alertas de precio ya se cumplieron
-            const triggered = list.filter(item => item.native ? item.targetPrice>0 && Number.isFinite(item.price) && item.price<=item.targetPrice : item.targetPriceUsd && Number.isFinite(Number(item.salePrice)) && parseFloat(item.salePrice) <= parseFloat(item.targetPriceUsd));
+            const triggered = list.filter(wishlistGoalReached);
             const topAlertBadge = document.getElementById('triggeredAlertsTopBadge');
             const topAlertCount = document.getElementById('triggeredAlertsCount');
             const bellDot = document.getElementById('alertBellDot');
