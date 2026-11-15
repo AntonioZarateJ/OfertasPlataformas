@@ -13,6 +13,21 @@
 .catalog-context .catalog-scope-note { padding: 0; margin: 0; }
 .catalog-context > a { color: #7dd3fc; font-size: 11px; flex-shrink: 0; }
 .catalog-context > a:hover { text-decoration: underline; }
+.catalog-context > .radar-edition-link, .mobile-catalog-info > .radar-edition-link { color: #83ebcb; font-weight: 750; }
+
+.price-decision {
+    margin: 12px 0 16px;
+    padding: 12px 14px;
+    border: 1px solid #32546b;
+    border-radius: 12px;
+    background: #122438;
+    color: #c6d9ea;
+    font-size: .8125rem;
+    line-height: 1.55;
+}
+
+.price-decision h3 { margin: 0 0 4px; color: #e9f7ff; font-size: .9rem; }
+.price-decision p { margin: 0; }
 
 .catalog-guide {
     display: flex;

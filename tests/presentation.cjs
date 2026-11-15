@@ -18,6 +18,11 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         let heldPage;
         let regionalRequests = 0;
         let heldRegional, releaseRegional;
+        const editorialQuotes = {
+            xbox: {id:'9NKX70BBCDRN', store:'Xbox Store', price:639.60, regular:1599, discount:59.99, currency:'MXN'},
+            ps: {id:'UP9000-PPSA21564_00-0000000000000000', store:'PlayStation Store', price:999, regular:999, discount:0, currency:'MXN'},
+            switch: {id:'7100077279', store:'Nintendo eShop', price:7, regular:10, discount:30, currency:'USD'}
+        };
         await page.route('**/*', async route => {
             const u = new URL(route.request().url());
             if(u.origin !== root)return route.fulfill({body:'',contentType:'text/css'});
@@ -29,6 +34,12 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
                 regionalRequests++;
                 if(heldRegional)await heldRegional;
                 data={'31415':{success:true,data:{price_overview:{currency:'MXN',final:1000,initial:2000,discount_percent:50}}}};
+                if (u.searchParams.get('appids') === '206190') {
+                    assert.equal(u.searchParams.get('region'), 'MX');
+                    data = {
+                        206190: {success:true, data:{price_overview:{currency:'MXN', final:2199, initial:10995, discount_percent:80}}}
+                    };
+                }
             }
             if(u.pathname === '/api/deals'){
                 pcRequests++;
@@ -40,6 +51,12 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
                 const offset=JSON.parse(u.searchParams.get('cursor')||'{}').official||0;
                 if(offset && heldPage)await heldPage;
                 data={platform:u.searchParams.get('platform'),region:'MX',checkedAt:Date.now(),sources:[],scope:'Prueba',next:offset?null:{official:1,external:false},items:Array.from({length:60},(_,i)=>({id:String(offset*60+i),title:'Consola '+(offset*60+i),price:100,regular:200,discount:50,currency:'MXN',edition:'Base',store:'Tienda oficial',kind:'official',url:'https://example.com/'}))};
+                if (Object.hasOwn(editorialQuotes, data.platform) && u.searchParams.get('q')) {
+                    assert.equal(u.searchParams.get('region'), 'MX');
+                    assert.equal(u.searchParams.get('source'), 'official');
+                    const quote = {...editorialQuotes[data.platform], kind:'official'};
+                    data.items = [{...quote, id:'other-edition', currency:'MXN', price:1}, quote];
+                }
             }
             await route.fulfill({contentType:'application/json',body:JSON.stringify(data)}).catch(()=>{});
         });
@@ -142,5 +159,19 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         await expect(page.locator('#loadingText')).toContainText('Cargando juegos');
         await expect(page.locator('#loadingText')).not.toContainText('lote');
         assert.deepEqual(errors,[]);
+        assert.match(await page.evaluate(() => consolePriceDecision({store:'Nintendo eShop', currency:'MXN', price:249, history:{min:199, days:3}}, 'México')), /por encima de ese mínimo/);
+        assert.match(await page.evaluate(() => consolePriceDecision({store:'Nintendo eShop', currency:'MXN', price:249, history:{min:199, days:2}}, 'México')), /Historial insuficiente/);
+        await page.setViewportSize({width:390,height:844});
+        await page.locator('.mobile-catalog-info a[href="/radar-mexico"]').click();
+        await expect(page.getByRole('heading', {name:'Radar de México'})).toBeVisible();
+        await expect(page.locator('.pick-platform strong')).toHaveText(['PC', 'Xbox', 'PlayStation', 'Nintendo Switch']);
+        await expect(page.locator('[data-platform="pc"] .pick-price')).toContainText('−80%');
+        await expect(page.locator('[data-platform="xbox"] .pick-price')).toContainText('$639.60 MXN');
+        await expect(page.locator('[data-platform="xbox"] .pick-price')).toContainText('−60%');
+        await expect(page.locator('[data-platform="ps"] .pick-price')).toContainText('Precio regular');
+        await expect(page.locator('[data-platform="switch"] .pick-price')).toHaveText('Consulta el precio en la tienda');
+        await expect(page.getByRole('status')).toContainText('precios que pudimos comprobar');
+        assert.deepEqual(errors, []);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     } finally { await browser.close();await new Promise(resolve=>server.close(resolve)); }
 });

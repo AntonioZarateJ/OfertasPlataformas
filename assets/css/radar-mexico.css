@@ -1,0 +1,24 @@
+.radar-edition main { max-width: 1184px; }
+.edition-intro { max-width: 640px; margin: 0 0 26px; }
+.edition-region { display: flex; align-items: center; gap: 8px; color: #a1eed7; font-size: .8125rem; font-weight: 700; }
+.edition-region img { border-radius: 3px; }
+.edition-price-status { color: #a8bfd4; font-size: .8125rem; }
+.edition-picks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.edition-pick { display: flex; flex-direction: column; overflow: hidden; border: 1px solid #294058; border-radius: 16px; background: #111d2d; }
+.pick-cover { display: block; width: 100%; height: auto; aspect-ratio: 460 / 215; object-fit: cover; background: #192c43; }
+.pick-body { display: flex; flex: 1; flex-direction: column; padding: 18px; }
+.pick-body h2 { margin: 4px 0 0; font-size: 1.3rem; }
+.pick-body p { margin: 8px 0 16px; font-size: .9rem; }
+.pick-body .pick-platform { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 0 4px; color: #b6c9dc; font-size: .75rem; }
+.pick-platform strong { padding: 1px 7px; border-radius: 5px; background: #234052; color: #b9ecff; }
+[data-platform="xbox"] .pick-platform strong { background: #1c3d2c; color: #b9f3c8; }
+[data-platform="ps"] .pick-platform strong { background: #253a67; color: #d1dfff; }
+[data-platform="switch"] .pick-platform strong { background: #512c3a; color: #ffd0dc; }
+.pick-body .pick-edition { margin-top: auto; margin-bottom: 5px; color: #a8bfd4; font-size: .75rem; }
+.pick-edition + .pick-price { margin-top: 0; }
+.pick-price { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 9px; margin: auto 0 12px; }
+.pick-price span { padding: 1px 6px; border-radius: 5px; background: #1e3d36; color: #b1f6df; font-size: .75rem; }
+.pick-link { display: block; padding: 9px 10px; border: 1px solid #345975; border-radius: 8px; text-align: center; font-size: .8125rem; font-weight: 700; text-decoration: none; }
+.pick-link:hover { background: #1b3549; }
+@media (max-width: 940px) { .edition-picks { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .edition-picks { grid-template-columns: 1fr; } }
