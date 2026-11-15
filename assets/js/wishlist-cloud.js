@@ -62,22 +62,69 @@
             document.getElementById('wishlistDrawerModal').classList.add('hidden-el');
         }
 
+        function appendWishlistReview(card, item) {
+            card.dataset.wishKey = item.gameID;
+            const review = document.createElement('div');
+            review.className = 'wish-card-review';
+            const difference = wishlistPriceDifference(item);
+            if (difference) {
+                const change = document.createElement('p');
+                change.className = difference < 0 ? 'wish-price-down' : 'wish-price-up';
+                const currency = item.native ? item.currency : 'USD';
+                change.textContent = `${difference < 0 ? 'Bajó' : 'Subió'} ${nativeMoney(Math.abs(difference), currency)}${item.native ? '' : ' · Referencia'}`;
+                review.append(change);
+            }
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'wish-owned-button';
+            button.textContent = 'Ya lo tengo';
+            button.setAttribute('aria-label', 'Ya lo tengo: ' + item.title);
+            button.setAttribute('aria-pressed', String(Boolean(item.owned)));
+            button.addEventListener('click', () => {
+                const saved = userWishlist[item.gameID];
+                if (!saved) return;
+                if (saved.owned) {
+                    delete saved.owned;
+                    void refreshWishlistPrices();
+                    void refreshConsoleWishlistPrices();
+                } else {
+                    saved.owned = true;
+                }
+                persistWishlistState();
+                refreshWishlistHeartButtonsOnGrid();
+                renderWishlistDrawerItems();
+            });
+            review.append(button);
+            card.append(review);
+        }
+
         function renderWishlistDrawerItems() {
             const container = document.getElementById('wishlistItemsContainer');
+            const focusedKey = document.activeElement?.matches('.wish-owned-button') ?
+                document.activeElement.closest('[data-wish-key]').dataset.wishKey : null;
             const all = Object.values(userWishlist);
-            const hasGoal = item => Number(item.native ? item.targetPrice : item.targetPriceUsd) > 0;
-            const reached = item => hasGoal(item) && Number(item.native ? item.price : item.salePrice) <= Number(item.native ? item.targetPrice : item.targetPriceUsd);
-            document.getElementById('wishGoalsCount').textContent = all.filter(hasGoal).length;
-            document.getElementById('wishReachedCount').textContent = all.filter(reached).length;
+            const lower = all.filter(item => wishlistPriceDifference(item) < 0).length;
+            const higher = all.filter(item => wishlistPriceDifference(item) > 0).length;
+            document.getElementById('wishLowerCount').textContent = lower;
+            document.getElementById('wishHigherCount').textContent = higher;
+            document.getElementById('wishChangeCount').textContent = lower + higher ? String(lower + higher) : '';
+            document.getElementById('wishGoalsCount').textContent = all.filter(wishlistHasGoal).length;
+            document.getElementById('wishReachedCount').textContent = all.filter(wishlistGoalReached).length;
             document.getElementById('wishlistSyncStatusText').textContent = window.currentAccount ? 'Favoritos asociados a tu cuenta' : 'Guardados en este navegador';
             document.getElementById('wishAccountAction').textContent = window.currentAccount ? 'Ver mi perfil' : 'Iniciar sesión para guardar en mi cuenta';
             const search = document.getElementById('wishSearch').value.trim().toLocaleLowerCase('es');
             const platform = document.getElementById('wishPlatform').value;
             const order = document.getElementById('wishOrder').value;
+            const hideOwned = document.getElementById('wishHideOwned');
             const list = all.filter(item => item.title.toLocaleLowerCase('es').includes(search)
                 && (platform === 'all' || (item.native ? item.platform : 'pc') === platform)
-                && (order !== 'goals' || hasGoal(item)) && (order !== 'reached' || reached(item)))
-                .sort((a,b) => order === 'title' ? a.title.localeCompare(b.title, 'es') : (b.addedAt || 0) - (a.addedAt || 0));
+                && (!hideOwned.checked || !item.owned) && (order !== 'changed' || wishlistPriceDifference(item))
+                && (order !== 'goals' || wishlistHasGoal(item)) && (order !== 'reached' || wishlistGoalReached(item)))
+                .sort((a,b) => {
+                    if (order === 'title') return a.title.localeCompare(b.title, 'es');
+                    if (order === 'changed') return b.priceChangedAt - a.priceChangedAt;
+                    return b.addedAt - a.addedAt;
+                });
             container.innerHTML = '';
 
             if (list.length === 0) {
@@ -92,14 +139,15 @@
                         </p>
                     </div>
                 `;
+                if (focusedKey) hideOwned.focus({preventScroll:true});
                 return;
             }
 
             list.forEach(item => {
                 if(item.native){container.appendChild(renderConsoleWishCard(item));return;}
                 const saleUsd = parseFloat(item.salePrice || 0);
-                const targetUsd = item.targetPriceUsd ? parseFloat(item.targetPriceUsd) : null;
-                const alertMet = targetUsd !== null && saleUsd <= targetUsd;
+                const targetUsd = wishlistHasGoal(item) ? Number(item.targetPriceUsd) : null;
+                const alertMet = wishlistGoalReached(item);
                 const img = item.steamAppID ? `${STEAM_HEADER_IMG}${item.steamAppID}/header.jpg` : item.thumb;
 
                 const card = document.createElement('div');
@@ -112,7 +160,7 @@
                         <img src="${escapeHTML(safeURL(img))}" alt="${escapeHTML(item.title)}" data-fallback="${escapeHTML(safeURL(item.thumb))}"
                              class="w-16 h-10 object-cover rounded-lg border border-white/10 flex-shrink-0 cursor-pointer">
                         <div class="min-w-0 flex-1">
-                            <span class="wish-platform-tag"><i class="fa-brands fa-steam"></i> PC · Comparar tiendas</span>
+                            <span class="wish-platform-tag"><i class="fa-brands fa-steam"></i> PC · ${escapeHTML(storesMap[item.storeID]?.name || 'Referencia en USD')}</span>
                             <button type="button" class="wish-game-title">${escapeHTML(item.title)}</button>
                             <div class="flex items-center gap-2 mt-0.5">
                                 <span class="text-xs font-black text-emerald-400">${formatPrice(saleUsd, true)}</span>
@@ -149,9 +197,14 @@
                     if (activeChip === 'wishlist') renderWishlistChipMode();
                 });
 
+                appendWishlistReview(card, item);
                 prepareImages(card);
                 container.appendChild(card);
             });
+            if (focusedKey) {
+                const card = [...container.children].find(item => item.dataset.wishKey === focusedKey);
+                (card?.querySelector('.wish-owned-button') || hideOwned).focus({preventScroll:true});
+            }
         }
 
         function clearEntireWishlist() {
@@ -174,6 +227,7 @@
             for(const [index,item] of list.entries()){
                 lines.push((index+1)+'. '+singleLine(item.title));
                 lines.push('   Plataforma: '+(item.native?ECOSYSTEM_META[item.platform].name:'PC'));
+                if(item.owned) lines.push('   Estado: Ya lo tengo');
                 if(item.native) lines.push('   Tienda y región: '+singleLine(item.store)+' · '+purchaseRegions[item.region][0]);
                 lines.push('   Último precio: '+(item.native?money(item.price,item.currency):formatPrice(item.salePrice,true)+' (referencia convertida)'));
                 if(item.targetPrice||item.targetPriceUsd)lines.push('   Mi meta: '+(item.native?money(item.targetPrice,item.currency):formatPrice(item.targetPriceUsd,true)+' (referencia convertida)'));

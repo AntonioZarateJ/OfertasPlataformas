@@ -1,0 +1,245 @@
+const radarMexicoRotation = {
+    "startsOn": "2026-11-15",
+    "rotation": [
+        {
+            "pc": {
+                "product": "620",
+                "title": "Portal 2",
+                "reason": "Para resolver puzles en pareja. Cada jugador coloca sus propios portales y los niveles cooperativos obligan a coordinar el plan.",
+                "url": "https://store.steampowered.com/app/620/Portal_2/?cc=mx",
+                "image": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/620/header.jpg",
+                "edition": "Juego base"
+            },
+            "xbox": {
+                "product": "C125W9BG2K0V",
+                "title": "Rocket League®",
+                "search": "Rocket League",
+                "reason": "Para retar a tus amigos en partidos cortos. Aprender a rotar con el equipo suele rendir más que intentar cada tiro espectacular.",
+                "url": "https://www.xbox.com/es-MX/games/store/rocket-league/C125W9BG2K0V",
+                "image": "https://store-images.s-microsoft.com/image/apps.42368.65187692735347017.3990a461-2db8-41ef-8bf8-33d50ff2e82a.c3b82bee-c39d-4e94-b239-2ab0170c2551",
+                "system": "Xbox One y Series X|S",
+                "edition": "Juego base gratuito"
+            },
+            "ps": {
+                "product": "UP9000-PPSA08329_00-GOWRAGNAROK00000",
+                "title": "God of War Ragnarök",
+                "search": "God of War Ragnarök",
+                "reason": "Para alternar exploración y combate cuerpo a cuerpo. Las armas de Kratos y la ayuda de Atreus dan opciones cuando cambia la batalla.",
+                "url": "https://store.playstation.com/es-mx/product/UP9000-PPSA08329_00-GOWRAGNAROK00000",
+                "image": "https://image.api.playstation.com/vulcan/ap/rnd/202503/2016/b69c06fb108299866057126b0d3a0530bdf96a39d2ce1cb9.png",
+                "system": "PS4 y PS5",
+                "edition": "Juego base"
+            },
+            "switch": {
+                "product": "7100000153",
+                "title": "Mario Kart™ 8 Deluxe",
+                "search": "Mario Kart 8 Deluxe",
+                "reason": "Para una reunión con jugadores de niveles distintos. La dirección asistida ayuda a que todos puedan entrar a la primera carrera.",
+                "url": "https://www.nintendo.com/es-mx/store/products/mario-kart-8-deluxe-switch/",
+                "image": "https://assets.nintendo.com/image/fetch/q_auto/f_auto/https://atum-img-lp1.cdn.nintendo.net/i/c/c646e132be2d4dc0aa969ac014cb2610_1024",
+                "system": "Nintendo Switch",
+                "edition": "Juego base"
+            }
+        },
+        {
+            "pc": {
+                "product": "1145360",
+                "title": "Hades",
+                "reason": "Para quien disfruta mejorar con cada intento. Los dones cambian tu forma de pelear y volver a casa desbloquea conversaciones con el reparto.",
+                "url": "https://store.steampowered.com/app/1145360/Hades/?cc=mx",
+                "image": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1145360/header.jpg",
+                "edition": "Juego base"
+            },
+            "xbox": {
+                "product": "BX3M8L83BBRW",
+                "title": "Cyberpunk 2077",
+                "search": "Cyberpunk 2077",
+                "reason": "Para recorrer Night City a tu ritmo. En muchos encargos puedes abrirte paso con sigilo, hackeos o combate.",
+                "url": "https://www.xbox.com/es-MX/games/store/cyberpunk-2077/BX3M8L83BBRW",
+                "image": "https://store-images.s-microsoft.com/image/apps.23022.63407868131364914.bcaa868c-407e-42c2-baeb-48a3c9f29b54.be7c9193-46d7-42e9-b555-d0b8921fc4b8",
+                "system": "Xbox One y Series X|S",
+                "edition": "Juego base"
+            },
+            "ps": {
+                "product": "UP0101-PPSA08710_00-MAINGAME00000000",
+                "title": "SILENT HILL 2",
+                "search": "SILENT HILL 2",
+                "reason": "Para una noche de terror pausado. Escuchar lo que ocurre fuera de cámara y administrar la munición pesan tanto como orientarse entre la niebla.",
+                "url": "https://store.playstation.com/es-mx/product/UP0101-PPSA08710_00-MAINGAME00000000",
+                "image": "https://image.api.playstation.com/vulcan/ap/rnd/202210/2000/IgwsFz9BiBrFvyV7pIWpoVgd.png",
+                "system": "PS5",
+                "edition": "Juego base"
+            },
+            "switch": {
+                "product": "7100000025",
+                "title": "The Legend of Zelda™: Breath of the Wild",
+                "search": "The Legend of Zelda Breath of the Wild",
+                "reason": "Para explorar sin una ruta fija. La escalada y el planeador convierten una montaña o un camino lateral en parte de la aventura.",
+                "url": "https://www.nintendo.com/es-mx/store/products/the-legend-of-zelda-breath-of-the-wild-switch/",
+                "image": "https://assets.nintendo.com/image/fetch/q_auto/f_auto/https://atum-img-lp1.cdn.nintendo.net/i/c/a0cf87af83bf4161abd566c127327577_1024",
+                "system": "Nintendo Switch",
+                "edition": "Juego base"
+            }
+        },
+        {
+            "pc": {
+                "product": "413150",
+                "title": "Stardew Valley",
+                "reason": "Para desconectar a tu ritmo. Puedes dedicar una tarde a la pesca, planear los cultivos de la próxima estación o bajar a las minas.",
+                "url": "https://store.steampowered.com/app/413150/Stardew_Valley/?cc=mx",
+                "image": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/413150/header.jpg",
+                "edition": "Juego base"
+            },
+            "xbox": {
+                "product": "9MVXMVT8ZKWC",
+                "title": "Minecraft",
+                "search": "Minecraft",
+                "reason": "Para construir con amigos sin un objetivo fijo. En Supervivencia, conseguir materiales y preparar el refugio da rumbo a la primera sesión.",
+                "url": "https://www.xbox.com/es-MX/games/store/minecraft/9MVXMVT8ZKWC",
+                "image": "https://store-images.s-microsoft.com/image/apps.46509.13850085746326678.06e2dc5c-7997-46e9-a8e6-0e48b57cb13b.86bf6099-e11f-428b-a60a-1947131b7c26",
+                "system": "Xbox One y Series X|S",
+                "edition": "Juego base"
+            },
+            "ps": {
+                "product": "UP0700-PPSA15211_00-DRAGONBALLSPARK0",
+                "title": "DRAGON BALL: Sparking! ZERO",
+                "search": "DRAGON BALL Sparking ZERO",
+                "reason": "Para duelos de anime con escenarios amplios. La movilidad aérea y el manejo de la energía cambian cuándo conviene acercarse.",
+                "url": "https://store.playstation.com/es-mx/product/UP0700-PPSA15211_00-DRAGONBALLSPARK0",
+                "image": "https://image.api.playstation.com/vulcan/ap/rnd/202405/2216/cbb03393f0ab1149f2b89a8194ce19e596a24fa5bec6526a.png",
+                "system": "PS5",
+                "edition": "Juego base"
+            },
+            "switch": {
+                "product": "7100027619",
+                "title": "Animal Crossing™: New Horizons",
+                "search": "Animal Crossing New Horizons",
+                "reason": "Para volver un rato al día. Decorar un rincón, hablar con vecinos y recolectar materiales son metas que caben en sesiones cortas.",
+                "url": "https://www.nintendo.com/es-mx/store/products/animal-crossing-new-horizons-switch/",
+                "image": "https://assets.nintendo.com/image/fetch/q_auto/f_auto/https://atum-img-lp1.cdn.nintendo.net/i/c/6aa542e3ec7448dfa025df532a7ede58_1024",
+                "system": "Nintendo Switch",
+                "edition": "Juego base"
+            }
+        },
+        {
+            "pc": {
+                "product": "504230",
+                "title": "Celeste",
+                "reason": "Para practicar saltos de precisión en tramos cortos. Reinicias cerca del obstáculo y puedes retomar el desafío en otra sesión.",
+                "url": "https://store.steampowered.com/app/504230/Celeste/?cc=mx",
+                "image": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/504230/header.jpg",
+                "edition": "Juego base"
+            },
+            "xbox": {
+                "product": "BXBJQ1932138",
+                "title": "theHunter: Call of the Wild™",
+                "search": "theHunter Call of the Wild",
+                "reason": "Para jugar sin prisa. Seguir rastros y escoger desde dónde observar importa tanto como el disparo.",
+                "url": "https://www.xbox.com/es-MX/games/store/thehunter-call-of-the-wild/BXBJQ1932138",
+                "image": "https://store-images.s-microsoft.com/image/apps.9956.63553167684393025.1b31f51e-c4c6-49b1-bf61-a2e65ea14c73.a126b6d1-284c-4746-a11d-f6af188d1918",
+                "system": "Xbox One y Series X|S",
+                "edition": "Juego base"
+            },
+            "ps": {
+                "product": "UP0006-PPSA04873_00-APEXLEGENDRSPWN1",
+                "title": "Apex Legends",
+                "search": "Apex Legends",
+                "reason": "Para escuadras que disfrutan decidir rápido. Las habilidades de las leyendas ayudan a tomar altura, proteger al equipo o retirarse juntos.",
+                "url": "https://store.playstation.com/es-mx/product/UP0006-PPSA04873_00-APEXLEGENDRSPWN1",
+                "image": "https://image.api.playstation.com/vulcan/ap/rnd/202610/2617/51e9baa93fd454bc44df38597be72b7b83ab84cc37f82e12.png",
+                "system": "PS5",
+                "edition": "Juego base gratuito"
+            },
+            "switch": {
+                "product": "7100068688",
+                "title": "Super Mario Bros.™ Wonder",
+                "search": "Super Mario Bros Wonder",
+                "reason": "Para compartir una partida en el sofá. Las flores maravilla cambian las reglas de algunos niveles y dan sorpresas incluso al repetirlos.",
+                "url": "https://www.nintendo.com/es-mx/store/products/super-mario-bros-wonder-switch/",
+                "image": "https://assets.nintendo.com/image/fetch/q_auto/f_auto/https://atum-img-lp1.cdn.nintendo.net/i/c/a6d7016ff0ac4627be2fe50a6ed97db5_1024",
+                "system": "Nintendo Switch",
+                "edition": "Juego base"
+            }
+        },
+        {
+            "pc": {
+                "product": "646570",
+                "title": "Slay the Spire",
+                "reason": "Para pensar cada turno con calma. Ves la intención del enemigo y eliges cuándo bloquear, atacar o preparar la próxima jugada.",
+                "url": "https://store.steampowered.com/app/646570/Slay_the_Spire/?cc=mx",
+                "image": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/646570/header.jpg",
+                "edition": "Juego base"
+            },
+            "xbox": {
+                "product": "BRQ2SCZCTXF2",
+                "title": "Grand Theft Auto IV",
+                "search": "Grand Theft Auto IV",
+                "reason": "Para visitar una Liberty City con calles densas y una historia centrada en Niko. Su conducción premia tomar las curvas con calma.",
+                "url": "https://www.xbox.com/es-MX/games/store/grand-theft-auto-iv/BRQ2SCZCTXF2",
+                "image": "https://store-images.s-microsoft.com/image/apps.18344.69304479265522151.5b8601c1-35b0-4bad-bcff-f51fb0ce43d8.addad03c-8295-4bb1-a2eb-47bee7b2b6d6",
+                "system": "Xbox One y Series X|S",
+                "edition": "Juego base"
+            },
+            "ps": {
+                "product": "UB0335-PPSA21669_00-0320312678245089",
+                "title": "Marvel Rivals",
+                "search": "Marvel Rivals",
+                "reason": "Para probar distintos roles en equipo. Las habilidades de dos héroes pueden complementarse y cambiar el resultado de un enfrentamiento.",
+                "url": "https://store.playstation.com/es-mx/product/UB0335-PPSA21669_00-0320312678245089",
+                "image": "https://image.api.playstation.com/vulcan/ap/rnd/202609/1008/3d85937370ce5d1fe39c9541e7cdc14455798fed56dc2390.png",
+                "system": "PS5",
+                "edition": "Juego base gratuito"
+            },
+            "switch": {
+                "product": "7100012332",
+                "title": "Super Smash Bros.™ Ultimate",
+                "search": "Super Smash Bros Ultimate",
+                "reason": "Para partidas locales rápidas. Puedes ajustar los objetos y las reglas según si el grupo quiere un duelo técnico o algo más caótico.",
+                "url": "https://www.nintendo.com/es-mx/store/products/super-smash-bros-ultimate-switch/",
+                "image": "https://assets.nintendo.com/image/fetch/q_auto/f_auto/https://atum-img-lp1.cdn.nintendo.net/i/c/d1b8c834478f476f9ab7d74f30ae3588_1024",
+                "system": "Nintendo Switch",
+                "edition": "Juego base"
+            }
+        },
+        {
+            "pc": {
+                "product": "105600",
+                "title": "Terraria",
+                "reason": "Para quien prefiere explorar bajo tierra y construir su propia base. Cada hallazgo sirve para preparar la siguiente expedición.",
+                "url": "https://store.steampowered.com/app/105600/Terraria/?cc=mx",
+                "image": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/105600/header.jpg",
+                "edition": "Juego base"
+            },
+            "xbox": {
+                "product": "C0N22P73QZ60",
+                "title": "Dead by Daylight",
+                "search": "Dead by Daylight",
+                "reason": "Para un grupo que disfruta el terror competitivo. Los supervivientes deciden cuándo reparar, esconderse y volver por un compañero.",
+                "url": "https://www.xbox.com/es-MX/games/store/dead-by-daylight/C0N22P73QZ60",
+                "image": "https://store-images.s-microsoft.com/image/apps.51458.64366672042187759.733004ed-c696-44cf-98cc-30eddf2375a8.33981a4c-a34b-4492-b81f-8695c017496b",
+                "system": "Xbox One y Series X|S",
+                "edition": "Juego base"
+            },
+            "ps": {
+                "product": "EP3969-PPSA11386_00-007FIRSTLIGHT000",
+                "title": "007 First Light",
+                "search": "007 First Light",
+                "reason": "Para quien disfruta el espionaje y la improvisación. La aventura sigue a un Bond joven y combina infiltración con momentos de acción.",
+                "url": "https://store.playstation.com/es-mx/product/EP3969-PPSA11386_00-007FIRSTLIGHT000",
+                "image": "https://image.api.playstation.com/vulcan/ap/rnd/202610/0213/2a446965c0e8537af78302782417b0353a73ff1b19ebfeb4.png",
+                "system": "PS5",
+                "edition": "Juego base"
+            },
+            "switch": {
+                "product": "7100036098",
+                "title": "Among Us",
+                "search": "Among Us",
+                "reason": "Para jugar con un grupo que disfruta debatir. Observar coartadas y decidir cuándo convocar una reunión es tan importante como completar tareas.",
+                "url": "https://www.nintendo.com/es-mx/store/products/among-us-switch/",
+                "image": "https://assets.nintendo.com/image/fetch/q_auto/f_auto/https://atum-img-lp1.cdn.nintendo.net/i/c/517172da1a5c4996966c79e16009bb13_1024",
+                "system": "Nintendo Switch",
+                "edition": "Juego base"
+            }
+        }
+    ]
+};

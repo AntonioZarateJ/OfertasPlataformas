@@ -3,6 +3,20 @@ function editionGrid(editions){
 }
 let comparisonController;
 let comparisonSelection;
+function consolePriceDecision(quote, regionName) {
+ const title = '<h3>¿Conviene hoy?</h3>';
+ if (!quote) return `<section class="price-decision">${title}<p>Precio oficial sin confirmar en esta consulta.</p></section>`;
+ const {history, price, store, currency} = quote;
+ const scope = `${store} · ${regionName} · ${currency}`;
+ const comparable = Number.isInteger(history?.days) && history.days >= 3 && Number.isFinite(history.min) &&
+  history.min >= 0 && Number.isFinite(price) && price >= history.min;
+ let detail = 'Historial insuficiente. La comparación requiere tres días con precios de esta edición en la misma tienda y región.';
+ if (comparable) {
+  const difference = price === history.min ? 'Iguala ese mínimo.' : `Está ${nativeMoney(price - history.min, currency)} por encima de ese mínimo.`;
+  detail = `Precio consultado: ${nativeMoney(price, currency)}. Mínimo observado: ${nativeMoney(history.min, currency)} en ${history.days} días con datos. ${difference}`;
+ }
+ return `<section class="price-decision">${title}<p>${escapeHTML(detail)}</p><p>${escapeHTML(scope)}</p></section>`;
+}
 function closeConsoleComparison(){comparisonController?.abort();document.getElementById('consoleComparison').close();document.documentElement.classList.remove('console-modal-open');}
 async function openConsoleComparison(item,platform=activeEcosystem,region=currentRegion){
  comparisonController?.abort();
@@ -31,6 +45,10 @@ async function openConsoleComparison(item,platform=activeEcosystem,region=curren
   let html=`<p class="comparison-context">${escapeHTML(ECOSYSTEM_META[data.platform].name)} · Región ${escapeHTML(purchaseRegions[data.region][0])} · Consulta ${escapeHTML(new Date(data.checkedAt).toLocaleTimeString('es-MX'))}</p>`;
   const bestOfficial=[...official].sort((a,b)=>a.price-b.price)[0];
   const bestExternal=[...external].sort((a,b)=>a.price-b.price)[0];
+  const comparableOfficial = item.kind === 'official'
+   ? official.find(quote => String(quote.id) === String(item.id) && quote.store === item.store && quote.currency === item.currency)
+   : bestOfficial;
+  html += consolePriceDecision(comparableOfficial, purchaseRegions[data.region][0]);
   const observations=data.offers.filter(q=>q.history?.days>1);
   html+=`<div class="comparison-metrics"><div class="metric-official"><span><i class="fa-solid fa-store"></i> Mejor oficial consultado</span><strong>${bestOfficial?escapeHTML(format(bestOfficial)):'No confirmado'}</strong><small>Esta edición y región</small></div><div class="metric-external"><span><i class="fa-solid fa-key"></i> Mejor externo consultado</span><strong>${bestExternal?escapeHTML(format(bestExternal)):'Sin coincidencias'}</strong><small>Antes de posibles cargos</small></div><div class="metric-history"><span><i class="fa-solid fa-clock-rotate-left"></i> Registro observado</span><strong>${observations.length?escapeHTML(format({...observations[0],price:Math.min(...observations.filter(q=>q.currency===observations[0].currency).map(q=>q.history.min))})):'En construcción'}</strong><small>${observations.length?'Mínimo del registro propio':'Aún no hay suficientes días'}</small></div></div>`;
   html+='<h3><i class="fa-solid fa-scale-balanced"></i> Opciones para esta edición</h3>';

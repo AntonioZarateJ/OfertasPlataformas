@@ -248,6 +248,31 @@ main>div:first-child{border-color:rgba(var(--platform-rgb),.3);background:linear
 .profile-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.profile-stats span{padding:14px;border:1px solid #38bdf822;border-radius:14px;background:#07111b88;color:#94a3b8;font-size:12px}.profile-stats strong{display:block;font-size:23px;color:#7dd3fc}.profile-avatar-picker{margin-top:18px;border:0}.profile-avatar-picker legend{font-size:12px;color:#cbd5e1;margin-bottom:10px}#profileAvatarOptions{display:flex;flex-wrap:wrap;gap:8px}#profileAvatarOptions button{padding:4px;border:2px solid transparent;border-radius:17px;background:#ffffff08;transition:transform .15s,border-color .15s}#profileAvatarOptions button[aria-pressed=true]{border-color:#38bdf8;background:#38bdf81a}#profileAvatarOptions button:hover{transform:translateY(-2px)}#profileAvatarOptions img{border-radius:12px}.profile-security{padding:16px;border:1px solid #ffffff15;background:#080f1a66;border-radius:14px;margin-top:20px}.profile-security strong{font-size:12px;color:#e2e8f0}.profile-security p{font-size:12px;line-height:1.6;color:#94a3b8;margin:8px 0}.profile-security button{color:#7dd3fc;font-size:12px;text-align:left}.profile-footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;padding-top:20px;font-size:12px;color:#7dd3fc}.profile-footer .profile-logout{color:#fda4af}#profileMessage{font-size:12px;color:#7dd3fc;line-height:1.6}.profile-security button:disabled{opacity:.5}
 #wishlistDrawerModal>div{max-width:490px;background:radial-gradient(ellipse at top right,#4c214930,transparent 55%),#0e1626}#wishlistDrawerModal>div>div:first-child{background:linear-gradient(115deg,#29172b,#0c1c2b);padding:22px 18px}.wish-discovery{padding:16px;border-bottom:1px solid #ffffff10}.wish-stats{display:flex;gap:10px;margin-bottom:14px}.wish-stats>span{flex:1;border:1px solid #ffffff12;background:#ffffff04;border-radius:12px;padding:10px;font-size:11px;color:#94a3b8}.wish-stats strong{font-size:20px;color:#fda4af;display:block}.wish-stats>span+span strong{color:#6ee7b7}.wish-search{display:flex;align-items:center;gap:10px;border:1px solid #344157;border-radius:10px;padding:9px 12px;background:#080f1a;color:#64748b}.wish-search input{width:100%;min-width:0;background:transparent;color:#e2e8f0;outline:none;font-size:12px}.wish-selects{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.wish-selects select,.pc-store-select{width:100%;min-width:0;background:#111e30;color:#e2e8f0;border:1px solid #344157;padding:9px;border-radius:10px;font-size:12px}.wish-footnote{font-size:10px;line-height:1.6;color:#94a3b8}.wish-game-card{background:linear-gradient(120deg,#182438,#111a2a);box-shadow:0 5px 20px #0002}.wish-game-card img{width:92px;height:60px}.wish-game-title{display:block;font-size:13px;line-height:1.5;font-weight:800;text-align:left;color:#f1f5f9;white-space:normal;overflow-wrap:anywhere}.wish-game-title:hover{color:#7dd3fc}.wish-platform-tag{font-size:9px;letter-spacing:.04em;color:#7dd3fc;display:block;margin-bottom:3px}.native-wish-card{background:linear-gradient(120deg,#182438,#111a2a)!important}.native-wish-card .native-wish-open img{border-radius:10px}.pc-store-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border-top:1px solid #38bdf822;padding-top:14px;margin-top:14px}.pc-store-bar>label{font-size:12px;color:#7dd3fc;display:flex;align-items:center;gap:10px}.pc-store-select{width:auto;max-width:240px}.pc-external-links{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;color:#94a3b8}.pc-external-links a{padding:7px 10px;border:1px solid #a78bfa44;border-radius:8px;color:#c4b5fd;background:#8b5cf60a}.pc-store-bar small{font-size:10px;color:#94a3b8;width:100%}
 @media(max-width:520px){.auth-overlay{padding:12px}.auth-card{padding:26px 20px;border-radius:20px}.auth-card.has-profile h2{font-size:25px}.profile-identity{gap:12px}.profile-identity>img{width:60px;height:60px}.wish-selects{grid-template-columns:1fr}.pc-store-bar>label{width:100%;justify-content:space-between}.pc-store-select{max-width:70%}.wish-game-card img{width:76px;height:52px}}
+
+.wish-review { margin-bottom: 10px; padding: 8px 10px; border: 1px solid #334760; border-radius: 10px; background: #142136; }
+.wish-review summary { cursor: pointer; color: #dceefe; font-size: 12px; font-weight: 700; }
+#wishChangeCount:not(:empty) { margin-left: 5px; padding: 2px 6px; border-radius: 8px; background: #153c39; color: #a7f3d0; }
+.wish-review .wish-stats { gap: 6px; margin: 8px 0 4px; }
+.wish-review .wish-stats > span { padding: 5px 7px; }
+.wish-review .wish-stats strong { font-size: 16px; }
+#wishLowerCount, #wishReachedCount { color: #6ee7b7; }
+#wishHigherCount { color: #fcd58d; }
+.wish-review > p { color: #acbbcf; font-size: 10px; }
+.wish-hide-owned { display: flex; align-items: center; gap: 7px; width: fit-content; padding-top: 8px; color: #bfd1e5; font-size: 11px; cursor: pointer; }
+.wish-hide-owned input { accent-color: #5bd7ff; }
+#wishlistItemsContainer { min-height: 0; }
+.wish-card-review { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: space-between; border-top: 1px solid #33435b; padding-top: 6px; font-size: 11px; }
+.wish-card-review p { margin: 0; font-weight: 700; }
+.wish-price-down { color: #8ff3c9; }
+.wish-price-up { color: #ffd685; }
+.wish-owned-button { margin-left: auto; padding: 4px 9px; border: 1px solid #3b526c; border-radius: 7px; color: #c5d9ed; }
+.wish-owned-button[aria-pressed="true"] { color: #a7f3d0; border-color: #48997f; background: #163937; }
+.wish-owned-button[aria-pressed="true"]::before { content: "✓ "; }
+.native-wish-card > p:empty { display: none; }
+@media (max-width: 520px) {
+    .wish-discovery { padding: 10px 12px; }
+    .wish-selects { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 #profileAvatarOptions{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}#profileAvatarOptions button{min-width:0}#profileAvatarOptions img{display:block;width:100%;max-width:44px;height:auto;margin:auto}
 
 /* Preferencias de compra alineadas y estados de carga junto a la acción. */

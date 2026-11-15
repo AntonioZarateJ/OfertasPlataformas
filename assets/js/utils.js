@@ -163,18 +163,27 @@ function showCatalogError(message) {
     error.classList.remove('hidden-el');
 }
 
+function wishlistPCOffer(item, offers) {
+    const valid = offers.filter(offer => validWishlistAmount(offer.price) && /^\d{1,6}$/.test(String(offer.storeID)));
+    if (item.storeID) return valid.find(offer => String(offer.storeID) === String(item.storeID));
+    return valid.find(offer => offer.dealID === item.dealID) ||
+        valid.sort((a, b) => Number(a.price) - Number(b.price))[0];
+}
+
 function updateSavedPrices(games) {
     let changed = false;
     games.forEach(game => {
         const saved = userWishlist[String(game.gameID)];
-        if (!saved || !Number.isFinite(Number(game.salePrice))) return;
-        if (saved.salePrice === Number(game.salePrice).toFixed(2) &&
-            String(saved.normalPrice) === String(game.normalPrice ?? saved.normalPrice) &&
-            String(saved.savings) === String(game.savings ?? saved.savings)) return;
-        saved.salePrice = Number(game.salePrice).toFixed(2);
+        const storeID = String(game.storeID);
+        if (!saved || saved.native || saved.owned || !validWishlistAmount(game.salePrice) ||
+            !/^\d{1,6}$/.test(storeID) || (saved.storeID && saved.storeID !== storeID)) return;
+        const sameOffer = saved.storeID === storeID || (saved.dealID && saved.dealID === game.dealID);
+        const updated = recordWishlistPrice(saved, game.salePrice, game.priceCheckedAt ?? Date.now(), sameOffer);
+        if (!updated && saved.storeID) return;
+        saved.storeID = storeID;
+        saved.dealID = game.dealID || saved.dealID;
         saved.normalPrice = game.normalPrice ?? saved.normalPrice;
-        saved.savings = game.savings ?? saved.savings;
-        saved.priceCheckedAt = Date.now();
+        saved.savings = game.savings ?? (Number(saved.normalPrice) > 0 ? Math.round((1 - Number(saved.salePrice) / Number(saved.normalPrice)) * 100) : 0);
         changed = true;
     });
     if (changed) persistWishlistState();
@@ -182,25 +191,28 @@ function updateSavedPrices(games) {
 
 let wishlistRefresh = null;
 function refreshWishlistPrices() {
-    if (wishlistRefresh) return wishlistRefresh;
-    wishlistRefresh = (async () => {
-        const owner=window.accountStorageKey;
-        const ids = Object.keys(userWishlist).filter(id => /^\d+$/.test(id));
+    const epoch = accountEpoch;
+    if (wishlistRefresh?.epoch === epoch) return wishlistRefresh.promise;
+    const promise = (async () => {
+        const savedItems = Object.values(userWishlist).filter(item => !item.native && !item.owned && /^\d+$/.test(item.gameID));
+        const checkedAt = Date.now();
         const updates = [];
-        for (let i = 0; i < ids.length; i += 4) {
-            await Promise.all(ids.slice(i, i + 4).map(async id => {
+        for (let i = 0; i < savedItems.length && epoch === accountEpoch; i += 4) {
+            await Promise.all(savedItems.slice(i, i + 4).map(async saved => {
                 try {
-                    const game = await requestJSON(`${GAMES_API}?id=${encodeURIComponent(id)}`);
+                    const game = await requestJSON(`${GAMES_API}?id=${encodeURIComponent(saved.gameID)}`);
                     if (!Array.isArray(game?.deals) || !game.deals.length) return;
-                    const deal = [...game.deals].sort((a, b) => Number(a.price) - Number(b.price))[0];
-                    updates.push({ gameID: id, salePrice: deal.price, normalPrice: deal.retailPrice });
+                    const deal = wishlistPCOffer(saved, game.deals);
+                    if (deal) updates.push({gameID:saved.gameID, addedAt:saved.addedAt, storeID:deal.storeID,
+                        dealID:deal.dealID, salePrice:deal.price, normalPrice:deal.retailPrice, priceCheckedAt:checkedAt});
                 } catch { /* Se conserva el último precio consultado si la API falla. */ }
             }));
         }
-        if(owner!==window.accountStorageKey)return;
-        updateSavedPrices(updates);
+        if (epoch !== accountEpoch) return;
+        updateSavedPrices(updates.filter(update => userWishlist[update.gameID]?.addedAt === update.addedAt));
         if (activeChip === 'wishlist') renderWishlistChipMode();
         if (!document.getElementById('wishlistDrawerModal').classList.contains('hidden-el')) renderWishlistDrawerItems();
-    })().finally(() => { wishlistRefresh = null; });
-    return wishlistRefresh;
+    })().finally(() => { if (wishlistRefresh?.promise === promise) wishlistRefresh = null; });
+    wishlistRefresh = {epoch, promise};
+    return promise;
 }

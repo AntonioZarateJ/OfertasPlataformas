@@ -53,8 +53,16 @@ const server = http.createServer((req, res) => {
             }
             if (mode.detailFailure) return json({}, 500);
             const id = u.searchParams.get('id');
+            if (id === '900') return json({deals:[{storeID:'2',dealID:'other',price:'1.00',retailPrice:'40'}, {storeID:'1',dealID:'same',price:'7.00',retailPrice:'40'}]});
             if (id === '2' && mode.slowModal) await sleep(500);
             return json({ info: { title: `Juego ${id}` }, cheapestPriceEver: { price: '0.00', date: 1700000000 }, deals: [{ storeID: '1', dealID: 'detail', price: '7.00', retailPrice: '40.00', savings: '82.5' }] });
+        }
+        if (u.pathname === '/api/console-comparison' && mode.wishlistReview) {
+            const platform = u.searchParams.get('platform');
+            const region = u.searchParams.get('region');
+            const offer = {id:u.searchParams.get('id'), store:u.searchParams.get('store'), kind:'official', currency:'MXN',
+                price:{xbox:280,ps:550,switch:0}[platform]};
+            return json({platform, region, checkedAt:Date.now(), offers:[{...offer,currency:'USD',price:1},{...offer,id:'different-edition',price:1},offer]});
         }
         if (u.pathname.endsWith('/stores')) { await sleep(mode.auxDelay || 0); return json([{ storeID: '1', storeName: 'Steam', images: { icon: '/icon.png' } }]); }
         if (u.pathname === '/api/exchange-rates') { await sleep(mode.auxDelay || 0); return json({ rates: { USD: 1, MXN: 20, EUR: 0.9, JPY: 150 } }); }
@@ -247,6 +255,48 @@ const server = http.createServer((req, res) => {
             assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
             await page.setViewportSize({ width: 1440, height: 1000 });
             await page.keyboard.press('Escape');
+        });
+        await test('Favoritos revisa cambios comparables en las cuatro plataformas y conserva lo comprado', async () => {
+            mode = {wishlistReview:true};
+            await page.evaluate(() => {
+                const items = {
+                    900:{title:'Revisión PC', salePrice:10, targetPriceUsd:8, storeID:'1', dealID:'same'}
+                };
+                for (const [platform, title, store, price] of [
+                    ['xbox','Revisión Xbox','Xbox Store',300],
+                    ['ps','Revisión PlayStation','PlayStation Store',500],
+                    ['switch','Revisión Switch','Nintendo eShop',100]
+                ]) {
+                    items[platform] = {id:platform, title, native:true, platform, store, region:'MX', currency:'MXN', price, salePrice:price};
+                }
+                userWishlist = normalizeWishlist(items);
+                persistWishlistState({sync:false});
+                openWishlistDrawer();
+            });
+            await expect(page.locator('#wishChangeCount')).toHaveText('4');
+            await page.getByText('Qué cambió en tus favoritos').click();
+            await expect(page.locator('#wishLowerCount')).toHaveText('3');
+            await expect(page.locator('#wishHigherCount')).toHaveText('1');
+            await expect(page.locator('#wishReachedCount')).toHaveText('1');
+            const pc = page.locator('[data-wish-key="900"]');
+            await expect(pc).toContainText('Bajó $3.00 USD');
+            await expect(page.locator('[data-wish-key="switch"]')).toContainText('Bajó $100.00 MXN');
+            await expect(page.locator('[data-wish-key="ps"]')).toContainText('Subió $50.00 MXN');
+            await page.locator('#wishOrder').selectOption('changed');
+            await expect(page.locator('#wishlistItemsContainer > *')).toHaveCount(4);
+            await page.locator('#wishOrder').selectOption('recent');
+            await pc.locator('.wish-owned-button').click();
+            await expect(pc.locator('.wish-owned-button')).toHaveAttribute('aria-pressed','true');
+            await expect(page.locator('#wishReachedCount')).toHaveText('0');
+            await page.locator('#wishHideOwned').check();
+            await expect(pc).toHaveCount(0);
+            await page.reload();
+            await page.locator('#wishlistButton').click();
+            await page.locator('#wishHideOwned').uncheck();
+            await expect(pc.locator('.wish-owned-button')).toHaveAttribute('aria-pressed','true');
+            await pc.locator('.wish-owned-button').click();
+            await expect(pc.locator('.wish-owned-button')).toHaveAttribute('aria-pressed','false');
+            await expect(page.locator('#wishReachedCount')).toHaveText('1');
         });
         await test('Seleccionar tienda consulta y pagina ese catálogo y conserva el filtro al buscar', async () => {
             await reset();

@@ -18,6 +18,11 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         let heldPage;
         let regionalRequests = 0;
         let heldRegional, releaseRegional;
+        const editorialQuotes = {
+            xbox: {id:'9NKX70BBCDRN', store:'Xbox Store', price:639.60, regular:1599, discount:59.99, currency:'MXN'},
+            ps: {id:'UP9000-PPSA21564_00-0000000000000000', store:'PlayStation Store', price:999, regular:999, discount:0, currency:'MXN'},
+            switch: {id:'7100077279', store:'Nintendo eShop', price:7, regular:10, discount:30, currency:'USD'}
+        };
         await page.route('**/*', async route => {
             const u = new URL(route.request().url());
             if(u.origin !== root)return route.fulfill({body:'',contentType:'text/css'});
@@ -29,6 +34,12 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
                 regionalRequests++;
                 if(heldRegional)await heldRegional;
                 data={'31415':{success:true,data:{price_overview:{currency:'MXN',final:1000,initial:2000,discount_percent:50}}}};
+                if (u.searchParams.get('appids') === '206190') {
+                    assert.equal(u.searchParams.get('region'), 'MX');
+                    data = {
+                        206190: {success:true, data:{price_overview:{currency:'MXN', final:2199, initial:10995, discount_percent:80}}}
+                    };
+                }
             }
             if(u.pathname === '/api/deals'){
                 pcRequests++;
@@ -40,6 +51,12 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
                 const offset=JSON.parse(u.searchParams.get('cursor')||'{}').official||0;
                 if(offset && heldPage)await heldPage;
                 data={platform:u.searchParams.get('platform'),region:'MX',checkedAt:Date.now(),sources:[],scope:'Prueba',next:offset?null:{official:1,external:false},items:Array.from({length:60},(_,i)=>({id:String(offset*60+i),title:'Consola '+(offset*60+i),price:100,regular:200,discount:50,currency:'MXN',edition:'Base',store:'Tienda oficial',kind:'official',url:'https://example.com/'}))};
+                if (Object.hasOwn(editorialQuotes, data.platform) && u.searchParams.get('q')) {
+                    assert.equal(u.searchParams.get('region'), 'MX');
+                    assert.equal(u.searchParams.get('source'), 'official');
+                    const quote = {...editorialQuotes[data.platform], kind:'official'};
+                    data.items = [{...quote, id:'other-edition', currency:'MXN', price:1}, quote];
+                }
             }
             await route.fulfill({contentType:'application/json',body:JSON.stringify(data)}).catch(()=>{});
         });
@@ -142,5 +159,83 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         await expect(page.locator('#loadingText')).toContainText('Cargando juegos');
         await expect(page.locator('#loadingText')).not.toContainText('lote');
         assert.deepEqual(errors,[]);
+        assert.match(await page.evaluate(() => consolePriceDecision({store:'Nintendo eShop', currency:'MXN', price:249, history:{min:199, days:3}}, 'México')), /por encima de ese mínimo/);
+        assert.match(await page.evaluate(() => consolePriceDecision({store:'Nintendo eShop', currency:'MXN', price:249, history:{min:199, days:2}}, 'México')), /Historial insuficiente/);
+        await page.setViewportSize({width:390,height:844});
+        await page.clock.setFixedTime(new Date('2026-11-16T05:59:59Z'));
+        const discovery = page.getByRole('navigation', {name:'Descubre juegos'});
+        await expect(discovery.getByRole('link')).toHaveCount(2);
+        await expect(page.locator('.mobile-catalog-info a')).toHaveCount(0);
+        assert.equal(await discovery.evaluate(nav => getComputedStyle(nav).gridTemplateColumns.split(' ').length), 2);
+        await discovery.getByRole('link', {name:/Radar de México/}).click();
+        await expect(page.getByRole('heading', {name:'Radar de México'})).toBeVisible();
+        await expect(page.locator('.pick-platform strong')).toHaveText(['PC', 'Xbox', 'PlayStation', 'Nintendo Switch']);
+        await expect(page.locator('[data-platform="pc"] .pick-price')).toContainText('−80%');
+        await expect(page.locator('[data-platform="xbox"] .pick-price')).toContainText('$639.60 MXN');
+        await expect(page.locator('[data-platform="xbox"] .pick-price')).toContainText('−60%');
+        await expect(page.locator('[data-platform="ps"] .pick-price')).toContainText('Precio regular');
+        await expect(page.locator('[data-platform="switch"] .pick-price')).toHaveText('Consulta el precio en la tienda');
+        await expect(page.getByRole('status')).toContainText('precios que pudimos comprobar');
+        await expect(page.locator('#edition-date')).toContainText('15 de noviembre');
+        await expect(page.locator('.edition-history')).toBeVisible();
+        await expect(page.locator('#edition-history-empty')).toContainText('Todavía no hay');
+        assert.equal(await page.locator('.edition-pick').first().evaluate(card => getComputedStyle(card, '::after').animationName), 'none');
+
+        await page.clock.setFixedTime(new Date('2026-11-16T06:00:00Z'));
+        await page.reload();
+        await expect(page.locator('.edition-pick h2')).toHaveText(['Portal 2', 'Rocket League®', 'God of War Ragnarök', 'Mario Kart™ 8 Deluxe']);
+        await expect(page.locator('.pick-reason').first()).toContainText('los niveles cooperativos');
+        await expect(page.locator('#edition-date')).toContainText('16 de noviembre');
+        await expect(page.locator('#edition-history-empty')).toBeVisible();
+        await expect(page.locator('.edition-history details')).toHaveCount(0);
+
+        await page.clock.setFixedTime(new Date('2026-11-22T06:00:00Z'));
+        await page.reload();
+        await expect(page.locator('.edition-history details')).toHaveCount(6);
+        await expect(page.locator('.edition-pick h2').first()).toHaveText('Gunpoint');
+        await expect(page.locator('.edition-history summary').last()).toContainText('16 de noviembre');
+        await page.locator('.edition-history summary').last().click();
+        await expect(page.locator('.edition-history').getByRole('link', {name:'Portal 2'})).toBeVisible();
+        await page.emulateMedia({reducedMotion:'no-preference'});
+        assert.equal(await page.locator('.edition-pick').first().evaluate(card => getComputedStyle(card, '::after').animationIterationCount), 'infinite');
+        await page.getByRole('button', {name:'Pausar animación de los bordes'}).click();
+        assert.equal(await page.locator('.edition-pick').first().evaluate(card => getComputedStyle(card, '::after').animationPlayState), 'paused');
+
+        await page.clock.setFixedTime(new Date('2026-11-23T06:00:00Z'));
+        await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+        await expect(page.locator('.edition-pick h2').first()).toHaveText('Hades');
+        await expect(page.locator('.edition-history details')).toHaveCount(0);
+        await expect(page.locator('#edition-history-empty')).toBeVisible();
+        assert.deepEqual(errors, []);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+
+        await page.route('**/api/console-catalog?*', async route => {
+            const params = new URL(route.request().url()).searchParams;
+            const platform = params.get('platform');
+            const choices = {
+                xbox: {id:'C125W9BG2K0V',store:'Xbox Store',currency:'MXN',price:350},
+                ps: {id:'UP0006-PPSA04873_00-APEXLEGENDRSPWN1',store:'PlayStation Store',currency:'MXN',price:0},
+                switch: {id:'7100001801',store:'Nintendo eShop',currency:'USD',price:50}
+            };
+            await route.fulfill({json:{platform,region:'MX',items:[{...choices[platform],kind:'official'}]}});
+        });
+        await page.addInitScript(() => {
+            Object.defineProperty(navigator, 'share', {value:undefined});
+            Object.defineProperty(navigator, 'clipboard', {value:{writeText:async () => {throw new Error('Clipboard unavailable');}}});
+        });
+        await page.goto(root);
+        await discovery.getByRole('link', {name:/Colección de juegos/}).click();
+        await expect(page.getByRole('heading', {name:'Juegos hasta $300 MXN'})).toBeVisible();
+        await expect(page.locator('.discover-card')).toHaveCount(4);
+        await expect(page.locator('.discover-quote[data-platform="pc"]')).toContainText('Dentro del presupuesto');
+        await expect(page.locator('.discover-quote[data-platform="xbox"]')).toContainText('Supera el presupuesto');
+        await expect(page.locator('.discover-quote[data-platform="ps"]')).toContainText('Gratis');
+        await expect(page.locator('.discover-quote[data-platform="switch"]')).toContainText('Presupuesto por confirmar');
+        await page.getByRole('link', {name:'Ver ficha de Stardew Valley'}).click();
+        await expect(page.getByRole('heading', {name:'Stardew Valley'})).toBeVisible();
+        await page.getByRole('button', {name:'Copiar enlace'}).click();
+        await expect(page.getByRole('textbox', {name:'Enlace público de la ficha'})).toHaveValue('https://salesplataforms.onrender.com/descubre/stardew-valley');
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        assert.deepEqual(errors, []);
     } finally { await browser.close();await new Promise(resolve=>server.close(resolve)); }
 });

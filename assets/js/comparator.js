@@ -33,6 +33,7 @@
         }
 
         async function openAnalyticalModal(dealItem) {
+            dealItem = {...dealItem};
             modalController?.abort();
             const controller = new AbortController();
             modalController = controller;
@@ -126,7 +127,7 @@
 
             if (!hasHistoricalLow) {
                 historicalLowBanner.className = 'rounded-xl p-4 border bg-[#152033] border-white/10 text-sm text-gray-300';
-                historicalLowBanner.textContent = 'CheapShark no devolvió un mínimo histórico para este juego.';
+                historicalLowBanner.innerHTML = '<h3 class="font-bold text-white">¿Conviene hoy?</h3><p>Historial insuficiente. CheapShark no devolvió un mínimo comparable.</p>';
             } else if (isHistoricalLow) {
                 historicalLowBanner.className = "rounded-xl p-4 border bg-gradient-to-r from-amber-500/20 via-orange-500/10 to-transparent border-amber-400/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
                 historicalLowBanner.innerHTML = `
@@ -135,9 +136,10 @@
                             <i class="fa-solid fa-fire-flame-curved"></i>
                         </div>
                         <div>
-                            <span class="text-[11px] font-black uppercase tracking-wider text-amber-400 block">Historial de CheapShark</span>
+                            <span class="text-[11px] font-black uppercase tracking-wider text-amber-400 block">¿Conviene hoy?</span>
                             <h4 class="text-white font-bold text-sm">La mejor oferta de CheapShark iguala o mejora su mínimo registrado en USD.</h4>
                             <p class="text-xs text-gray-300 mt-0.5">${dateLabel}</p>
+                            <p class="text-xs text-gray-300">Referencia histórica en USD. Para decidir en tu región, revisa el precio regional cuando esté disponible.</p>
                         </div>
                     </div>
                     <div class="bg-black/40 px-3.5 py-2 rounded-lg border border-amber-400/30 text-right">
@@ -153,9 +155,10 @@
                             <i class="fa-solid fa-clock-rotate-left"></i>
                         </div>
                         <div>
-                            <span class="text-[11px] font-bold uppercase tracking-wider text-sky-400 block">Registro Histórico</span>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-sky-400 block">¿Conviene hoy?</span>
                             <h4 class="text-white font-semibold text-sm">Mínimo de CheapShark convertido: <strong class="text-emerald-400">${formatPrice(historicalLowUsd, true)}</strong></h4>
                             <p class="text-xs text-gray-400 mt-0.5">${dateLabel}</p>
+                            <p class="text-xs text-gray-300">${dealsList.length && Number.isFinite(currentLowestUsd) && currentLowestUsd > historicalLowUsd ? `La referencia actual está ${formatPrice(currentLowestUsd - historicalLowUsd, true)} por encima del mínimo, al tipo de cambio mostrado. ` : ''}El historial corresponde a CheapShark en USD. Consulta aparte el precio regional.</p>
                         </div>
                     </div>
                 `;
@@ -242,10 +245,12 @@
                 }
             });
 
-            // Guardar una alerta desde el modal debe usar el precio comparado actual.
-            dealContext.salePrice = currentLowestUsd.toFixed(2);
-            dealContext.normalPrice = retailUsd.toFixed(2);
-            updateSavedPrices([dealContext]);
+            const favoriteOffer = wishlistPCOffer(userWishlist[String(dealContext.gameID)] || dealContext, dealsList);
+            if (favoriteOffer) {
+                Object.assign(dealContext, {salePrice:favoriteOffer.price, normalPrice:favoriteOffer.retailPrice,
+                    storeID:favoriteOffer.storeID, dealID:favoriteOffer.dealID, savings:favoriteOffer.savings});
+                updateSavedPrices([dealContext]);
+            }
             syncModalWishlistAndAlertUI(dealContext);
 
             // Renderizar Pestaña 2: Mercados de Keys (Eneba, CDKeys, G2A, Instant Gaming, Kinguin)
