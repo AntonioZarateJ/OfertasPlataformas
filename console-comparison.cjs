@@ -1,5 +1,4 @@
-const fs=require('node:fs/promises');
-const path=require('node:path');
+const {createHistory,recordHistory}=require('./price-history.cjs');
 const { consoleCatalog }=require('./console-sources.cjs');
 const {loadNintendoVariants}=require('./nintendo-variants.cjs');
 const {loadPlaystationVariants}=require('./playstation-variants.cjs');
@@ -13,30 +12,7 @@ function signature(title){
  .replace(/xbox\s*(series\s*x\s*[|/]?\s*s|one|live|x\s*[|/]\s*s)?|playstation\s*[345]?|ps[345]|psn|nintendo\s*switch\s*2?|steam|pc|windows|global|latam|mexico|europe|united states|united kingdom|key|codigo|clave/gi,' ')
  .replace(/[^a-z0-9]+/g,' ').replace(/\bstandard edition\b/g,' ').replace(/\s+/g,' ').trim();
 }
-function createHistory(file=process.env.PRICE_HISTORY_PATH||path.join(__dirname,'.data','price-history.json')){
- let data=null,queue=Promise.resolve();
- return async function record(key,quotes,now=Date.now()){
-  const run=async()=>{
-   if(!data){try{data=JSON.parse(await fs.readFile(file,'utf8'));}catch{data={};}}
-   const date=new Date(now).toISOString().slice(0,10);
-   const result=quotes.map(quote=>{
-    const id=JSON.stringify([key,quote.store,quote.id,quote.currency]);
-    const days=data[id]||[];
-    let day=days.find(d=>d.date===date);
-    if(!day){day={date,min:quote.price,max:quote.price};days.push(day);}
-    else{day.min=Math.min(day.min,quote.price);day.max=Math.max(day.max,quote.price);}
-    data[id]=days.slice(-90);
-    return {...quote,history:{min:Math.min(...data[id].map(d=>d.min)),max:Math.max(...data[id].map(d=>d.max)),days:data[id].length,since:data[id][0].date,scope:'Precios observados por esta web; no es un histórico completo del mercado.'}};
-   });
-   const keys=Object.keys(data);for(const id of keys.slice(0,Math.max(0,keys.length-3000)))delete data[id];
-   try{await fs.mkdir(path.dirname(file),{recursive:true});await fs.writeFile(file+'.tmp',JSON.stringify(data));await fs.rename(file+'.tmp',file);}catch{result.forEach(q=>q.history.persistent=false);}
-   return result;
-  };
-  const work=queue.then(run,run);queue=work.catch(()=>{});return work;
- };
-}
-const record=createHistory();
-async function compareGame(platform,region,title,id,store,{catalog=consoleCatalog,variantsLoader=(item,region)=>platform==='ps'?loadPlaystationVariants(item,region):loadNintendoVariants(item,region),recordPrices=record}={}){
+async function compareGame(platform,region,title,id,store,{catalog=consoleCatalog,variantsLoader=(item,region)=>platform==='ps'?loadPlaystationVariants(item,region):loadNintendoVariants(item,region),recordPrices=recordHistory}={}){
  const selected=registry.get([platform,region,store,id].join('|'));
  const canonical=signature(title);
  const familyTitle=canonical.replace(/\b(ultimate|deluxe|gold|goty|complete|definitive|definitiva|edicion|edition|standard|coleccion|collection)\b/g,' ').replace(/\s+/g,' ').trim();

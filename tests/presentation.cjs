@@ -231,11 +231,33 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         await expect(page.locator('.discover-quote[data-platform="xbox"]')).toContainText('Supera el presupuesto');
         await expect(page.locator('.discover-quote[data-platform="ps"]')).toContainText('Gratis');
         await expect(page.locator('.discover-quote[data-platform="switch"]')).toContainText('Presupuesto por confirmar');
+        await page.getByLabel('Forma de jugar').selectOption('coop');
+        await expect(page.locator('.discover-card:visible h2')).toHaveText(['Rocket League','Stardew Valley']);
+        await page.getByLabel('Forma de jugar').selectOption('online');
+        await expect(page.locator('.discover-card:visible h2')).toHaveText(['Rocket League','Apex Legends','Stardew Valley']);
+        await page.getByLabel('Forma de jugar').selectOption('solo');
+        await expect(page.locator('.discover-card:visible h2')).toHaveText(['Gunpoint','Stardew Valley']);
         await page.getByRole('link', {name:'Ver ficha de Stardew Valley'}).click();
         await expect(page.getByRole('heading', {name:'Stardew Valley'})).toBeVisible();
         await page.getByRole('button', {name:'Copiar enlace'}).click();
         await expect(page.getByRole('textbox', {name:'Enlace público de la ficha'})).toHaveValue('https://salesplataforms.onrender.com/descubre/stardew-valley');
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
         assert.deepEqual(errors, []);
+
+        await page.getByRole('link', {name:'Reportar precio'}).click();
+        await expect(page.getByRole('heading', {name:'Reportar un precio'})).toBeVisible();
+        await expect(page.locator('[data-report-label="Juego"]')).toHaveText('Stardew Valley');
+        await expect(page.locator('[data-report-label="Plataforma"]')).toHaveText('Nintendo Switch');
+        await expect(page.locator('[data-report-label="Edición"]')).toHaveText('Juego base');
+        await expect(page.locator('[data-report-label="Región"]')).toHaveText('México');
+        await page.evaluate(() => document.addEventListener('click', event => {
+            if (event.target.closest('a[href^="mailto:"]')) event.preventDefault();
+        }, true));
+        await page.getByLabel('¿Qué precio aparece en la tienda?').fill('$199 MXN');
+        await page.getByRole('button', {name:'Preparar correo'}).click();
+        const draft = await page.getByRole('link', {name:'Abrir borrador de correo'}).getAttribute('href');
+        assert.match(decodeURIComponent(draft), /Precio visto en la tienda: \$199 MXN/);
+        assert.match(decodeURIComponent(draft), /Tienda: Nintendo eShop/);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     } finally { await browser.close();await new Promise(resolve=>server.close(resolve)); }
 });

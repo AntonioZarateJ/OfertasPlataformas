@@ -1,0 +1,15 @@
+.price-insight { margin: 14px 0; padding: 12px 14px; border: 1px solid #324b61; border-radius: 12px; background: #101d2c; color: #b9cce0; font-size: .8125rem; }
+.price-insight summary { color: #dcf3ff; cursor: pointer; font-weight: 750; }
+.price-insight p { margin: 7px 0; }
+.price-insight .observed-drop, .price-insight .bundle-result { color: #9bf1c7; }
+.price-history-bars { display: flex; align-items: end; gap: 3px; height: 90px; margin: 12px 0; padding: 0 2px; border-bottom: 1px solid #46617a; }
+.price-history-bars span { flex: 1; max-width: 32px; height: var(--price-height); background: linear-gradient(#70dcf4,#266483); border-radius: 3px 3px 0 0; }
+.price-history-table table { width: 100%; margin: 8px 0; font-size: .75rem; }
+.price-history-table th, .price-history-table td { padding: 5px 4px; text-align: left; border-bottom: 1px solid #2e4356; }
+.bundle-price-inputs label { display: grid; gap: 4px; }
+.bundle-price-inputs input { width: 100%; min-width: 0; padding: 6px; border: 1px solid #3f5872; border-radius: 7px; background: #0d1725; color: #e0effb; }
+.bundle-components { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 8px 0; }
+.bundle-price-inputs button { color: #b0e9ff; text-decoration: underline; }
+.bundle-price-inputs button:disabled { opacity: .55; }
+#recentDropsItems li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid #31495d; }
+#recentDropsItems a { color: #93e0ff; text-decoration: underline; }

@@ -20,6 +20,7 @@
 
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="assets/css/catalog-layout.css">
+    <link rel="stylesheet" href="assets/css/price-insights.css">
 </head>
 <body class="min-h-screen flex flex-col selection:bg-steam-blue selection:text-steam-bg">
 
@@ -333,6 +334,11 @@
             <div><h2 id="catalogGuideTitle">Cómo comparamos precios</h2><p>Consulta qué significa cada precio, cómo distinguimos regiones y ediciones y qué puedes comprobar en el historial.</p></div>
             <a href="/como-comparamos">Leer la guía <span aria-hidden="true">→</span></a>
         </section>
+        <details id="recentDrops" class="price-insight">
+            <summary>Bajadas de precio observadas</summary>
+            <p id="recentDropsStatus" role="status">Precios que vimos bajar en las últimas 24 horas, por plataforma y región.</p>
+            <ul id="recentDropsItems"></ul>
+        </details>
     </main>
 
     <!-- 5. MODAL ANALÍTICO: DETECTOR DE MÍNIMO HISTÓRICO + COMPARADOR MULTITIENDA + ALERTAS (FASE 3) -->
@@ -538,7 +544,12 @@
                 </div>
             </div>
 
-            <div class="wish-discovery">
+            <div class="wish-view-tabs" aria-label="Vistas de favoritos">
+                <button type="button" id="wishListView" aria-pressed="true"><i class="fa-regular fa-heart" aria-hidden="true"></i> Favoritos</button>
+                <button type="button" id="wishPurchaseView" aria-pressed="false"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Lista de compra <span id="wishPurchaseCount" hidden></span></button>
+            </div>
+
+            <div class="wish-discovery" id="wishDiscovery">
               <details class="wish-review">
                 <summary>Qué cambió en tus favoritos <span id="wishChangeCount"></span></summary>
                 <div class="wish-stats">
@@ -554,6 +565,24 @@
             </div>
             <!-- Lista de juegos en Wishlist -->
             <div id="wishlistItemsContainer" class="p-4 overflow-y-auto flex-1 space-y-3"></div>
+
+            <section id="wishPurchasePanel" class="wish-purchase-panel" aria-label="Lista de compra" hidden>
+                <div class="wish-purchase-summary">
+                    <label for="wishPurchaseCurrency">Moneda del total</label>
+                    <select id="wishPurchaseCurrency"></select>
+                    <output id="wishPurchaseTotal" aria-live="polite">—</output>
+                    <p id="wishPurchaseStatus"></p>
+                </div>
+                <ul id="wishPurchaseItems"></ul>
+                <details class="wish-review wish-compare">
+                    <summary>Comparar dos juegos</summary>
+                    <div class="wish-selects">
+                        <label>Primer juego<select id="wishCompareFirst"></select></label>
+                        <label>Segundo juego<select id="wishCompareSecond"></select></label>
+                    </div>
+                    <div id="wishCompareResult" aria-live="polite"></div>
+                </details>
+            </section>
 
             <div class="p-4 border-t border-white/10 bg-[#090e19] flex flex-col gap-2">
                 <button type="button" data-ui-click="open-cloud-config-modal"
@@ -628,6 +657,8 @@
     <script src="assets/js/currency.js"></script>
     <script src="assets/js/console-wishlist.js"></script>
     <script src="assets/js/console-catalog.js"></script>
+    <script src="assets/js/price-report.js"></script>
+    <script src="assets/js/price-insights.js"></script>
     <script src="assets/js/console-comparison.js"></script>
     <script src="assets/js/navigation.js"></script>
     <script src="assets/js/filters.js"></script>
@@ -635,6 +666,7 @@
     <script src="assets/js/catalog.js"></script>
     <script src="assets/js/search.js"></script>
     <script src="assets/js/comparator.js"></script>
+    <script src="assets/js/wishlist-purchase.js"></script>
     <script src="assets/js/wishlist-cloud.js"></script>
     <script src="assets/js/responsive-layout.js"></script>
     <script src="assets/js/ui-events.js"></script>

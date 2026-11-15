@@ -3,6 +3,7 @@
             if (!ECOSYSTEM_META[ecoKey]) return;
             document.getElementById('platformPriceNotice').classList.toggle('hidden-el', ecoKey === 'pc');
             activeEcosystem = ecoKey;
+            void refreshRecentDrops();
             document.getElementById('pcStoreBar').classList.toggle('hidden-el', ecoKey !== 'pc');
             document.documentElement.dataset.platform = ecoKey;
             modalKeyPlatform = ecoKey;

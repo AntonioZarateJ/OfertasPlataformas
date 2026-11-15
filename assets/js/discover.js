@@ -1,4 +1,14 @@
 const collectionBudget = Number(document.querySelector('main').dataset.budget);
+const modeFilter = document.getElementById('discoverPlayMode');
+if (modeFilter) {
+    document.getElementById('discoverModeTools').hidden = false;
+    modeFilter.addEventListener('change', () => {
+        const cards = [...document.querySelectorAll('[data-play-modes]')];
+        for (const card of cards) card.hidden = Boolean(modeFilter.value) && !card.dataset.playModes.split(' ').includes(modeFilter.value);
+        const shown = cards.filter(card => !card.hidden).length;
+        document.getElementById('discoverModeStatus').textContent = shown ? `${shown} de ${cards.length} juegos de la colección.` : 'Sin coincidencias en esta colección.';
+    });
+}
 
 for (const quoteBox of document.querySelectorAll('.discover-quote')) {
     const price = quoteBox.querySelector('[data-quote-price]');
@@ -11,6 +21,12 @@ for (const quoteBox of document.querySelectorAll('.discover-quote')) {
             return;
         }
         price.textContent = quote.price === 0 ? 'Gratis' : formatMxQuote(quote.price);
+        const report = document.querySelector('[data-discover-report]');
+        if (report) {
+            const url = new URL(report.href);
+            url.searchParams.set('price', price.textContent);
+            report.href = url.href;
+        }
         const fits = quote.price <= collectionBudget;
         quoteBox.dataset.status = fits ? 'within' : 'over';
         status.textContent = fits ? 'Dentro del presupuesto' : 'Supera el presupuesto';

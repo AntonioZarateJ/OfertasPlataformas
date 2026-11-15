@@ -18,6 +18,26 @@ test('Las coincidencias conservan la edición y el registro separa región y tie
  const other=await record('xbox|US|cyberpunk',[{...quote,price:20,currency:'USD'}]);assert.equal(other[0].history.min,20);
  await fs.unlink(file);
 });
+test('Conserva las series tras reiniciar y limita las bajadas a la misma oferta observada',async()=>{
+ const file=path.resolve(__dirname,'../test-results/history-restart-'+Date.now()+'.json');
+ const time=Date.UTC(2026,10,15,15);
+ const item={id:'123',title:'Juego base',edition:'Estándar',kind:'official',store:'Steam',currency:'MXN',url:'https://store.steampowered.com/app/123/',price:200};
+ try {
+  const record=createHistory(file);
+  await record('pc|MX|123',[item],time);
+  await record('pc|MX|123',[{...item,price:175},{...item,id:'456',price:500}],time+3600000);
+  const restarted=createHistory(file);
+  const observed=await restarted.recentDrops('pc','MX',time+3600001);
+  assert.deepEqual(observed.map(q=>[q.previous,q.price]),[[200,175]]);
+  assert.equal((await restarted.recentDrops('pc','US',time+3600001)).length,0);
+  assert.equal((await restarted.recentDrops('pc','MX',time+24*3600000+1)).length,0);
+  const next=await restarted('pc|MX|123',[{...item,price:180}],time+3600002);
+  assert.deepEqual(next[0].history.points,[{date:'2026-11-15',min:175,max:200,last:180}]);
+  assert.equal(next[0].history.drop,null);
+  const older=await restarted('pc|MX|123',[{...item,price:170}],time+48*3600000);
+  assert.equal(older[0].history.drop,null);
+ } finally { await fs.unlink(file); }
+});
 test('Comparador y móvil conservan accesos únicos y controles operativos',async()=>{
  const server=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const browser=await chromium.launch({channel:process.env.BROWSER_CHANNEL||'chrome',headless:true});
@@ -27,7 +47,8 @@ test('Comparador y móvil conservan accesos únicos y controles operativos',asyn
   const u=new URL(route.request().url());let data={};
   if(u.pathname==='/api/stores'||u.pathname==='/api/deals')data=[];
   if(u.pathname==='/api/console-catalog')data={platform:'xbox',region:'MX',checkedAt:Date.now(),sources:[],scope:'Prueba',items:[{id:'1',title:'Cyberpunk 2077',price:369,regular:1230,discount:70,currency:'MXN',kind:'official',store:'Xbox Store',url:'https://www.xbox.com',edition:'Xbox'}]};
-  if(u.pathname==='/api/console-comparison')data={platform:'xbox',region:'MX',title:'Cyberpunk 2077',checkedAt:Date.now(),coverage:'Fuentes consultadas',sources:[{name:'Xbox Store',status:'ok'},{name:'Eneba',status:'ok'}],searchLinks:[{name:'G2A',url:'https://www.g2a.com/search?query=cyberpunk'}],otherEditions:[],offers:[{id:'1',title:'Cyberpunk 2077',store:'Xbox Store',kind:'official',currency:'MXN',price:369,history:{days:1,since:'2026-10-29'},url:'https://www.xbox.com'},{id:'2',title:'Cyberpunk 2077 Key',store:'Eneba',kind:'external',currency:'MXN',price:455.29,history:{days:1,since:'2026-10-29'},url:'https://www.eneba.com'}]};
+  if(u.pathname==='/api/console-comparison')data={platform:'xbox',region:'MX',title:'Cyberpunk 2077',checkedAt:Date.now(),coverage:'Fuentes consultadas',sources:[{name:'Xbox Store',status:'ok'},{name:'Eneba',status:'ok'}],searchLinks:[{name:'G2A',url:'https://www.g2a.com/search?query=cyberpunk'}],otherEditions:[],offers:[{id:'1',title:'Cyberpunk 2077',store:'Xbox Store',kind:'official',currency:'MXN',price:369,history:{days:1,since:'2026-10-29',points:[{date:'2026-10-29',min:369,max:420}]},url:'https://www.xbox.com'},{id:'2',title:'Cyberpunk 2077 Key',store:'Eneba',kind:'external',currency:'MXN',price:455.29,history:{days:1,since:'2026-10-29'},url:'https://www.eneba.com'}]};
+  if(u.pathname==='/api/recent-drops')data={platform:u.searchParams.get('platform'),region:'MX',items:[{title:'Oferta de prueba',store:'Xbox Store',currency:'MXN',previous:420,price:369,url:'https://www.xbox.com'}]};
   await route.fulfill({contentType:'application/json',body:JSON.stringify(data)});
  });
  await page.goto('http://127.0.0.1:'+server.address().port);
@@ -41,6 +62,15 @@ test('Comparador y móvil conservan accesos únicos y controles operativos',asyn
  await expect(page.locator('#consoleComparison')).toBeVisible();
  await expect(page.locator('#consoleComparisonBody')).toContainText('455.29');
  await expect(page.locator('#consoleComparisonBody')).toContainText('Historial insuficiente');
+ await expect(page.locator('#consoleComparisonBody')).toContainText('Región de activación por confirmar');
+ await page.getByText('Historial de Cyberpunk 2077 · Xbox Store',{exact:true}).click();
+ await page.getByText('Ver precios por día',{exact:true}).click();
+ await expect(page.locator('.price-history-table tbody')).toContainText('$369.00 MXN');
+ await page.getByText('Comparar un paquete con compras separadas',{exact:true}).click();
+ await page.locator('[data-bundle-total]').fill('200');
+ await page.getByLabel('Producto 1',{exact:true}).fill('110');
+ await page.getByLabel('Producto 2',{exact:true}).fill('115');
+ await expect(page.locator('.bundle-result')).toContainText('El paquete cuesta $25.00 MXN menos.');
  assert.equal(await page.locator('.comparison-row strong').first().textContent(),' Xbox Store');
  await page.keyboard.press('Escape');await expect(page.locator('#consoleComparison')).not.toBeVisible();
  await page.setViewportSize({width:1440,height:1000});await expect(page.locator('#regionSelect')).toBeVisible();

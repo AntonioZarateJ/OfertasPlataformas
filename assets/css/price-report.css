@@ -1,0 +1,8 @@
+#priceReportForm { display: grid; gap: 8px; max-width: 620px; }
+#priceReportForm label { color: #e1f4ff; font-weight: 700; }
+#priceReportForm label:not(:first-child) { margin-top: 8px; }
+#priceReportForm input, #priceReportForm textarea { width: 100%; border: 1px solid #37556e; border-radius: 8px; padding: 10px 12px; color: #e1f4ff; background: #111c2b; font: inherit; }
+#priceReportForm textarea { resize: vertical; }
+#priceReportForm button { grid-column: 1; width: fit-content; cursor: pointer; }
+#priceReportForm button[hidden], #priceReportStatus:empty { display: none; }
+.price-report-context dd { min-width: 0; overflow-wrap: anywhere; }

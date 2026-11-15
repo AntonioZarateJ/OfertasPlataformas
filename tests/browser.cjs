@@ -298,6 +298,42 @@ const server = http.createServer((req, res) => {
             await expect(pc.locator('.wish-owned-button')).toHaveAttribute('aria-pressed','false');
             await expect(page.locator('#wishReachedCount')).toHaveText('1');
         });
+        await test('Lista de compra conserva la selección y calcula cada subtotal en una moneda', async () => {
+            await page.setViewportSize({width:390,height:844});
+            await page.evaluate(() => {
+                Object.assign(userWishlist.switch, {region:'US', currency:'USD', price:25, salePrice:'25'});
+                exchangeRates.MXN = 20;
+                persistWishlistState({sync:false});
+                renderWishlistDrawerItems();
+            });
+            for (const gameID of ['900', 'xbox', 'ps', 'switch']) {
+                await page.locator(`[data-wish-key="${gameID}"] .wish-plan-button`).click();
+            }
+            await page.locator('#wishPurchaseView').click();
+            await page.getByLabel('Moneda del total').selectOption('MXN');
+            await expect(page.locator('#wishPurchaseItems li')).toHaveCount(4);
+            await expect(page.locator('#wishPurchaseTotal')).toHaveText('$970.00 MXN');
+            await expect(page.locator('#wishPurchaseStatus')).toContainText('Subtotal de 3 de 4 juegos estimado');
+            await expect(page.locator('#wishPurchaseItems')).toContainText('Fuera del total');
+            await page.getByText('Comparar dos juegos', {exact:true}).click();
+            await page.getByLabel('Primer juego').selectOption('xbox');
+            await page.getByLabel('Segundo juego').selectOption('ps');
+            await expect(page.locator('#wishCompareResult')).toContainText('Diferencia de precio: $270.00 MXN');
+            await page.getByLabel('Segundo juego').selectOption('xbox');
+            await expect(page.locator('#wishCompareResult')).toContainText('Elige dos juegos distintos');
+            await page.getByLabel('Segundo juego').selectOption('switch');
+            await expect(page.locator('#wishCompareResult')).toContainText('monedas diferentes');
+            await page.getByLabel('Moneda del total').selectOption('USD');
+            await expect(page.locator('#wishPurchaseTotal')).toHaveText('$32.00 USD');
+            assert.equal(await page.evaluate(() => document.querySelector('#wishPurchasePanel').scrollWidth > document.querySelector('#wishPurchasePanel').clientWidth), false);
+            await page.setViewportSize({width:1440,height:1000});
+            await page.reload();
+            await page.locator('#wishlistButton').click();
+            await page.locator('#wishPurchaseView').click();
+            await expect(page.locator('#wishPurchaseItems li')).toHaveCount(4);
+            await page.getByRole('button', {name:'Quitar Revisión Xbox de la lista de compra'}).click();
+            await expect(page.locator('#wishPurchaseItems li')).toHaveCount(3);
+        });
         await test('Seleccionar tienda consulta y pagina ese catálogo y conserva el filtro al buscar', async () => {
             await reset();
             const before = calls.length;

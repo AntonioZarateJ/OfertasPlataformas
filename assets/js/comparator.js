@@ -205,6 +205,9 @@
                 const st = storesMap[deal.storeID] || { name: `Tienda #${deal.storeID}`, icon: '' };
                 const savings = Math.round(parseFloat(deal.savings || 0));
                 const isBest = idx === 0;
+                const reportContext = {title:dealContext.title, platform:'PC', edition:dealContext.edition, store:st.name,
+                    region:'Referencia en USD de CheapShark, convertida', currency:currentCurrency, price:formatPrice(deal.price, true),
+                    link:dealRedirectURL(deal.dealID)};
 
                 const row = document.createElement('div');
                 row.className = `flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl border transition ${
@@ -220,6 +223,7 @@
                                 ${isBest ? `<span class="text-[10px] bg-emerald-400 text-gray-950 px-2 py-0.5 rounded font-black uppercase">Referencia</span>` : ''}
                             </div>
                             <span class="text-[11px] text-gray-400">Distribuidor Autorizado • Normal: ${formatPrice(deal.retailPrice, false)}</span>
+                            <a class="price-report-link" href="${escapeHTML(priceReportPath(reportContext))}">Reportar precio</a>
                         </div>
                     </div>
 
@@ -241,6 +245,9 @@
                         if (!quote || !row.isConnected || currentCurrency !== quote.currency) return;
                         const price = row.querySelector('.text-base.font-black');
                         if (price) price.textContent = new Intl.NumberFormat('es-MX', { style: 'currency', currency: quote.currency }).format(quote.amount) + ' ' + quote.currency + ' (' + purchaseRegions[quote.region][0] + ')';
+                        row.querySelector('.price-report-link').href = priceReportPath({...reportContext,
+                            region:purchaseRegions[quote.region][0], currency:quote.currency, price:nativeMoney(quote.amount, quote.currency),
+                            link:STEAM_APP_URL + dealContext.steamAppID + '/?cc=' + quote.region.toLowerCase()});
                     });
                 }
             });
@@ -260,13 +267,10 @@
         function renderKeyMarketsList(gameData, dealContext) {
             keyStoresList.innerHTML = '';
             const title = dealContext.title || (gameData.info && gameData.info.title) || 'Game';
-            const dealsList = [...(gameData.deals || [])].sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-
             const platMeta = ECOSYSTEM_META[modalKeyPlatform] || ECOSYSTEM_META.pc;
+            const activationRegion = purchaseRegions[currentRegion][0];
 
-            KEY_MARKETS_CATALOG.forEach((market, index) => {
-                // Estimación orientativa basada en el mejor precio actual
-
+            KEY_MARKETS_CATALOG.forEach(market => {
                 const searchUrl = market.buildUrl(title, modalKeyPlatform);
 
                 const item = document.createElement('div');
@@ -286,8 +290,9 @@
                                 </span>
                             </div>
                             <p class="text-[11px] text-gray-400 mt-0.5">
-                                <strong class="text-sky-300">${platMeta.shortBadge} (Comprobar región)</strong> • ${market.paymentInfo}
+                                <strong class="text-sky-300">${platMeta.shortBadge}</strong> • ${market.paymentInfo}
                             </p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Comprueba si la clave se activa en ${escapeHTML(activationRegion)}.</p>
                         </div>
                     </div>
 
@@ -338,12 +343,16 @@
 
 async function loadPCEditions(game,signal,generation){
  const panel=document.createElement('section');panel.id='pcEditions';panel.className='game-editions';panel.innerHTML='<h3>Versiones y paquetes de PC</h3><p class="comparison-note">Consultando versiones en Steam…</p>';historicalLowBanner.after(panel);
- if(!game.steamAppID){panel.innerHTML='<h3>Versiones de PC</h3><p class="comparison-note">No hay otras ediciones verificadas de este producto en las fuentes consultadas.</p>';return;}
+ const region=currentRegion,[regionName,currency]=purchaseRegions[region];
+ if(!game.steamAppID){panel.innerHTML='<h3>Versiones de PC</h3><p class="comparison-note">No hay otras ediciones verificadas de este producto en las fuentes consultadas.</p>'+bundlePriceComparison(currency,regionName);return;}
  try{
-  const data=await requestJSON('/api/pc-editions?'+new URLSearchParams({appid:String(game.steamAppID),region:currentRegion}),{signal,timeout:15000});
+  const data=await requestJSON('/api/pc-editions?'+new URLSearchParams({appid:String(game.steamAppID),region}),{signal,timeout:15000});
   if(signal.aborted||generation!==modalGeneration)return;
   if(data.image){game.artwork=data.image;setGameArtwork(modalHeaderImg,game);setGameArtwork(modalCoverImg,game);}
-  panel.innerHTML='<h3><i class="fa-solid fa-layer-group"></i> Versiones y paquetes de PC</h3>'+editionGrid(data.editions||[])+'<p class="comparison-note">'+escapeHTML(data.coverage||'Solo versiones confirmadas en esta consulta.')+'</p>';
+  const editions=data.editions||[];
+  panel.innerHTML='<h3><i class="fa-solid fa-layer-group"></i> Versiones y paquetes de PC</h3>'+editionGrid(editions)+'<p class="comparison-note">'+escapeHTML(data.coverage||'Solo versiones confirmadas en esta consulta.')+'</p>'+
+   bundlePriceComparison(currency,regionName,editions.find(q=>q.variantType==='bundle'&&q.currency===currency))+
+   editions.map(quote=>observedPriceHistory(quote,regionName)).join('');
   if(modalLoading.querySelector('[data-detail-error]'))modalLoading.appendChild(panel);
- }catch(error){if(!signal.aborted)panel.innerHTML='<h3>Versiones y paquetes de PC</h3><p class="comparison-note">No se pudieron confirmar otras versiones en Steam en esta consulta.</p>';}
+ }catch(error){if(!signal.aborted)panel.innerHTML='<h3>Versiones y paquetes de PC</h3><p class="comparison-note">No se pudieron confirmar otras versiones en Steam en esta consulta.</p>'+bundlePriceComparison(currency,regionName);}
 }

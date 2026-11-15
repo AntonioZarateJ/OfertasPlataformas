@@ -25,6 +25,7 @@
             updateExchangeBadge();
             updateDrawerLabels();
             updateAllPricesOnScreen();
+            if (!document.getElementById('wishlistDrawerModal').classList.contains('hidden-el')) renderWishlistPurchase();
         }
 
         async function loadStoresCatalog() {

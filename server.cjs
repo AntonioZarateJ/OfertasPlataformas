@@ -3,6 +3,8 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const {renderLegalPage} = require('./legal.cjs');
 const {renderDiscoverPage} = require('./discover.cjs');
+const {renderPriceReport} = require('./price-report.cjs');
+const {recordHistory} = require('./price-history.cjs');
 const {acceptsGzip, createStaticAssetCache} = require('./static-assets.cjs');
 const {validateQuery,securityHeaders,createApiGuard,publicFirebaseConfig}=require('./security.cjs');
 const {createPublicFetch}=require('./public-fetch.cjs');
@@ -58,13 +60,13 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
         if (!['GET', 'HEAD'].includes(req.method)) { res.setHeader('Allow', 'GET, HEAD'); reply(res, 405, { error: 'Método no permitido' }); return; }
         try {
             const url = new URL(req.url, 'http://localhost');
-            const publicPage = renderLegalPage(url.pathname) ?? renderDiscoverPage(url.pathname);
+            const publicPage = renderLegalPage(url.pathname) ?? renderDiscoverPage(url.pathname) ?? renderPriceReport(url);
             if (publicPage !== null) {
                 res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache'});
                 res.end(req.method === 'HEAD' ? undefined : publicPage); return;
             }
             if(url.pathname.startsWith('/api/')){
-                if(!validateQuery(url)){reply(res,upstreams[url.pathname]||['/api/deals-position','/api/console-catalog','/api/console-comparison','/api/auth-config','/api/pc-editions'].includes(url.pathname)?400:404,{error:'Parámetros inválidos'});return;}
+                if(!validateQuery(url)){reply(res,upstreams[url.pathname]||['/api/deals-position','/api/console-catalog','/api/console-comparison','/api/auth-config','/api/pc-editions','/api/recent-drops'].includes(url.pathname)?400:404,{error:'Parámetros inválidos'});return;}
                 const access=admit(req,{key:url.pathname+'?'+url.searchParams.toString()});if(access.status){reply(res,access.status,{error:'Límite temporal de acceso',retryAfter:access.retryAfter||0});return;}
                 release=access.release;
             }
@@ -75,9 +77,20 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
                 if(cache.get(key)?.expires>Date.now()){reply(res,200,cache.get(key).data);return;}
                 const data = await shared(key, async () => {
                     const data = await loadSteamEditions(appid,region,fetchImpl);
+                    data.editions = await recordHistory(`pc|${region}|${appid}`, data.editions);
                     cache.set(key,{data,expires:Date.now()+60000}); return data;
                 });
                 reply(res,200,data); return;
+            }
+            if (url.pathname === '/api/recent-drops') {
+                const platform = url.searchParams.get('platform');
+                const region = url.searchParams.get('region');
+                if (!['pc', 'xbox', 'ps', 'switch'].includes(platform) || !region) {
+                    reply(res, 400, {error:'Plataforma o región inválida'});
+                    return;
+                }
+                reply(res, 200, {platform, region, items:await recordHistory.recentDrops(platform, region)});
+                return;
             }
             if (url.pathname === '/api/deals-position') {
                 if(!url.searchParams.has('storeID'))url.searchParams.set('storeID','1');

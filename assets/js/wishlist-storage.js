@@ -38,6 +38,7 @@
                 if(native){clean.native=true;clean.price=Number(item.price);clean.regular=money(item.regular)?Number(item.regular):null;clean.discount=Number(item.discount)||0;clean.kind=item.kind==='external'?'external':'official';clean.targetPrice=money(item.targetPrice)&&Number(item.targetPrice)>0?Number(item.targetPrice):null;}
                 if(!native && /^\d{1,6}$/.test(String(item.storeID))) clean.storeID=String(item.storeID);
                 if(item.owned===true) clean.owned=true;
+                if(item.planned===true) clean.planned=true;
                 if((native||clean.storeID)&&money(item.previousPrice)&&validWishlistTimestamp(item.priceChangedAt)){
                     clean.previousPrice=Number(item.previousPrice);
                     clean.priceChangedAt=Number(item.priceChangedAt);

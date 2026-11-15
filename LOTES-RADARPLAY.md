@@ -33,3 +33,17 @@ Mantener una recomendación para PC, Xbox, PlayStation y Nintendo Switch por dí
 1. Abre **Colección de juegos** desde el catálogo y revisa **Juegos hasta $300 MXN**. Hay una ficha por plataforma. Cada tarjeta indica si el precio de esa edición sigue dentro del presupuesto o queda pendiente de confirmar.
 2. Abre una ficha y revisa por qué se eligió el juego, la edición y su enlace oficial. Usa **Compartir ficha** o **Copiar enlace** para obtener la dirección pública. Esa dirección funciona en Render cuando se despliegue el lote.
 3. Revisa la guía **Cómo elegir una edición** al final de la colección.
+
+## Cómo probar el lote 4
+
+1. Abre **Wishlist**, pulsa **Añadir a compra** en varios juegos y selecciona **Lista de compra**. Cambia la moneda para comprobar el subtotal. Los juegos de consola guardados en otra moneda quedan fuera. Las referencias de PC se marcan como estimadas cuando participan en el total.
+2. Abre **Comparar dos juegos** y selecciona dos favoritos distintos. Revisa sus ediciones y el importe de cada uno. La diferencia requiere una moneda compatible para ambos.
+3. Desde una ficha pública o una oferta individual del comparador, pulsa **Reportar precio**. Verifica los datos, escribe lo que muestra la tienda y pulsa **Preparar correo** para revisar el borrador en tu aplicación de correo.
+
+## Cómo probar el lote 5
+
+1. Abre el comparador en cada plataforma. Los gráficos muestran el mínimo diario observado y una tabla de precios por tienda, edición, región y moneda. En PC, el nuevo historial es regional de Steam y el mínimo de CheapShark sigue identificado como referencia en USD.
+2. Abre **Bajadas de precio observadas** al final del catálogo. Solo aparecen ofertas oficiales con dos precios observados en un intervalo de 24 horas, sin registrar un aumento posterior. Abrir el panel consulta el registro existente.
+3. En **Colección de juegos**, prueba **Forma de jugar**. Los filtros se aplican a las fichas con datos revisados en las tiendas oficiales. En el comparador, una clave de Eneba indica las regiones de activación declaradas cuando están disponibles.
+4. Abre **Comparar un paquete con compras separadas**. Si se encontró un paquete, se propone su precio. Confirma el contenido e introduce los precios individuales comprobados en la misma tienda, región y moneda.
+5. En local, el puerto 3000 guarda el historial en `.data/price-history.json` y los puertos alternativos usan archivos propios, como `.data/price-history-3001.json`. Para conservarlo entre despliegues en Render, apunta `PRICE_HISTORY_PATH` a un archivo dentro de un volumen persistente. Con el almacenamiento efímero, la interfaz identifica el historial como temporal.
