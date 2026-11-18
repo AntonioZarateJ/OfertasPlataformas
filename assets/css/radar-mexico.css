@@ -54,6 +54,13 @@
 .pick-edition + .pick-price { margin-top: 0; }
 .pick-price { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 9px; margin: auto 0 12px; }
 .pick-price span { padding: 1px 6px; border-radius: 5px; background: #1e3d36; color: #b1f6df; font-size: .75rem; }
+.pick-price .pick-deal { background: #38601a; color: #d7ffab; font-weight: 750; }
+.pick-options { margin-bottom: 9px; font-size: .75rem; color: #a8daef; }
+.pick-options summary { cursor: pointer; }
+.pick-package-list { display: grid; gap: 5px; margin-top: 5px; color: #b7cee2; }
+.pick-history-price { margin: auto 8px 8px; font-size: .8rem; }
+.edition-history li .pick-history-price strong { padding: 0; color: #f0f9ff; font-size: .75rem; }
+.edition-history li[data-platform="android"] img { object-fit: contain; background: #142c28; }
 .pick-link { display: block; padding: 9px 10px; border: 1px solid #345975; border-radius: 8px; text-align: center; font-size: .8125rem; font-weight: 700; text-decoration: none; }
 .pick-link:hover { background: #1b3549; }
 .edition-date { color: #b9ecff; font-size: .875rem; font-weight: 700; }

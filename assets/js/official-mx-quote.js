@@ -7,9 +7,15 @@ function formatMxQuote(price) {
 async function readOfficialMxQuote({platform, product, store, search}) {
     const params = new URLSearchParams({region: 'MX'});
     const isSteam = platform === 'pc';
-    const endpoint = isSteam ? '/api/steam-prices' : '/api/console-catalog';
+    const isPlay = platform === 'android';
+    const endpoint = isSteam ? '/api/steam-prices' : isPlay ? '/api/console-comparison' : '/api/console-catalog';
     if (isSteam) {
         params.set('appids', product);
+    } else if (isPlay) {
+        params.set('platform', platform);
+        params.set('id', product);
+        params.set('title', search);
+        params.set('store', store);
     } else {
         params.set('platform', platform);
         params.set('q', search);
@@ -26,7 +32,9 @@ async function readOfficialMxQuote({platform, product, store, search}) {
         return {price: quote.final / 100, regular: quote.initial / 100, discount: quote.discount_percent};
     }
 
-    if (data?.platform !== platform || data.region !== 'MX' || !Array.isArray(data.items)) return null;
-    return data.items.find(item => String(item.id) === product && item.kind === 'official' && item.store === store &&
+    if (data?.platform !== platform || data.region !== 'MX') return null;
+    const items = isPlay ? data.offers : data.items;
+    if (!Array.isArray(items)) return null;
+    return items.find(item => String(item.id) === product && item.kind === 'official' && item.store === store &&
         item.currency === 'MXN' && Number.isFinite(item.price) && item.price >= 0) ?? null;
 }

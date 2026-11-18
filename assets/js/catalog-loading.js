@@ -27,7 +27,7 @@ function resetLoadMoreButton() {
     clearInterval(catalogLogoTimer); catalogLogoTimer = null;
     loadMoreBtn.disabled = false;
     loadMoreBtn.removeAttribute('aria-busy');
-    loadMoreBtn.innerHTML = '<i class="fa-solid fa-plus" aria-hidden="true"></i><span>Cargar más juegos</span>';
+    loadMoreBtn.innerHTML = `<i class="fa-solid fa-plus" aria-hidden="true"></i><span>${activeEcosystem === 'android' ? 'Cargar más resultados' : 'Cargar más juegos'}</span>`;
 }
 function beginCatalogLoading() {
     clearInterval(catalogLogoTimer); catalogLogoIndex = 0;

@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const {chromium, expect} = require('@playwright/test');
 const {createServer} = require('../server.cjs');
+const {renderNewsPage} = require('../news.cjs');
 
 test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizadas', async () => {
     const server = createServer();
@@ -25,7 +26,11 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         };
         await page.route('**/*', async route => {
             const u = new URL(route.request().url());
-            if(u.origin !== root)return route.fulfill({body:'',contentType:'text/css'});
+            if(u.origin !== root) {
+                if (route.request().resourceType() === 'image') return route.fulfill({contentType:'image/svg+xml',
+                    body:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2"><path fill="teal" d="M0 0h2v2H0z"/></svg>'});
+                return route.fulfill({body:'',contentType:'text/css'});
+            }
             if(!u.pathname.startsWith('/api/'))return route.continue();
             let data = {};
             if(u.pathname === '/api/stores')data = [{storeID:'1',storeName:'Steam'}];
@@ -40,7 +45,11 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
                         206190: {success:true, data:{price_overview:{currency:'MXN', final:2199, initial:10995, discount_percent:80}}}
                     };
                 }
+                if (u.searchParams.get('appids') === '620') {
+                    data = {620:{success:true,data:{price_overview:{currency:'MXN',final:2400,initial:12000,discount_percent:80}}}};
+                }
             }
+            if (u.pathname === '/api/pc-editions') data = {editions:[{id:'bundle:42',title:'Paquete de Portal',store:'Steam',kind:'official',currency:'MXN',price:59,url:'https://store.steampowered.com/bundle/42/'}]};
             if(u.pathname === '/api/deals'){
                 pcRequests++;
                 const offset = Number(u.searchParams.get('pageNumber')) || 0;
@@ -188,6 +197,8 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         await expect(page.locator('#edition-date')).toContainText('16 de noviembre');
         await expect(page.locator('#edition-history-empty')).toBeVisible();
         await expect(page.locator('.edition-history details')).toHaveCount(0);
+        await page.locator('.edition-pick[data-platform="pc"] .pick-options summary').click();
+        await expect(page.locator('.edition-pick[data-platform="pc"] .pick-package-list')).toContainText('Paquete de Portal · $59.00 MXN');
 
         await page.clock.setFixedTime(new Date('2026-11-22T06:00:00Z'));
         await page.reload();
@@ -197,6 +208,8 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         await page.locator('.edition-history summary').last().click();
         await expect(page.locator('.edition-history').getByRole('link', {name:'Portal 2'})).toBeVisible();
         await expect(page.locator('.edition-history details[open] img')).toHaveCount(5);
+        await expect(page.locator('.edition-history details[open] li[data-platform="pc"] .pick-history-price')).toContainText('$24.00 MXN');
+        await expect(page.locator('.edition-history details[open] li[data-platform="pc"] .pick-deal')).toHaveText('−80%');
         await page.emulateMedia({reducedMotion:'no-preference'});
         assert.equal(await page.locator('.edition-pick').first().evaluate(card => getComputedStyle(card, '::after').animationIterationCount), 'infinite');
         await page.getByRole('button', {name:'Pausar animación de los bordes'}).click();
@@ -267,18 +280,29 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
             await route.fulfill({json:[gift, {...gift,title:'Vencido',end_date:'2026-11-20'},
                 {...gift,title:'Sin fecha',end_date:'N/A'}, {...gift,title:'Sin tienda oficial',open_giveaway_url:'https://example.com/game'}]});
         });
+        await page.route('**/novedades',route=>route.fulfill({contentType:'text/html',body:renderNewsPage('/novedades',new Date('2026-11-23T18:00:00Z'))}));
         await page.goto(root);
         await discovery.getByRole('link', {name:/Novedades/}).click();
         await expect(page.getByRole('heading', {name:'Novedades de RadarPlay'})).toBeVisible();
         await expect(page.locator('.news-featured img')).toHaveCount(5);
+        await expect(page.getByRole('link',{name:'Abrir RSS'})).toHaveCount(0);
         await expect(page.locator('#calendario')).toBeHidden();
         await page.getByRole('link', {name:'Calendario',exact:true}).click();
         await expect(page.locator('#newsGifts li')).toHaveCount(1);
         await expect(page.locator('#newsGifts')).toContainText('Regalo disponible');
+        await expect(page.locator('#newsMonthTitle')).toHaveText('noviembre de 2026');
+        await page.getByRole('button',{name:'Mes siguiente'}).click();
+        await expect(page.locator('#newsMonthTitle')).toHaveText('diciembre de 2026');
+        await page.getByRole('button',{name:/, 9 de diciembre de 2026/}).click();
+        await expect(page.locator('#newsDayEvents')).toContainText('Dispatch');
+        await expect(page.locator('#newsDayEvents img').first()).toBeVisible();
+        await page.locator('#newsCalendarPlatform').selectOption('android');
+        await expect(page.locator('#newsDayEvents .news-event')).toHaveCount(1);
         await page.getByRole('link', {name:'Suscripciones',exact:true}).click();
-        await page.getByLabel('Plataforma', {exact:true}).selectOption('switch');
+        await page.locator('#newsSubscriptionFilter').selectOption('switch');
         await expect(page.locator('[data-subscription]:visible')).toHaveCount(1);
         await expect(page.locator('[data-subscription]:visible')).toContainText('Nintendo Switch Online');
+        await expect(page.locator('[data-subscription]:visible')).toContainText('$1,029.00');
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
         assert.deepEqual(errors, []);
     } finally { await browser.close();await new Promise(resolve=>server.close(resolve)); }

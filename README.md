@@ -28,7 +28,8 @@ Las pruebas de navegador usan Chromium de Playwright o el navegador que indique 
 
 ## Fuentes y persistencia
 
-- Android consulta una selección de fichas de Google Play. Muestra el precio regional de descarga y las rebajas observadas por RadarPlay. Las compras dentro de las aplicaciones, suscripciones y promociones personales se consultan en Google Play.
+- Android usa las fichas y los listados públicos de Google Play. Muestra el precio regional de descarga y las rebajas observadas por RadarPlay. Las promociones de la app pueden diferir.
+- Novedades carga las fechas anunciadas y las tarifas de referencia desde `news-data.cjs`. Cada evento incluye su fuente y las tarifas indican la fecha en que se revisaron.
 - Los favoritos se guardan en el navegador y se sincronizan con Firestore cuando hay sesión. Los avisos automáticos por correo siguen pendientes.
 - El historial de precios se guarda en `.data/` de forma predeterminada. En Render Free puede perderse entre reinicios o despliegues. Para conservarlo, configura `PRICE_HISTORY_PATH` en almacenamiento persistente.
 - Las notas internas se guardan localmente en `docs-local/`. Git también ignora las capturas de pruebas, datos locales y credenciales de entorno.

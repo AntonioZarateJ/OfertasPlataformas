@@ -69,7 +69,7 @@ async function fetchLiveSuggestions(query) {
     const generation=searchGeneration,platform=activeEcosystem,region=currentRegion;
     searchController?.abort();const controller=new AbortController();searchController=controller;
     const current=()=>!controller.signal.aborted&&generation===searchGeneration&&platform===activeEcosystem&&region===currentRegion&&predictiveSearchInput.value.trim()===query;
-    suggestionsMessage(platform==='android'?'Buscando en nuestra selección de Google Play…':'Buscando juegos y ediciones…');
+    suggestionsMessage(platform==='android'?'Buscando en Google Play…':'Buscando juegos y ediciones…');
     try {
         let list,partial=false,more=false;
         if(platform==='pc'){
@@ -93,7 +93,7 @@ async function fetchLiveSuggestions(query) {
         searchDropdownContent.replaceChildren();suggestionActions=[];selectedSuggestion=-1;
         if(!list.length){
             const status=document.createElement('p');status.className='suggestion-status';
-            status.textContent=partial?'La consulta está incompleta. Abre los resultados para reintentar.':more?'Hay más páginas por consultar. Abre los resultados para continuar.':platform==='android'?'Sin coincidencias en nuestra selección. Abre los resultados para buscar en Google Play.':'No hay coincidencias en esta consulta. Puedes abrir los resultados completos.';
+            status.textContent=partial?'La consulta está incompleta. Abre los resultados para reintentar.':more?'Hay más resultados por consultar. Abre el catálogo para continuar.':platform==='android'?'Sin coincidencias en los resultados consultados. Abre el catálogo para buscar en Google Play.':'No hay coincidencias en esta consulta. Puedes abrir los resultados completos.';
             searchDropdownContent.append(status);
         }
         for(const item of list){

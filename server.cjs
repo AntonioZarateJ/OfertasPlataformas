@@ -117,12 +117,13 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
             }
             if (url.pathname === '/api/console-comparison') {
                 const platform=url.searchParams.get('platform'), region=url.searchParams.get('region'), title=(url.searchParams.get('title')||'').trim();
-                if(!['xbox','ps','switch','android'].includes(platform)||!['MX','US','ES','GB','BR','JP'].includes(region)||!title||title.length>200){reply(res,400,{error:'Juego inválido'});return;}
+                const source = url.searchParams.get('source') ?? 'all';
+                if(!['xbox','ps','switch','android'].includes(platform)||!['MX','US','ES','GB','BR','JP'].includes(region)||!title||title.length>200||!['all','official'].includes(source)){reply(res,400,{error:'Juego inválido'});return;}
                 const key='compare:'+url.searchParams.toString();
                 if(cache.get(key)?.expires>Date.now()){reply(res,200,cache.get(key).data);return;}
                 const data = await shared(key, async () => {
                     const data = platform === 'android' ? await googlePlay.compare(region,url.searchParams.get('id')) :
-                        await compareGame(platform,region,title,url.searchParams.get('id'),url.searchParams.get('store'));
+                        await compareGame(platform,region,title,url.searchParams.get('id'),url.searchParams.get('store'),{source});
                     if (platform === 'android') return data;
                     cache.set(key,{data,expires:Date.now()+60000}); return data;
                 });

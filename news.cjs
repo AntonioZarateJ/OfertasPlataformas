@@ -1,3 +1,4 @@
+const {events,subscriptions,verified} = require('./news-data.cjs');
 const schedule = require('./assets/js/radar-mexico-rotation.js');
 const {radarDayMs, radarCalendarDay, radarWeekStart, radarPicksAt} = require('./assets/js/radar-calendar.js');
 
@@ -6,26 +7,8 @@ const feedPath = '/novedades/rss.xml';
 const labels = {pc:'PC', xbox:'Xbox', ps:'PlayStation', switch:'Nintendo Switch', android:'Android'};
 const icons = {pc:'fa-solid fa-desktop', xbox:'fa-brands fa-xbox', ps:'fa-brands fa-playstation', switch:'fa-solid fa-gamepad', android:'fa-brands fa-android'};
 const dates = new Intl.DateTimeFormat('es-MX', {day:'numeric', month:'long', year:'numeric', timeZone:'UTC'});
-const months = new Intl.DateTimeFormat('es-MX', {month:'short', timeZone:'UTC'});
 const saleDates = new Intl.DateTimeFormat('es-MX', {day:'numeric', month:'short', year:'numeric', timeZone:'UTC'});
-const steamCalendar = 'https://partner.steamgames.com/doc/marketing/discounts/seasonalsales';
-const sales = [
-    ['Ofertas de invierno de Steam', '2026-12-17', '2027-01-04'],
-    ['Ofertas de primavera de Steam', '2027-03-18', '2027-03-25'],
-    ['Ofertas de verano de Steam', '2027-06-24', '2027-07-08']
-];
-const subscriptions = [
-    {platform:'pc', name:'PC Game Pass', content:'Elige PC Game Pass y filtra por PC para consultar el catálogo del plan.',
-        url:'https://www.xbox.com/es-MX/xbox-game-pass/games/'},
-    {platform:'xbox', name:'Xbox Game Pass', content:'Selecciona el plan y revisa las pestañas de juegos agregados y próximos a salir.',
-        url:'https://www.xbox.com/es-MX/xbox-game-pass/games/'},
-    {platform:'ps', name:'PlayStation Plus', content:'Consulta catálogo, clásicos, juegos mensuales y pruebas. Verifica el plan y si la ficha corresponde a PS4 o PS5.',
-        url:'https://www.playstation.com/es-mx/ps-plus/games/'},
-    {platform:'switch', name:'Nintendo Switch Online', content:'Consulta las bibliotecas de Nintendo Classics y distingue el plan base del Paquete de expansión.',
-        url:'https://www.nintendo.com/es-mx/online/nintendo-switch-online/classic-games/'},
-    {platform:'android', name:'Google Play Pass', content:'Revisa en Google Play los juegos y aplicaciones disponibles con tu suscripción en México.',
-        url:'https://play.google.com/store/pass?hl=es&gl=MX'}
-];
+const planMoney = new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'});
 
 const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]));
 
@@ -56,7 +39,7 @@ function newsPage({title, description, body, script, shared = false}) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous">
     <link rel="stylesheet" href="/assets/css/legal.css"><link rel="stylesheet" href="/assets/css/news.css">
     <link rel="alternate" type="application/rss+xml" title="RadarPlay semanal" href="${feedPath}">
-    ${shared ? '' : '<script src="/assets/js/radar-calendar.js" defer></script>'}
+    ${shared ? '' : '<script src="/assets/js/radar-calendar.js" defer></script><script src="/assets/js/news-calendar.js" defer></script>'}
     <script src="/assets/js/${script}" defer></script>
 </head>
 <body class="news-page">
@@ -67,16 +50,25 @@ function newsPage({title, description, body, script, shared = false}) {
 </html>`;
 }
 
+function renderEvent(event) {
+    const end = event.end || event.start;
+    const date = saleDates.formatRange(Date.parse(event.start), Date.parse(end));
+    const chips = event.platforms.map(platform=>`<span class="news-event-chip" data-news-platform="${platform}"><i class="${icons[platform]}" aria-hidden="true"></i> ${labels[platform]}</span>`).join('');
+    const category = {release:'Lanzamiento',sale:'Venta',festival:'Festival'}[event.kind];
+    return `<article class="news-event" data-start="${event.start}" data-end="${end}" data-kind="${event.kind}" data-platforms="${event.platforms.join(' ')}" data-news-platform="${event.platforms[0]}">
+        ${event.image ? `<img src="${escape(event.image)}" loading="lazy" decoding="async" width="288" height="150" alt="">` : ''}
+        <div class="news-event-copy"><small>${category} · ${escape(date)}</small><h4>${escape(event.title)}</h4><div class="news-event-chips">${chips}</div>
+        ${event.note ? `<p>${escape(event.note)}</p>` : ''}<a href="${escape(event.url)}">Ver anuncio oficial <span aria-hidden="true">↗</span></a></div></article>`;
+}
 function renderNews(now) {
-    const today = radarCalendarDay(now);
-    const upcoming = sales.filter(([, , end]) => Date.parse(end) >= today);
-    const calendar = upcoming.map(([title, start, end]) => `<li><time class="news-date-tile" datetime="${start}" aria-label="${dates.format(Date.parse(start))}"><strong>${Number(start.slice(-2))}</strong><small>${months.format(Date.parse(start))}</small></time>
-        <div><strong>${title}</strong><p>${saleDates.formatRange(Date.parse(start), Date.parse(end))}</p>
-        <a href="${steamCalendar}">Fechas oficiales de Steam</a></div></li>`).join('');
-    const plans = subscriptions.map(plan => `<li data-subscription="${plan.platform}" data-news-platform="${plan.platform}">
-        <span class="news-service-icon" aria-hidden="true"><i class="${icons[plan.platform]}"></i></span>
-        <div><p class="news-platform">${labels[plan.platform]}</p><h3>${plan.name}</h3>
-        <p>${plan.content}</p><a class="news-cta" href="${plan.url}">Abrir catálogo oficial <span aria-hidden="true">↗</span></a></div></li>`).join('');
+    const today = new Date(radarCalendarDay(now)).toISOString().slice(0,10);
+    const calendar = events.filter(event=>(event.end || event.start) >= today).map(renderEvent).join('');
+    const plans = subscriptions.map(service => `<li class="news-membership" data-subscription="${service.platform}" data-news-platform="${service.platform}">
+        <header><span class="news-service-icon" aria-hidden="true"><i class="${icons[service.platform]}"></i></span>
+        <div><p class="news-platform">${labels[service.platform]}</p><h3>${service.name}</h3></div></header>
+        <div class="news-plan-grid">${service.plans.map(([name,note,prices])=>`<article><h4>${name}</h4>
+        <p>${note}</p><div class="news-plan-rates">${prices.length ? prices.map(([amount,period])=>`<div><strong>${planMoney.format(amount)}</strong><small>MXN / ${period}</small></div>`).join('') : '<span>Precio en Play Store</span>'}</div></article>`).join('')}</div>
+        <a class="news-cta" href="${escape(service.url)}">Ver suscripción oficial <span aria-hidden="true">↗</span></a></li>`).join('');
     const week = radarWeeks(now)[0];
     const featured = week ? Object.entries(week.picks).map(([key,pick]) => `<li data-news-platform="${key}">
         <a href="${escape(pick.url)}"><img src="${escape(pick.image)}" alt="" width="460" height="215" loading="lazy" decoding="async">
@@ -94,23 +86,28 @@ function renderNews(now) {
             ${week ? `<p>Semana del ${dates.format(week.monday)}</p>` : '<p>La próxima selección aparecerá aquí.</p>'}</div>
             <a class="news-cta" href="/radar-mexico">Ver Radar de México <span aria-hidden="true">→</span></a></div>
             ${featured ? `<ul class="news-featured">${featured}</ul>` : ''}
-            <div class="news-feed"><div><h3>Resumen por RSS</h3><p>Recibe la selección semanal en tu lector.</p></div>
-                <a class="news-cta" href="${feedPath}"><i class="fa-solid fa-rss" aria-hidden="true"></i> Abrir RSS</a></div>
         </section>
-        <section id="calendario" class="news-panel"><h2>Calendario de ofertas y regalos</h2>
-            <h3>Ventas anunciadas</h3>
-            ${calendar ? `<ul class="news-timeline">${calendar}</ul>` : '<p>Aún no hay fechas confirmadas en este calendario.</p>'}
-            <nav class="news-store-links" aria-label="Ofertas vigentes en consola"><a class="news-cta" href="https://www.xbox.com/es-MX/promotions/sales/sales-and-specials">Ofertas de Xbox</a>
-            <a class="news-cta" href="https://store.playstation.com/es-mx/pages/deals">Ofertas de PlayStation</a><a class="news-cta" href="https://www.nintendo.com/es-mx/store/sales-and-deals/">Ofertas de Nintendo</a></nav>
+        <section id="calendario" class="news-panel"><h2>Lanzamientos y ventas anunciadas</h2>
+            <div class="news-calendar" id="newsCalendar" data-today="${today}" hidden>
+                <div class="news-calendar-top"><div class="news-calendar-month"><button type="button" id="newsPreviousMonth" aria-label="Mes anterior">‹</button>
+                    <h3 id="newsMonthTitle" aria-live="polite"></h3><button type="button" id="newsNextMonth" aria-label="Mes siguiente">›</button></div>
+                    <label>Plataforma <select id="newsCalendarPlatform"><option value="">Todas</option>${Object.entries(labels).map(([key,label])=>`<option value="${key}">${label}</option>`).join('')}</select></label></div>
+                <div class="news-calendar-body"><div><div class="news-calendar-week" aria-hidden="true"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div>
+                    <div id="newsMonthGrid" class="news-month-grid" role="group" aria-label="Días del mes"></div></div>
+                    <div class="news-day-agenda"><h3 id="newsDayTitle" aria-live="polite"></h3><div id="newsDayEvents"></div></div></div>
+                <p id="newsCalendarRange"></p>
+            </div>
+            <div id="newsCalendarData">${calendar || '<p>Aún no hay fechas confirmadas.</p>'}</div>
+            <p class="news-calendar-caption">Selección de fechas confirmadas. Las tiendas pueden cambiar las fechas y la disponibilidad por región.</p>
             <h3>Juegos para reclamar</h3>
             <p id="newsGiftsStatus" role="status">Consulta las fechas reportadas y confirma la disponibilidad en la tienda.</p>
             <ul class="news-cards" id="newsGifts"></ul><a class="news-cta" href="https://store.epicgames.com/es-MX/free-games">Gratis en Epic Games Store <span aria-hidden="true">↗</span></a>
         </section>
-        <section id="suscripciones" class="news-panel"><h2>Catálogos de suscripción</h2><p>Consulta los planes y juegos disponibles en México.</p>
+        <section id="suscripciones" class="news-panel"><h2>Catálogos de suscripción</h2><p>Precios en pesos mexicanos, revisados el ${dates.format(Date.parse(verified))}. Los cobros y el catálogo pueden cambiar.</p>
             <div id="newsSubscriptionLabel" hidden><label for="newsSubscriptionFilter">Plataforma</label>
                 <select id="newsSubscriptionFilter"><option value="">Todas</option>${Object.entries(labels).map(([key,label])=>`<option value="${key}">${label}</option>`).join('')}</select>
             </div>
-            <ul class="news-cards">${plans}</ul>
+            <ul class="news-plans">${plans}</ul>
         </section>`
     });
 }

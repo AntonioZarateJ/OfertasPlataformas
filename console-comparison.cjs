@@ -12,12 +12,13 @@ function signature(title){
  .replace(/xbox\s*(series\s*x\s*[|/]?\s*s|one|live|x\s*[|/]\s*s)?|playstation\s*[345]?|ps[345]|psn|nintendo\s*switch\s*2?|steam|pc|windows|global|latam|mexico|europe|united states|united kingdom|key|codigo|clave/gi,' ')
  .replace(/[^a-z0-9]+/g,' ').replace(/\bstandard edition\b/g,' ').replace(/\s+/g,' ').trim();
 }
-async function compareGame(platform,region,title,id,store,{catalog=consoleCatalog,variantsLoader=(item,region)=>platform==='ps'?loadPlaystationVariants(item,region):loadNintendoVariants(item,region),recordPrices=recordHistory}={}){
- const selected=registry.get([platform,region,store,id].join('|'));
+async function compareGame(platform,region,title,id,store,{catalog=consoleCatalog,variantsLoader=(item,region)=>platform==='ps'?loadPlaystationVariants(item,region):loadNintendoVariants(item,region),recordPrices=recordHistory,source='all'}={}){
+ const remembered=registry.get([platform,region,store,id].join('|'));
+ const selected=source==='all'||remembered?.kind==='official'?remembered:undefined;
  const canonical=signature(title);
  const familyTitle=canonical.replace(/\b(ultimate|deluxe|gold|goty|complete|definitive|definitiva|edicion|edition|standard|coleccion|collection)\b/g,' ').replace(/\s+/g,' ').trim();
  const variantRequest=['switch','ps'].includes(platform)&&selected?.kind==='official'?variantsLoader(selected,region).catch(()=>null):null;
- const result=await catalog(platform,region,familyTitle||canonical,{source:'all',onlyDeals:false});
+ const result=await catalog(platform,region,familyTitle||canonical,{source,onlyDeals:false});
  const candidates=[...result.items];
  if(selected&&Date.now()-selected.checkedAt<60000&&!candidates.some(q=>q.id===selected.id&&q.store===selected.store))candidates.push(selected);
 let variants=variantRequest?await variantRequest:null;
@@ -30,7 +31,7 @@ let variants=variantRequest?await variantRequest:null;
  const seen=new Set();
  const valid=candidates.filter(q=>{
   const key=q.store+'|'+q.id;
-  if(seen.has(key)||!Number.isFinite(q.price)||q.price<0||/random|try to get|account|cuenta/i.test(q.title))return false;
+  if(seen.has(key)||(source==='official'&&q.kind!=='official')||!Number.isFinite(q.price)||q.price<0||/random|try to get|account|cuenta/i.test(q.title))return false;
   seen.add(key);return true;
  });
  // Switch y Switch 2 no forman una misma oferta, aunque compartan título.
@@ -45,7 +46,7 @@ let variants=variantRequest?await variantRequest:null;
  const editions=valid.filter(q=>q.kind==='official'&&(sameFamily(q)||linked(q))).map(q=>({...q,selected:exact.some(e=>e.id===q.id&&e.store===q.store),variantType:q.variantType||(signature(q.title)===family?'base':'edition')}));
  exact.sort((a,b)=>(a.kind==='official'?0:1)-(b.kind==='official'?0:1)||a.price-b.price);
  const offers=await recordPrices([platform,region,canonical].join('|'),exact);
- return {title,platform,region,checkedAt:Date.now(),offers,otherEditions,editions,editionsStatus:['switch','ps'].includes(platform)?(variants?'ok':'unavailable'):'catalog',sources:result.sources,coverage:'Consultamos la tienda oficial y Eneba. Los demás enlaces son búsquedas externas sin precio verificado.',searchLinks:[
+ return {title,platform,region,checkedAt:Date.now(),offers,otherEditions,editions,editionsStatus:['switch','ps'].includes(platform)?(variants?'ok':'unavailable'):'catalog',sources:result.sources,coverage:source==='official'?'Consultamos la tienda oficial.':'Consultamos la tienda oficial y Eneba. Los demás enlaces son búsquedas externas sin precio verificado.',searchLinks:source==='official'?[]:[
   {name:'G2A',url:'https://www.g2a.com/search?query='+encodeURIComponent(title+' '+({xbox:'Xbox',ps:'PlayStation',switch:'Nintendo Switch'}[platform]))},
   {name:'Eneba',url:'https://www.eneba.com/store/all?text='+encodeURIComponent(title+' '+({xbox:'Xbox',ps:'PSN',switch:'Nintendo Switch'}[platform]))},
   {name:'Kinguin',url:'https://www.kinguin.net/listing?phrase='+encodeURIComponent(title+' '+platform)},

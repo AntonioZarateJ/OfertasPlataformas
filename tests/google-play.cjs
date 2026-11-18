@@ -22,9 +22,11 @@ test('Google Play valida paquete y moneda, comparte consultas y publica solo reb
     assert.equal(playQuote(ficha(monument,'Monument Valley',''),game,'MX'),null);
     let calls = 0, now = Date.now(), price = 69;
     const initial = now;
-    const play = createGooglePlay(async () => {
+    const play = createGooglePlay(async url => {
+        const target = new URL(url);
+        if (target.pathname === '/store/search') return new Response('');
         calls++;
-        return new Response(ficha(monument,'Monument Valley',String(price)));
+        return target.searchParams.get('id') === monument ? new Response(ficha(monument,'Monument Valley',String(price))) : new Response('',{status:404});
     }, {now:()=>now, record:async (_scope,quotes)=>quotes.map(quote=>({...quote,
         history:{drop: price < 69 ? {from:69,previousAt:initial,at:now} : null}}))});
     const options = {source:'official',cursor:{},onlyDeals:true,sort:'relevance'};
@@ -38,10 +40,34 @@ test('Google Play valida paquete y moneda, comparte consultas y publica solo reb
     assert.equal(result.items[0].regular,69);
     assert.equal(Math.round(result.items[0].discount),29);
     assert.equal(calls,2);
-    assert.equal((await play.compare('MX','untracked.app')).offers.length,0);
+    assert.equal((await play.compare('MX','https://otro-dominio.test')).offers.length,0);
     assert.equal(calls,2);
     now += 86400000;
     assert.equal((await play.catalog('MX','Monument',options)).items.length,0);
+});
+
+test('Google Play encuentra paquetes nuevos y pagina resultados sin repetir cotizaciones', async () => {
+    const ids = Array.from({length:13},(_,index)=>`org.example.app${index}`);
+    let searches = 0;
+    const play = createGooglePlay(async input=>{
+        const url = new URL(input);
+        if (url.pathname === '/store/search') {
+            searches++;
+            assert.equal(url.searchParams.get('q'),'Warhammer');
+            return new Response(ids.map(id=>`<a href="/store/apps/details?id=${id}&amp;gl=MX">Ficha</a>`).join(''));
+        }
+        const id = url.searchParams.get('id');
+        assert.ok(ids.includes(id));
+        return new Response(ficha(id,id,'169'));
+    },{record:async (_scope,quotes)=>quotes});
+    const options = {source:'official',cursor:{},onlyDeals:false,sort:'relevance'};
+    const first = await play.catalog('MX','Warhammer',options);
+    assert.equal(first.items.length,10);
+    const second = await play.catalog('MX','Warhammer',{...options,cursor:first.next});
+    assert.deepEqual(second.items.map(item=>item.id),ids.slice(10));
+    assert.equal(second.next,null);
+    assert.equal(searches,1);
+    assert.equal((await play.compare('MX',ids[0])).offers[0].price,169);
 });
 
 test('Android móvil muestra sugerencias, filtra sin recargar y conserva la meta de precio', async () => {

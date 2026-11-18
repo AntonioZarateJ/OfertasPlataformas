@@ -77,7 +77,7 @@ async function loadConsoleCatalog(reset = true) {
     loadMoreContainer.classList.add('hidden-el');
     sortContainer.classList.add('hidden-el');
     setHeaderInfo(`${ECOSYSTEM_META[platform].name} · ${purchaseRegions[region][0]}${query ? ' · ' + query : ''}`,
-        android ? 'Selección de juegos y aplicaciones de Google Play.' : 'Busca juegos con o sin oferta. Mostramos hasta 60 resultados por carga.', 'fa-gamepad', 'sky');
+        android ? 'Juegos y aplicaciones con precios de Google Play web.' : 'Busca juegos con o sin oferta. Mostramos hasta 60 resultados por carga.', 'fa-gamepad', 'sky');
     try {
         let scans = 0,sourceRetries=0;const scanStarted=Date.now();const deadline=scanStarted+45000;
         showLoader('Comparando precios de esta plataforma…');
@@ -95,7 +95,9 @@ async function loadConsoleCatalog(reset = true) {
             consoleResult.items.push(...added);
             consoleResult.sources = result.sources;
             consoleResult.checkedAt = result.checkedAt;
+            consoleResult.partial ||= result.partial;
             consoleNext = result.next || null;
+            if (android) break;
             if(consoleNext&&filteredConsoleItems().length<consoleVisible)await catalogPause(900,controller.signal);
             if(consoleNext && JSON.stringify(consoleNext)===params.get('cursor')){consoleResult.scope+=' La fuente repitió su página; consulta incompleta.';consoleNext=null;break;}
         }
@@ -175,10 +177,12 @@ function renderConsoleCatalog() {
     const android = activeEcosystem === 'android';
     const empty = !filtered.length && !consoleNext && !unavailable;
     emptyState.classList.toggle('hidden-el', android || !empty);
-    document.getElementById('androidEmptyState').classList.toggle('hidden-el', !android || !empty);
-    if (android && empty) {
-        document.getElementById('androidEmptyTitle').textContent = onlyDeals ? 'Sin rebajas observadas con estos filtros' : 'Sin coincidencias en nuestra selección';
-        document.getElementById('androidEmptyHint').textContent = onlyDeals ? 'Abre Catálogo completo para ver los precios disponibles.' : 'Cambia los filtros o busca directamente en Google Play.';
+    const androidEmpty = android && !filtered.length && !unavailable;
+    document.getElementById('androidEmptyState').classList.toggle('hidden-el', !androidEmpty);
+    if (androidEmpty) {
+        document.getElementById('androidEmptyTitle').textContent = onlyDeals ? 'Sin rebajas web verificadas en esta consulta' : 'Sin coincidencias en los resultados consultados';
+        document.getElementById('androidEmptyHint').textContent = onlyDeals ? 'La app de Play Store puede mostrar ofertas distintas para tu cuenta o dispositivo.' :
+            consoleNext ? 'Carga más resultados o cambia los filtros.' : 'Cambia los filtros o busca directamente en Google Play.';
     }
     if(!filtered.length&&unavailable)showCatalogError('Una tienda no pudo responder. La consulta está incompleta; reintenta para comprobar sus ofertas.');
     if (!android && !filtered.length) document.getElementById('consoleScope').textContent += ' No hay coincidencias con estos filtros en las páginas cargadas. Prueba Catálogo completo, cambia el porcentaje o carga más resultados.';

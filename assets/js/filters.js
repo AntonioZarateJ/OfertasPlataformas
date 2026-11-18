@@ -25,7 +25,7 @@ function updateDiscountControls(prefix) {
 function updateScopeNote() {
     const offers=queryConfig.onSale==='1';
     document.getElementById('catalogScopeNote').textContent=offers?'Solo ofertas: juegos con descuento. Ajusta el porcentaje si quieres afinar los resultados.':'Catálogo completo: incluye juegos con y sin descuento. Los demás filtros se siguen aplicando.';
-    if (activeEcosystem === 'android') document.getElementById('catalogScopeNote').textContent = offers ? 'Bajadas recientes observadas en Google Play.' : 'Selección de Google Play con precio de descarga confirmado.';
+    if (activeEcosystem === 'android') document.getElementById('catalogScopeNote').textContent = offers ? 'Rebajas verificadas en Google Play web. Las promociones de la app pueden variar.' : 'Precios públicos de descarga en Google Play web.';
     const filter=activeEcosystem==='pc'?queryConfig.discountFilter:getDiscountSettings('console');
     if(filter&&filter.mode!=='any')document.getElementById('catalogScopeNote').textContent+=' · '+discountDescription(filter)+'.';
     if(activeChip==='free')document.getElementById('catalogScopeNote').textContent='Gratis: promociones y directorios para reclamar juegos sin costo.';
