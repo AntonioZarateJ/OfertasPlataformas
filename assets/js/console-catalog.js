@@ -11,9 +11,14 @@ function changeConsoleOrder() {
 function filteredConsoleItems() {
     if (!consoleResult) return [];
     const onlyDeals = queryConfig.onSale === '1';
-    const kind = document.getElementById('consoleSource').value;
+    const android = activeEcosystem === 'android';
+    const kind = android ? 'official' : document.getElementById('consoleSource').value;
+    const type = android ? document.getElementById('androidType').value : 'all';
+    const price = android ? document.getElementById('androidPrice').value : 'all';
     const filter=getDiscountSettings('console');
-    return consoleResult.items.filter(item => (kind === 'all' || item.kind === kind) && (!onlyDeals || item.discount > 0 && item.regular > item.price) && matchesDiscount(item.discount,filter));
+    return consoleResult.items.filter(item => (kind === 'all' || item.kind === kind) &&
+        (type === 'all' || item.appType === type) && (price === 'all' || (price === 'free' ? item.price === 0 : item.price > 0)) &&
+        (!onlyDeals || item.discount > 0 && item.regular > item.price) && matchesDiscount(android ? Math.round(item.discount) : item.discount,filter));
 }
 async function loadConsoleCatalog(reset = true) {
     if (!reset && consoleLoading) return;
@@ -26,11 +31,13 @@ async function loadConsoleCatalog(reset = true) {
         gamesGrid.replaceChildren();
         loadedCountBadge.textContent = '0';
         emptyState.classList.add('hidden-el');
+        document.getElementById('androidEmptyState').classList.add('hidden-el');
         showLoader('Buscando en los catálogos de esta plataforma…');
     } else consoleVisible += 60;
     updateScopeNote();
     const generation = catalogGeneration;
     const platform = activeEcosystem;
+    const android = platform === 'android';
     const region = currentRegion;
     const query = currentSearchQuery;
     const controller = new AbortController();
@@ -38,10 +45,27 @@ async function loadConsoleCatalog(reset = true) {
     consoleLoading = true;
     loadMoreBtn.disabled = true;
     const ratingOption = document.querySelector('#consoleOrder option[value="rating"]');
-    ratingOption.disabled = platform !== 'xbox';
-    ratingOption.textContent = platform === 'xbox' ? 'Mejores reseñas disponibles' : 'Reseñas no disponibles en esta fuente';
-    if (platform !== 'xbox' && document.getElementById('consoleOrder').value === 'rating') document.getElementById('consoleOrder').value = 'relevance';
-    const source = document.getElementById('consoleSource').value;
+    const hasRatings = platform === 'xbox' || android;
+    ratingOption.disabled = !hasRatings;
+    ratingOption.textContent = hasRatings ? 'Mejores reseñas disponibles' : 'Reseñas no disponibles en esta fuente';
+    if (!hasRatings && document.getElementById('consoleOrder').value === 'rating') document.getElementById('consoleOrder').value = 'relevance';
+    const source = android ? 'official' : document.getElementById('consoleSource').value;
+    document.getElementById('consoleFiltersCaption').hidden = android;
+    document.getElementById('consoleFiltersTitle').textContent = android ? 'Filtros de Google Play' : 'Tu plataforma, tus preferencias';
+    document.getElementById('consoleOrderHint').textContent = android ? 'Ordena la selección al instante.' : 'Ordena los juegos cargados al instante. Cargar más amplía la lista.';
+    document.getElementById('consoleSourceField').classList.toggle('hidden-el',android);
+    document.getElementById('androidFilters').classList.toggle('hidden-el',!android);
+    const storeSearch = document.getElementById('androidStoreSearch');
+    storeSearch.classList.toggle('hidden-el',!android);
+    if (android) {
+        const search = new URL(query ? '/store/search' : '/store','https://play.google.com');
+        search.search = new URLSearchParams({hl:'es',gl:region,...(query?{q:query,c:'apps'}:{})});
+        storeSearch.href = search.href;
+        storeSearch.textContent = query ? 'Buscar en todo Google Play ↗' : 'Ver todo Google Play ↗';
+        const emptyStore = document.getElementById('androidEmptyStore');
+        emptyStore.href = storeSearch.href;
+        emptyStore.textContent = storeSearch.textContent;
+    }
     const onlyDeals = queryConfig.onSale === '1';
     if (!onlyDeals && document.getElementById('consoleOrder').value.startsWith('discount')) document.getElementById('consoleOrder').value = 'relevance';
     if (reset) consoleFetchSort = document.getElementById('consoleOrder').value;
@@ -52,16 +76,17 @@ async function loadConsoleCatalog(reset = true) {
     document.getElementById('catalogError').classList.add('hidden-el');catalogNotice();
     loadMoreContainer.classList.add('hidden-el');
     sortContainer.classList.add('hidden-el');
-    setHeaderInfo(`${ECOSYSTEM_META[platform].name} · ${purchaseRegions[region][0]}${query ? ' · ' + query : ''}`, 'Busca juegos con o sin oferta. Mostramos hasta 60 resultados por carga.', 'fa-gamepad', 'sky');
+    setHeaderInfo(`${ECOSYSTEM_META[platform].name} · ${purchaseRegions[region][0]}${query ? ' · ' + query : ''}`,
+        android ? 'Juegos y aplicaciones con precios de Google Play web.' : 'Busca juegos con o sin oferta. Mostramos hasta 60 resultados por carga.', 'fa-gamepad', 'sky');
     try {
         let scans = 0,sourceRetries=0;const scanStarted=Date.now();const deadline=scanStarted+45000;
         showLoader('Comparando precios de esta plataforma…');
         while (consoleNext !== null && filteredConsoleItems().length < consoleVisible && scans++ < 240 && Date.now()<deadline) {
             const params = new URLSearchParams({ platform, region, q: query, source, sort, deals: onlyDeals ? '1' : '0', cursor: JSON.stringify(consoleNext) });
-            if(discountFilter.mode!=='any'){params.set('discountMin',String(discountFilter.min));params.set('discountMax',String(discountFilter.max));}
+            if(!android&&discountFilter.mode!=='any'){params.set('discountMin',String(discountFilter.min));params.set('discountMax',String(discountFilter.max));}
             const result = await catalogJSON(`/api/console-catalog?${params}`, { signal: controller.signal, timeout:16000,ttl:0,deadline });
             if (generation !== catalogGeneration || platform !== activeEcosystem || region !== currentRegion) return;
-            if(result.sources?.some(s=>s.status==='unavailable')&&sourceRetries++<2){await catalogPause(2000,controller.signal);continue;}
+            if(!android&&result.sources?.some(s=>s.status==='unavailable')&&sourceRetries++<2){await catalogPause(2000,controller.signal);continue;}
             sourceRetries=0;
             if (!Array.isArray(result.items)) throw Error('Respuesta inválida');
             if (!consoleResult) consoleResult = { ...result, items: [] };
@@ -70,13 +95,16 @@ async function loadConsoleCatalog(reset = true) {
             consoleResult.items.push(...added);
             consoleResult.sources = result.sources;
             consoleResult.checkedAt = result.checkedAt;
+            consoleResult.partial ||= result.partial;
             consoleNext = result.next || null;
+            if (android) break;
             if(consoleNext&&filteredConsoleItems().length<consoleVisible)await catalogPause(900,controller.signal);
             if(consoleNext && JSON.stringify(consoleNext)===params.get('cursor')){consoleResult.scope+=' La fuente repitió su página; consulta incompleta.';consoleNext=null;break;}
         }
         if (generation !== catalogGeneration) return;
         hideLoader();
         renderConsoleCatalog();
+        if (android && consoleResult?.partial && consoleResult.items.length) catalogNotice('Algunas fichas de Google Play no devolvieron precio en esta región.');
     } catch (error) {
         if (generation !== catalogGeneration || controller.signal.aborted) return;
         hideLoader();
@@ -89,7 +117,6 @@ async function loadConsoleCatalog(reset = true) {
 function renderConsoleCatalog() {
     if (!consoleResult || consoleResult.platform !== activeEcosystem || consoleResult.region !== currentRegion) return;
     const { items, sources, scope, checkedAt } = consoleResult;
-    const kind = document.getElementById('consoleSource').value;
     const onlyDeals = queryConfig.onSale === '1';
     const filtered = filteredConsoleItems();
     const order = document.getElementById('consoleOrder').value;
@@ -113,7 +140,7 @@ function renderConsoleCatalog() {
     const existingCards = new Map([...gamesGrid.children].map(card => [card.dataset.consoleKey, card]));
     const orderedCards = [];
     visible.forEach(item => {
-        item.checkedAt=checkedAt;
+        item.checkedAt=activeEcosystem === 'android' ? item.checkedAt ?? checkedAt : checkedAt;
         const key = [activeEcosystem,currentRegion,item.store,item.id].join(':');
         const signature = JSON.stringify([item.title,item.price,item.regular,item.discount,item.currency,item.edition,item.image,item.imageAlternatives,item.url,item.seller,item.rating,item.ratingCount,item.kind]);
         const existing = existingCards.get(key);
@@ -124,7 +151,8 @@ function renderConsoleCatalog() {
         card.className = 'steam-card console-card';
         const platform=ECOSYSTEM_META[activeEcosystem];
         const displayDiscount=Math.round(Number(item.discount)||0);
-        card.innerHTML = `<div class="console-art"><img class="console-art-backdrop" src="${escapeHTML(safeURL(item.image))}" alt="" aria-hidden="true" loading="lazy"><img class="console-art-cover" src="${escapeHTML(safeURL(item.image))}" alt="${escapeHTML(item.title)}" loading="lazy"><div class="console-art-shade"></div><div class="console-card-badges"><span class="platform-tag"><i class="${platform.icon}"></i> ${escapeHTML(activeEcosystem==='switch'?'Nintendo':activeEcosystem==='ps'?'PlayStation':'Xbox')}</span><span class="source-tag ${item.kind==='official'?'source-official':'source-market'}">${item.kind==='official'?'Oficial':'Mercado externo'}</span></div>${item.discount>0&&item.regular>item.price?`<span class="console-discount-badge">-${displayDiscount}%</span>`:'<span class="console-regular-badge">Precio sin rebaja comprobada</span>'}${Number.isFinite(item.rating)&&item.ratingCount>0?`<span class="console-rating-badge">★ ${escapeHTML(item.rating)}/5</span>`:''}</div><div class="console-card-body"><p class="console-store">${escapeHTML(item.store)}</p><h3>${escapeHTML(item.title)}</h3><p class="console-edition" title="${escapeHTML(item.edition)}">${escapeHTML(item.edition)}</p>${item.seller?`<p>Vendedor: ${escapeHTML(item.seller)}</p>`:''}<div class="console-price"><div><small>${item.regular>item.price?'Antes':'Precio publicado'}</small>${item.regular>item.price?`<del>${escapeHTML(format(item.regular))}</del>`:''}</div><strong>${escapeHTML(format(item.price))} <small>${escapeHTML(item.currency)}</small></strong></div><div class="console-card-actions"><a class="console-buy" href="${escapeHTML(safeURL(item.url))}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-up-right-from-square"></i> ${item.kind==='official'?'Tienda oficial':'Ver tienda'}</a></div></div>`;
+        const freeDownload = activeEcosystem === 'android' && item.price === 0;
+        card.innerHTML = `<div class="console-art"><img class="console-art-backdrop" src="${escapeHTML(safeURL(item.image))}" alt="" aria-hidden="true" loading="lazy"><img class="console-art-cover" src="${escapeHTML(safeURL(item.image))}" alt="${escapeHTML(item.title)}" loading="lazy"><div class="console-art-shade"></div><div class="console-card-badges"><span class="platform-tag"><i class="${platform.icon}"></i> ${escapeHTML(activeEcosystem==='switch'?'Nintendo':activeEcosystem==='ps'?'PlayStation':activeEcosystem==='android'?'Android':'Xbox')}</span><span class="source-tag ${item.kind==='official'?'source-official':'source-market'}">${item.kind==='official'?'Oficial':'Mercado externo'}</span></div>${item.discount>0&&item.regular>item.price?`<span class="console-discount-badge">-${displayDiscount}%</span>`:'<span class="console-regular-badge">Precio sin rebaja comprobada</span>'}${Number.isFinite(item.rating)&&item.ratingCount>0?`<span class="console-rating-badge">★ ${escapeHTML(item.rating)}/5</span>`:''}</div><div class="console-card-body"><p class="console-store">${escapeHTML(item.store)}</p><h3>${escapeHTML(item.title)}</h3><p class="console-edition" title="${escapeHTML(item.edition)}">${escapeHTML(item.edition)}</p>${item.seller?`<p>Vendedor: ${escapeHTML(item.seller)}</p>`:''}<div class="console-price"><div><small>${item.regular>item.price?(item.observedDrop?'Antes observado':'Antes'):'Precio publicado'}</small>${item.regular>item.price?`<del>${escapeHTML(format(item.regular))}</del>`:''}</div><strong>${freeDownload ? 'Gratis' : `${escapeHTML(format(item.price))} <small>${escapeHTML(item.currency)}</small>`}</strong></div><div class="console-card-actions"><a class="console-buy" href="${escapeHTML(safeURL(item.url))}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-up-right-from-square"></i> ${item.kind==='official'?'Tienda oficial':'Ver tienda'}</a></div></div>`;
         const favorite=document.createElement('button');
         favorite.type='button';favorite.className='console-heart console-card-heart';
         favorite.dataset.consoleWish=consoleWishKey(item);
@@ -146,8 +174,17 @@ function renderConsoleCatalog() {
     refreshConsoleHearts();
     loadedCountBadge.textContent = visible.length;
     const unavailable=sources.some(s=>s.status==='unavailable');
-    emptyState.classList.toggle('hidden-el', filtered.length > 0 || !!consoleNext || unavailable);
+    const android = activeEcosystem === 'android';
+    const empty = !filtered.length && !consoleNext && !unavailable;
+    emptyState.classList.toggle('hidden-el', android || !empty);
+    const androidEmpty = android && !filtered.length && !unavailable;
+    document.getElementById('androidEmptyState').classList.toggle('hidden-el', !androidEmpty);
+    if (androidEmpty) {
+        document.getElementById('androidEmptyTitle').textContent = onlyDeals ? 'Sin rebajas web verificadas en esta consulta' : 'Sin coincidencias en los resultados consultados';
+        document.getElementById('androidEmptyHint').textContent = onlyDeals ? 'La app de Play Store puede mostrar ofertas distintas para tu cuenta o dispositivo.' :
+            consoleNext ? 'Carga más resultados o cambia los filtros.' : 'Cambia los filtros o busca directamente en Google Play.';
+    }
     if(!filtered.length&&unavailable)showCatalogError('Una tienda no pudo responder. La consulta está incompleta; reintenta para comprobar sus ofertas.');
-    if (!filtered.length) document.getElementById('consoleScope').textContent += ' No hay coincidencias con estos filtros en las páginas cargadas. Prueba Catálogo completo, cambia el porcentaje o carga más resultados.';
+    if (!android && !filtered.length) document.getElementById('consoleScope').textContent += ' No hay coincidencias con estos filtros en las páginas cargadas. Prueba Catálogo completo, cambia el porcentaje o carga más resultados.';
     syncCatalogBatchView();
 }

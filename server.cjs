@@ -3,6 +3,10 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const {renderLegalPage} = require('./legal.cjs');
 const {renderDiscoverPage} = require('./discover.cjs');
+const {renderPriceReport} = require('./price-report.cjs');
+const {recordHistory} = require('./price-history.cjs');
+const {createGooglePlay} = require('./google-play.cjs');
+const {renderNewsPage, renderNewsFeed, feedPath} = require('./news.cjs');
 const {acceptsGzip, createStaticAssetCache} = require('./static-assets.cjs');
 const {validateQuery,securityHeaders,createApiGuard,publicFirebaseConfig}=require('./security.cjs');
 const {createPublicFetch}=require('./public-fetch.cjs');
@@ -26,6 +30,7 @@ const upstreams = {
 
 function createServer({ fetchImpl = fetch, limits = {} } = {}) {
     fetchImpl=createPublicFetch(fetchImpl);
+    const googlePlay = createGooglePlay(fetchImpl);
     const trustProxy=process.env.TRUST_PROXY==='1';
     const admit=createApiGuard({trustProxy,...limits});
     const cache = new BoundedCache();
@@ -58,13 +63,18 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
         if (!['GET', 'HEAD'].includes(req.method)) { res.setHeader('Allow', 'GET, HEAD'); reply(res, 405, { error: 'Método no permitido' }); return; }
         try {
             const url = new URL(req.url, 'http://localhost');
-            const publicPage = renderLegalPage(url.pathname) ?? renderDiscoverPage(url.pathname);
+            if (url.pathname === feedPath) {
+                res.writeHead(200, {'Content-Type':'application/rss+xml; charset=utf-8','Cache-Control':'public, max-age=300'});
+                res.end(req.method === 'HEAD' ? undefined : renderNewsFeed());
+                return;
+            }
+            const publicPage = renderLegalPage(url.pathname) ?? renderDiscoverPage(url.pathname) ?? renderPriceReport(url) ?? renderNewsPage(url.pathname);
             if (publicPage !== null) {
                 res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache'});
                 res.end(req.method === 'HEAD' ? undefined : publicPage); return;
             }
             if(url.pathname.startsWith('/api/')){
-                if(!validateQuery(url)){reply(res,upstreams[url.pathname]||['/api/deals-position','/api/console-catalog','/api/console-comparison','/api/auth-config','/api/pc-editions'].includes(url.pathname)?400:404,{error:'Parámetros inválidos'});return;}
+                if(!validateQuery(url)){reply(res,upstreams[url.pathname]||['/api/deals-position','/api/console-catalog','/api/console-comparison','/api/auth-config','/api/pc-editions','/api/recent-drops'].includes(url.pathname)?400:404,{error:'Parámetros inválidos'});return;}
                 const access=admit(req,{key:url.pathname+'?'+url.searchParams.toString()});if(access.status){reply(res,access.status,{error:'Límite temporal de acceso',retryAfter:access.retryAfter||0});return;}
                 release=access.release;
             }
@@ -75,9 +85,20 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
                 if(cache.get(key)?.expires>Date.now()){reply(res,200,cache.get(key).data);return;}
                 const data = await shared(key, async () => {
                     const data = await loadSteamEditions(appid,region,fetchImpl);
+                    data.editions = await recordHistory(`pc|${region}|${appid}`, data.editions);
                     cache.set(key,{data,expires:Date.now()+60000}); return data;
                 });
                 reply(res,200,data); return;
+            }
+            if (url.pathname === '/api/recent-drops') {
+                const platform = url.searchParams.get('platform');
+                const region = url.searchParams.get('region');
+                if (!['pc', 'xbox', 'ps', 'switch', 'android'].includes(platform) || !region) {
+                    reply(res, 400, {error:'Plataforma o región inválida'});
+                    return;
+                }
+                reply(res, 200, {platform, region, items:await recordHistory.recentDrops(platform, region)});
+                return;
             }
             if (url.pathname === '/api/deals-position') {
                 if(!url.searchParams.has('storeID'))url.searchParams.set('storeID','1');
@@ -96,11 +117,14 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
             }
             if (url.pathname === '/api/console-comparison') {
                 const platform=url.searchParams.get('platform'), region=url.searchParams.get('region'), title=(url.searchParams.get('title')||'').trim();
-                if(!['xbox','ps','switch'].includes(platform)||!['MX','US','ES','GB','BR','JP'].includes(region)||!title||title.length>200){reply(res,400,{error:'Juego inválido'});return;}
+                const source = url.searchParams.get('source') ?? 'all';
+                if(!['xbox','ps','switch','android'].includes(platform)||!['MX','US','ES','GB','BR','JP'].includes(region)||!title||title.length>200||!['all','official'].includes(source)){reply(res,400,{error:'Juego inválido'});return;}
                 const key='compare:'+url.searchParams.toString();
                 if(cache.get(key)?.expires>Date.now()){reply(res,200,cache.get(key).data);return;}
                 const data = await shared(key, async () => {
-                    const data = await compareGame(platform,region,title,url.searchParams.get('id'),url.searchParams.get('store'));
+                    const data = platform === 'android' ? await googlePlay.compare(region,url.searchParams.get('id')) :
+                        await compareGame(platform,region,title,url.searchParams.get('id'),url.searchParams.get('store'),{source});
+                    if (platform === 'android') return data;
                     cache.set(key,{data,expires:Date.now()+60000}); return data;
                 });
                 reply(res,200,data); return;
@@ -109,7 +133,7 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
                 const platform = url.searchParams.get('platform');
                 const region = url.searchParams.get('region');
                 const query = (url.searchParams.get('q') || '').trim();
-                if (!['xbox','ps','switch'].includes(platform) || !['MX','US','ES','GB','BR','JP'].includes(region) || query.length > 100) { reply(res,400,{error:'Consulta inválida'}); return; }
+                if (!['xbox','ps','switch','android'].includes(platform) || !['MX','US','ES','GB','BR','JP'].includes(region) || query.length > 100) { reply(res,400,{error:'Consulta inválida'}); return; }
                 const sort = url.searchParams.get('sort') || 'relevance';
                 const source = url.searchParams.get('source') || 'all';
                 const onlyDeals = url.searchParams.get('deals') === '1';
@@ -128,7 +152,9 @@ function createServer({ fetchImpl = fetch, limits = {} } = {}) {
                 const key = `console:${platform}:${region}:${query}:${sort}:${source}:${onlyDeals}:${JSON.stringify(discount)}:${JSON.stringify(cursor)}`;
                 if (cache.get(key)?.expires > Date.now()) { rememberCatalog(cache.get(key).data); reply(res,200,cache.get(key).data); return; }
                 const data = await shared(key, async () => {
-                    const data = await consoleCatalog(platform,region,query,{cursor,sort,source,onlyDeals,discount});
+                    const options = {cursor,sort,source,onlyDeals,discount};
+                    if (platform === 'android') return googlePlay.catalog(region,query,options);
+                    const data = await consoleCatalog(platform,region,query,options);
                     rememberCatalog(data);
                     if (data.sources.every(s => s.status !== 'unavailable')) cache.set(key,{data,expires:Date.now()+60000});
                     return data;

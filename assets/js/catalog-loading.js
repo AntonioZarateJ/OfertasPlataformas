@@ -6,9 +6,11 @@ const LOADING_LOGOS = {
     gog: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="3" y="8" width="42" height="32" rx="9" fill="currentColor"/><text x="24" y="30" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="20" fill="#0d1725">gog</text></svg>',
     xbox: '<i class="fa-brands fa-xbox"></i>',
     ps: '<i class="fa-brands fa-playstation"></i>',
+    android: '<i class="fa-brands fa-android"></i>',
     switch: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M22 5H15C8 5 5 10 5 17v14c0 8 4 12 10 12h7Z" fill="none" stroke="currentColor" stroke-width="3"/><path d="M27 5h6c7 0 10 5 10 12v14c0 8-4 12-10 12h-6Z" fill="currentColor"/><circle cx="14" cy="17" r="4" fill="currentColor"/><circle cx="35" cy="30" r="4" fill="#0d1725"/></svg>'
 };
 function catalogLoadingMessage() {
+    if (activeEcosystem === 'android') return 'Consultando Google Play…';
     return activeChip === 'free' ? 'Cargando juegos gratis… Espera un momento.' : queryConfig.onSale === '1' ? 'Cargando ofertas… Espera un momento.' : 'Cargando juegos… Espera un momento.';
 }
 function loadingLogoKeys() {
@@ -25,7 +27,7 @@ function resetLoadMoreButton() {
     clearInterval(catalogLogoTimer); catalogLogoTimer = null;
     loadMoreBtn.disabled = false;
     loadMoreBtn.removeAttribute('aria-busy');
-    loadMoreBtn.innerHTML = '<i class="fa-solid fa-plus" aria-hidden="true"></i><span>Cargar más juegos</span>';
+    loadMoreBtn.innerHTML = `<i class="fa-solid fa-plus" aria-hidden="true"></i><span>${activeEcosystem === 'android' ? 'Cargar más resultados' : 'Cargar más juegos'}</span>`;
 }
 function beginCatalogLoading() {
     clearInterval(catalogLogoTimer); catalogLogoIndex = 0;

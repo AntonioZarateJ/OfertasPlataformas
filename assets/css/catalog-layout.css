@@ -14,7 +14,7 @@
 
 .catalog-discovery {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
     margin: 0 0 20px;
 }
@@ -34,6 +34,7 @@
 }
 
 .catalog-discovery-collection { --discovery-accent: #c2baff; }
+.catalog-discovery-news { --discovery-accent: #ffc98b; }
 .catalog-discovery-icon {
     display: grid;
     place-items: center;
@@ -137,6 +138,10 @@
     .catalog-discovery-copy strong { font-size: .75rem; }
     .catalog-discovery-copy small { font-size: .6875rem; }
     .catalog-discovery-arrow { display: none; }
+    .catalog-discovery-long, .catalog-discovery-copy small { display: none; }
+    .catalog-discovery-card { justify-content: center; gap: 4px; padding-inline: 4px; }
+    .catalog-discovery-icon { flex-basis: 20px; height: 24px; }
+    .catalog-discovery-copy strong { font-size: .7rem; }
 
     #mobileFilterContent { padding-top: 8px; border-top: 1px solid #293c52; }
     #mobileFilterContent select { min-height: 40px; }

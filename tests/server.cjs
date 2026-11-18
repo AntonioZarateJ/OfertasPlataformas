@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { createServer } = require('../server.cjs');
+const { renderNewsFeed, renderNewsPage } = require('../news.cjs');
 
 async function withServer(fetchImpl, run) {
     const server = createServer({ fetchImpl });
@@ -101,7 +102,7 @@ test('El calendario usa un recurso público y las fichas de la colección entreg
         const collection = await (await fetch(base + '/descubre')).text();
         assert.match(collection, /Juegos hasta \$300 MXN/);
         assert.match(collection, /Cómo elegir una edición/);
-        for (const slug of ['gunpoint', 'rocket-league', 'apex-legends', 'stardew-valley']) {
+        for (const slug of ['gunpoint', 'rocket-league', 'apex-legends', 'stardew-valley', 'monument-valley-android']) {
             assert.ok(collection.includes('href="/descubre/' + slug + '"'));
             const response = await fetch(base + '/descubre/' + slug);
             assert.equal(response.status, 200);
@@ -112,4 +113,29 @@ test('El calendario usa un recurso público y las fichas de la colección entreg
         }
         assert.equal((await fetch(base + '/descubre/desconocido')).status, 404);
     });
+});
+
+test('Novedades, listas y RSS se sirven sin cuenta ni peticiones a tiendas', async () => {
+    await withServer(async () => { throw new Error('El servidor no consulta proveedores para estas rutas'); }, async base => {
+        assert.match(await (await fetch(base)).text(), /href="\/novedades"/);
+        const news = await fetch(base + '/novedades');
+        assert.equal(news.status, 200);
+        const html = await news.text();
+        assert.match(html, /href="\/novedades\/rss\.xml"/);
+        for (const platform of ['pc','xbox','ps','switch','android']) assert.ok(html.includes('data-subscription="' + platform + '"'));
+        const shared = await fetch(base + '/lista-compartida');
+        assert.equal(shared.status, 200);
+        assert.match(await shared.text(), /noindex, nofollow/);
+        const rss = await fetch(base + '/novedades/rss.xml');
+        assert.match(rss.headers.get('content-type'), /application\/rss\+xml/);
+        assert.match(await rss.text(), /<rss version="2\.0"/);
+    });
+    const first = renderNewsFeed(new Date('2026-11-16T05:59:59Z'));
+    const next = renderNewsFeed(new Date('2026-11-16T06:00:00Z'));
+    assert.match(first, /radarplay\.week\.2026-11-09/);
+    assert.doesNotMatch(first, /radarplay\.week\.2026-11-16/);
+    assert.match(next, /radarplay\.week\.2026-11-16/);
+    assert.match(next, /Portal 2/);
+    assert.match(next, /Nintendo Switch/);
+    assert.match(renderNewsPage('/novedades', new Date('2026-11-16T00:00:00Z')), /2026-12-17/);
 });

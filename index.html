@@ -20,6 +20,7 @@
 
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="assets/css/catalog-layout.css">
+    <link rel="stylesheet" href="assets/css/price-insights.css">
 </head>
 <body class="min-h-screen flex flex-col selection:bg-steam-blue selection:text-steam-bg">
 
@@ -76,6 +77,7 @@
                 <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="xbox" data-ui-click="select-ecosystem-xbox"><i class="fa-brands fa-xbox"></i> Xbox</button>
                 <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="ps" data-ui-click="select-ecosystem-ps"><i class="fa-brands fa-playstation"></i> PlayStation</button>
                 <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="switch" data-ui-click="select-ecosystem-switch"><span class="desktop-label">Nintendo Switch</span><span class="mobile-label">Switch</span></button>
+                <button type="button" class="plat-pill px-3 py-2 text-xs rounded-lg" data-ecosystem="android" data-ui-click="select-ecosystem-android"><i class="fa-brands fa-android" aria-hidden="true"></i> Android</button>
             </div>
 
             <!-- Buscador Predictivo en Vivo (Cualquier juego con o sin oferta) -->
@@ -261,20 +263,25 @@
                 </div>
             </div>
             <div class="flex items-center gap-2 self-start sm:self-center bg-[#0b101b] px-3.5 py-2 rounded-xl border border-white/10">
-                <span class="text-xs text-gray-400">Juegos listados:</span>
+                <span id="loadedCountLabel" class="text-xs text-gray-400">Juegos listados:</span>
                 <span id="loadedCountBadge" class="text-sm font-black text-sky-400">0</span>
             </div>
         </div>
 
         <nav class="catalog-discovery" aria-label="Descubre juegos">
-            <a class="catalog-discovery-card catalog-discovery-radar" href="/radar-mexico">
+            <a class="catalog-discovery-card catalog-discovery-radar" href="/radar-mexico" aria-label="Radar de México">
                 <span class="catalog-discovery-icon" aria-hidden="true"><i class="fa-solid fa-satellite-dish"></i></span>
-                <span class="catalog-discovery-copy"><strong>Radar de México</strong><small>Selección de hoy</small></span>
+                <span class="catalog-discovery-copy"><strong>Radar<span class="catalog-discovery-long"> de México</span></strong><small>Selección de hoy</small></span>
                 <i class="fa-solid fa-arrow-right catalog-discovery-arrow" aria-hidden="true"></i>
             </a>
-            <a class="catalog-discovery-card catalog-discovery-collection" href="/descubre">
+            <a class="catalog-discovery-card catalog-discovery-collection" href="/descubre" aria-label="Colección de juegos">
                 <span class="catalog-discovery-icon" aria-hidden="true"><i class="fa-solid fa-layer-group"></i></span>
-                <span class="catalog-discovery-copy"><strong>Colección de juegos</strong><small>Hasta $300 MXN</small></span>
+                <span class="catalog-discovery-copy"><strong>Colección<span class="catalog-discovery-long"> de juegos</span></strong><small>Hasta $300 MXN</small></span>
+                <i class="fa-solid fa-arrow-right catalog-discovery-arrow" aria-hidden="true"></i>
+            </a>
+            <a class="catalog-discovery-card catalog-discovery-news" href="/novedades">
+                <span class="catalog-discovery-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span>
+                <span class="catalog-discovery-copy"><strong>Novedades</strong><small>Calendario y suscripciones</small></span>
                 <i class="fa-solid fa-arrow-right catalog-discovery-arrow" aria-hidden="true"></i>
             </a>
         </nav>
@@ -296,6 +303,11 @@
                 Volver a Ofertas Top
             </button>
         </div>
+        <div id="androidEmptyState" class="hidden-el text-center py-10 border border-white/10 rounded-2xl p-6">
+            <h3 id="androidEmptyTitle" class="text-base font-bold text-white mb-1"></h3>
+            <p id="androidEmptyHint" class="text-xs text-gray-400 mx-auto mb-2"></p>
+            <a id="androidEmptyStore" class="android-store-search" target="_blank" rel="noopener noreferrer" href="https://play.google.com/store?hl=es">Ver todo Google Play ↗</a>
+        </div>
 
         <div id="catalogError" role="alert" class="hidden-el text-center p-6 mb-5 rounded-xl border border-rose-400/40 text-rose-300">
             <p class="mb-3"></p>
@@ -303,13 +315,15 @@
         </div>
 
         <section id="consoleTools" class="hidden-el console-tools refined-filters">
-          <div class="filter-panel-heading"><div><span>ENCUENTRA TU PRÓXIMO JUEGO</span><h3>Tu plataforma, tus preferencias</h3></div><button type="button" data-ui-click="reset-console-filters">Restablecer filtros</button></div>
+          <div class="filter-panel-heading"><div><span id="consoleFiltersCaption">ENCUENTRA TU PRÓXIMO JUEGO</span><h3 id="consoleFiltersTitle">Tu plataforma, tus preferencias</h3></div><button type="button" data-ui-click="reset-console-filters">Restablecer filtros</button></div>
           <div class="console-filters refined-filter-grid">
-            <div class="filter-field"><label for="consoleSource"><i class="fa-solid fa-store"></i> Tiendas</label><select id="consoleSource" data-ui-change="load-console-catalog"><option value="all">Oficiales y externas</option><option value="official">Sólo tiendas oficiales</option><option value="external">Sólo mercados externos</option></select><small>Siempre distinguimos la fuente de cada precio.</small></div>
-            <div class="filter-field"><label for="consoleOrder"><i class="fa-solid fa-arrow-down-wide-short"></i> Ordenar resultados</label><select id="consoleOrder" data-ui-change="change-console-order"><option value="relevance">Relevancia</option><option value="rating">Mejores reseñas disponibles</option><option value="priceAsc">Menor precio</option><option value="priceDesc">Mayor precio</option><option value="discountDesc">Mayor descuento</option><option value="discountAsc">Menor descuento</option></select><small>Ordena los juegos cargados al instante. Cargar más amplía la lista.</small></div>
+            <div class="filter-field" id="consoleSourceField"><label for="consoleSource"><i class="fa-solid fa-store"></i> Tiendas</label><select id="consoleSource" data-ui-change="load-console-catalog"><option value="all">Oficiales y externas</option><option value="official">Sólo tiendas oficiales</option><option value="external">Sólo mercados externos</option></select><small>Siempre distinguimos la fuente de cada precio.</small></div>
+            <div class="filter-field hidden-el" id="androidFilters"><label for="androidType">Tipo de descarga</label><select id="androidType" data-ui-change="change-console-order"><option value="all">Juegos y aplicaciones</option><option value="game">Juegos</option><option value="app">Aplicaciones</option></select><label for="androidPrice">Precio de descarga</label><select id="androidPrice" data-ui-change="change-console-order"><option value="all">Cualquier precio</option><option value="free">Descarga gratis</option><option value="paid">De pago</option></select></div>
+            <div class="filter-field"><label for="consoleOrder"><i class="fa-solid fa-arrow-down-wide-short"></i> Ordenar resultados</label><select id="consoleOrder" data-ui-change="change-console-order"><option value="relevance">Relevancia</option><option value="rating">Mejores reseñas disponibles</option><option value="priceAsc">Menor precio</option><option value="priceDesc">Mayor precio</option><option value="discountDesc">Mayor descuento</option><option value="discountAsc">Menor descuento</option></select><small id="consoleOrderHint">Ordena los juegos cargados al instante. Cargar más amplía la lista.</small></div>
             <div class="filter-field"><label for="consoleDiscountMode"><i class="fa-solid fa-percent"></i> Descuento</label><select id="consoleDiscountMode" data-ui-change="apply-console-discount"><option value="any">Cualquier porcentaje</option><option value="exact">Un porcentaje exacto</option><option value="range">Un rango de porcentajes</option></select><div class="discount-values"><label id="consoleValueLabel">Porcentaje<input id="consoleDiscountValue" type="number" min="0" max="100" step="1" value="10" data-ui-change="apply-console-discount"></label><label id="consoleEndLabel">Hasta<input id="consoleDiscountEnd" type="number" min="0" max="100" step="1" value="50" data-ui-change="apply-console-discount"></label></div><p id="consoleDiscountLabel">Sin restricción de porcentaje.</p></div>
           </div>
           <details class="source-details"><summary>Fuentes consultadas y alcance de la búsqueda</summary><div id="consoleSources"></div><p id="consoleScope"></p></details>
+          <a class="android-store-search hidden-el" id="androidStoreSearch" target="_blank" rel="noopener noreferrer" href="https://play.google.com/store?hl=es">Ver en Google Play ↗</a>
         </section>
         <!-- Grid de Tarjetas -->
         <div id="gamesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
@@ -333,6 +347,11 @@
             <div><h2 id="catalogGuideTitle">Cómo comparamos precios</h2><p>Consulta qué significa cada precio, cómo distinguimos regiones y ediciones y qué puedes comprobar en el historial.</p></div>
             <a href="/como-comparamos">Leer la guía <span aria-hidden="true">→</span></a>
         </section>
+        <details id="recentDrops" class="price-insight">
+            <summary>Bajadas de precio observadas</summary>
+            <p id="recentDropsStatus" role="status">Precios que vimos bajar en las últimas 24 horas, por plataforma y región.</p>
+            <ul id="recentDropsItems"></ul>
+        </details>
     </main>
 
     <!-- 5. MODAL ANALÍTICO: DETECTOR DE MÍNIMO HISTÓRICO + COMPARADOR MULTITIENDA + ALERTAS (FASE 3) -->
@@ -538,22 +557,53 @@
                 </div>
             </div>
 
-            <div class="wish-discovery">
+            <div class="wish-view-tabs" aria-label="Vistas de favoritos">
+                <button type="button" id="wishListView" aria-pressed="true"><i class="fa-regular fa-heart" aria-hidden="true"></i> Favoritos</button>
+                <button type="button" id="wishPurchaseView" aria-pressed="false"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Lista de compra <span id="wishPurchaseCount" hidden></span></button>
+            </div>
+
+            <div class="wish-discovery" id="wishDiscovery">
               <details class="wish-review">
                 <summary>Qué cambió en tus favoritos <span id="wishChangeCount"></span></summary>
                 <div class="wish-stats">
-                  <span><strong id="wishLowerCount">0</strong> bajaron</span>
-                  <span><strong id="wishHigherCount">0</strong> subieron</span>
-                  <span><strong id="wishReachedCount">0</strong> metas alcanzadas*</span>
+                  <span class="wish-stat-lower"><i class="fa-solid fa-arrow-trend-down" aria-hidden="true"></i><strong id="wishLowerCount">0</strong> bajaron</span>
+                  <span class="wish-stat-higher"><i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i><strong id="wishHigherCount">0</strong> subieron</span>
+                  <span class="wish-stat-reached"><i class="fa-solid fa-bullseye" aria-hidden="true"></i><strong id="wishReachedCount">0</strong> metas alcanzadas*</span>
                 </div>
                 <p><span id="wishGoalsCount">0</span> juegos con meta. Mostramos la última variación detectada por juego.</p>
               </details>
               <label class="wish-search"><i class="fa-solid fa-magnifying-glass"></i><input id="wishSearch" type="search" placeholder="Buscar en tus favoritos" aria-label="Buscar en favoritos" data-ui-input="filter-wishlist"></label>
-              <div class="wish-selects"><select id="wishPlatform" aria-label="Plataforma de favoritos" data-ui-change="filter-wishlist"><option value="all">Todas las plataformas</option><option value="pc">PC</option><option value="xbox">Xbox</option><option value="ps">PlayStation</option><option value="switch">Nintendo Switch</option></select><select id="wishOrder" aria-label="Orden o filtro de favoritos" data-ui-change="filter-wishlist"><option value="recent">Más recientes</option><option value="title">Nombre A–Z</option><option value="changed">Solo cambios de precio</option><option value="goals">Con meta de precio</option><option value="reached">Meta alcanzada</option></select></div>
+              <div class="wish-selects"><select id="wishPlatform" aria-label="Plataforma de favoritos" data-ui-change="filter-wishlist"><option value="all">Todas las plataformas</option><option value="pc">PC</option><option value="xbox">Xbox</option><option value="ps">PlayStation</option><option value="switch">Nintendo Switch</option><option value="android">Android</option></select><select id="wishOrder" aria-label="Orden o filtro de favoritos" data-ui-change="filter-wishlist"><option value="recent">Más recientes</option><option value="title">Nombre A–Z</option><option value="changed">Solo cambios de precio</option><option value="goals">Con meta de precio</option><option value="reached">Meta alcanzada</option></select></div>
               <label class="wish-hide-owned"><input id="wishHideOwned" type="checkbox" data-ui-change="filter-wishlist"> Ocultar juegos que ya tengo</label>
             </div>
             <!-- Lista de juegos en Wishlist -->
             <div id="wishlistItemsContainer" class="p-4 overflow-y-auto flex-1 space-y-3"></div>
+
+            <section id="wishPurchasePanel" class="wish-purchase-panel" aria-label="Lista de compra" hidden>
+                <div class="wish-purchase-summary">
+                    <label for="wishPurchaseCurrency">Moneda del total</label>
+                    <select id="wishPurchaseCurrency"></select>
+                    <output id="wishPurchaseTotal" aria-live="polite">—</output>
+                    <progress id="wishPurchaseCoverage" aria-label="Juegos incluidos en el subtotal" hidden></progress>
+                    <p id="wishPurchaseStatus"></p>
+                </div>
+                <ul id="wishPurchaseItems"></ul>
+                <details class="wish-review wish-share">
+                    <summary>Compartir lista de compra</summary>
+                    <p>El enlace conserva los títulos, plataformas y ediciones de hasta 12 juegos del momento en que lo creas. Cualquiera con el enlace podrá verlos.</p>
+                    <button type="button" id="wishShareButton">Crear enlace</button>
+                    <input type="url" id="wishShareLink" aria-label="Enlace de la lista compartida" readonly hidden>
+                    <p id="wishShareStatus" role="status"></p>
+                </details>
+                <details class="wish-review wish-compare">
+                    <summary>Comparar dos juegos</summary>
+                    <div class="wish-selects">
+                        <label>Primer juego<select id="wishCompareFirst"></select></label>
+                        <label>Segundo juego<select id="wishCompareSecond"></select></label>
+                    </div>
+                    <div id="wishCompareResult" aria-live="polite"></div>
+                </details>
+            </section>
 
             <div class="p-4 border-t border-white/10 bg-[#090e19] flex flex-col gap-2">
                 <button type="button" data-ui-click="open-cloud-config-modal"
@@ -628,6 +678,8 @@
     <script src="assets/js/currency.js"></script>
     <script src="assets/js/console-wishlist.js"></script>
     <script src="assets/js/console-catalog.js"></script>
+    <script src="assets/js/price-report.js"></script>
+    <script src="assets/js/price-insights.js"></script>
     <script src="assets/js/console-comparison.js"></script>
     <script src="assets/js/navigation.js"></script>
     <script src="assets/js/filters.js"></script>
@@ -635,6 +687,8 @@
     <script src="assets/js/catalog.js"></script>
     <script src="assets/js/search.js"></script>
     <script src="assets/js/comparator.js"></script>
+    <script src="assets/js/shared-list.js"></script>
+    <script src="assets/js/wishlist-purchase.js"></script>
     <script src="assets/js/wishlist-cloud.js"></script>
     <script src="assets/js/responsive-layout.js"></script>
     <script src="assets/js/ui-events.js"></script>

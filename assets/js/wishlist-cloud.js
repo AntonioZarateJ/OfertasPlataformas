@@ -95,6 +95,15 @@
                 renderWishlistDrawerItems();
             });
             review.append(button);
+            if (!item.owned) {
+                const purchase = document.createElement('button');
+                purchase.type = 'button';
+                purchase.className = 'wish-plan-button';
+                purchase.textContent = item.planned ? 'En lista de compra' : 'Añadir a compra';
+                purchase.setAttribute('aria-pressed', String(Boolean(item.planned)));
+                purchase.addEventListener('click', () => toggleWishlistPurchase(item.gameID));
+                review.append(purchase);
+            }
             card.append(review);
         }
 
@@ -103,6 +112,7 @@
             const focusedKey = document.activeElement?.matches('.wish-owned-button') ?
                 document.activeElement.closest('[data-wish-key]').dataset.wishKey : null;
             const all = Object.values(userWishlist);
+            renderWishlistPurchase(all);
             const lower = all.filter(item => wishlistPriceDifference(item) < 0).length;
             const higher = all.filter(item => wishlistPriceDifference(item) > 0).length;
             document.getElementById('wishLowerCount').textContent = lower;
@@ -112,6 +122,7 @@
             document.getElementById('wishReachedCount').textContent = all.filter(wishlistGoalReached).length;
             document.getElementById('wishlistSyncStatusText').textContent = window.currentAccount ? 'Favoritos asociados a tu cuenta' : 'Guardados en este navegador';
             document.getElementById('wishAccountAction').textContent = window.currentAccount ? 'Ver mi perfil' : 'Iniciar sesión para guardar en mi cuenta';
+            if (container.hidden) return;
             const search = document.getElementById('wishSearch').value.trim().toLocaleLowerCase('es');
             const platform = document.getElementById('wishPlatform').value;
             const order = document.getElementById('wishOrder').value;

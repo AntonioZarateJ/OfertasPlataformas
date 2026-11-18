@@ -1,5 +1,57 @@
 const radarMexicoRotation = {
     "startsOn": "2026-11-15",
+    "original": {
+        "pc": {
+            "product": "206190",
+            "system": "",
+            "title": "Gunpoint",
+            "reason": "Lo elegimos para quien disfruta el sigilo en niveles cortos. Reconfigurar luces y puertas te deja preparar un plan y probar otra ruta si falla.",
+            "edition": "Juego base",
+            "image": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/206190/header.jpg",
+            "url": "https://store.steampowered.com/app/206190/Gunpoint/?cc=mx"
+        },
+        "xbox": {
+            "product": "9NKX70BBCDRN",
+            "search": "Forza Horizon 5",
+            "system": "Xbox One y Series X|S",
+            "title": "Forza Horizon 5",
+            "reason": "Una buena opción si alternas entre carreras y paseos libres. Lo elegimos por sus rutas inspiradas en México y la libertad de cambiar de actividad a mitad del recorrido.",
+            "edition": "Edición Estándar",
+            "image": "https://store-images.s-microsoft.com/image/apps.18975.13718773309227929.bebdcc0e-1ed5-4778-8732-f4ef65a2f445.125d6b3b-492f-4e5f-8037-7ade230c8224",
+            "url": "https://www.xbox.com/es-MX/games/store/forza-horizon-5-edicion-estandar/9NKX70BBCDRN"
+        },
+        "ps": {
+            "product": "UP9000-PPSA21564_00-0000000000000000",
+            "search": "ASTRO BOT",
+            "system": "PS5",
+            "title": "ASTRO BOT",
+            "reason": "Lo elegimos para partidas cortas de plataformas. Cada planeta cambia las herramientas que usas y el DualSense añade detalles al movimiento.",
+            "edition": "Edición Estándar",
+            "image": "https://image.api.playstation.com/vulcan/ap/rnd/202406/0500/80ecf657918558eeef8da3ee4cef326e4517d34e6c69d950.jpg",
+            "url": "https://store.playstation.com/es-mx/product/UP9000-PPSA21564_00-0000000000000000"
+        },
+        "switch": {
+            "product": "7100077279",
+            "search": "PICO PARK 2",
+            "system": "",
+            "title": "PICO PARK 2",
+            "reason": "Lo elegimos para jugar en grupo. Los puzles hacen que coordinar saltos, esperar a los demás y ponerse de acuerdo sea parte de la diversión.",
+            "edition": "Juego base",
+            "image": "https://assets.nintendo.com/image/fetch/q_auto/f_auto/https://atum-img-lp1.cdn.nintendo.net/i/c/a26b05a7d0ee4aaaacfeb0a95e269552_1024",
+            "url": "https://www.nintendo.com/es-mx/store/products/pico-park-2-switch/"
+        },
+        "android": {
+            "title": "Monument Valley",
+            "product": "com.ustwo.monumentvalley",
+            "search": "Monument Valley",
+            "store": "Google Play",
+            "image": "https://play-lh.googleusercontent.com/PSOC0jku9VwvqwGYQvYGmh9BcsCkc-raSp94t1CzOHi6v7MtC-CgqY0MJckRXX2uNCJ7S4p1eWs1d9uACuPfjw",
+            "url": "https://play.google.com/store/apps/details?id=com.ustwo.monumentvalley&hl=es&gl=MX",
+            "reason": "Gira edificios y conecta caminos imposibles. Sus puzles se prestan para jugar un par de niveles en ratos cortos.",
+            "system": "Android",
+            "edition": "Juego para Android"
+        }
+    },
     "rotation": [
         {
             "pc": {
@@ -39,6 +91,17 @@ const radarMexicoRotation = {
                 "image": "https://assets.nintendo.com/image/fetch/q_auto/f_auto/https://atum-img-lp1.cdn.nintendo.net/i/c/c646e132be2d4dc0aa969ac014cb2610_1024",
                 "system": "Nintendo Switch",
                 "edition": "Juego base"
+            },
+            "android": {
+                "title": "Geometry Dash",
+                "product": "com.robtopx.geometryjump",
+                "search": "Geometry Dash",
+                "store": "Google Play",
+                "image": "https://play-lh.googleusercontent.com/tF6siCn3bM7JmXqB_iLqZm17DCI-C2h5X8I_n1-bqmkMJrN1sm2ZDrj8IAqSFtQcF85QX1Puvhsi_vcnSmmzAOk",
+                "url": "https://play.google.com/store/apps/details?id=com.robtopx.geometryjump&hl=es&gl=MX",
+                "reason": "Aprende cada salto siguiendo la música. El modo de práctica ayuda a repetir los tramos que más cuestan.",
+                "system": "Android",
+                "edition": "Juego para Android"
             }
         },
         {
@@ -79,6 +142,17 @@ const radarMexicoRotation = {
                 "image": "https://assets.nintendo.com/image/fetch/q_auto/f_auto/https://atum-img-lp1.cdn.nintendo.net/i/c/a0cf87af83bf4161abd566c127327577_1024",
                 "system": "Nintendo Switch",
                 "edition": "Juego base"
+            },
+            "android": {
+                "title": "Stardew Valley",
+                "product": "com.chucklefish.stardewvalley",
+                "search": "Stardew Valley",
+                "store": "Google Play",
+                "image": "https://play-lh.googleusercontent.com/RwIUSwgsFOjwoKAdwCgpajGa6DrS44muStOLe_EIAA4mdzYMHR2N8fd4TbXYKSEVjD9bH63OPo5fFIrHqP_c_A",
+                "url": "https://play.google.com/store/apps/details?id=com.chucklefish.stardewvalley&hl=es&gl=MX",
+                "reason": "Un día de granja da para fijarte una meta pequeña en el móvil. Alterna cultivos, pesca y exploración.",
+                "system": "Android",
+                "edition": "Juego para Android"
             }
         },
         {
@@ -119,6 +193,17 @@ const radarMexicoRotation = {
                 "image": "https://assets.nintendo.com/image/fetch/q_auto/f_auto/https://atum-img-lp1.cdn.nintendo.net/i/c/6aa542e3ec7448dfa025df532a7ede58_1024",
                 "system": "Nintendo Switch",
                 "edition": "Juego base"
+            },
+            "android": {
+                "title": "Minecraft",
+                "product": "com.mojang.minecraftpe",
+                "search": "Minecraft",
+                "store": "Google Play",
+                "image": "https://play-lh.googleusercontent.com/tI4StRSPVhpGJH5R013naszLUawOjao1ya8FvyaNO7XY_cJFHFqo1EFaEJv_7zz3rRJ5lEpLiw14ZqQLCOYc",
+                "url": "https://play.google.com/store/apps/details?id=com.mojang.minecraftpe&hl=es&gl=MX",
+                "reason": "Empieza en creativo si tienes una construcción en mente, o en supervivencia si prefieres buscar primero tus recursos.",
+                "system": "Android",
+                "edition": "Juego para Android"
             }
         },
         {
@@ -159,6 +244,17 @@ const radarMexicoRotation = {
                 "image": "https://assets.nintendo.com/image/fetch/q_auto/f_auto/https://atum-img-lp1.cdn.nintendo.net/i/c/a6d7016ff0ac4627be2fe50a6ed97db5_1024",
                 "system": "Nintendo Switch",
                 "edition": "Juego base"
+            },
+            "android": {
+                "title": "Brawl Stars",
+                "product": "com.supercell.brawlstars",
+                "search": "Brawl Stars",
+                "store": "Google Play",
+                "image": "https://play-lh.googleusercontent.com/c0hXyphuxh-gpnhSJGZV1I0IpWbq9IdEc1pautS7SmHlXNBrCff7bMqK-u63pJdfP3KJoxamG7W1dRMKr7ZzWKs",
+                "url": "https://play.google.com/store/apps/details?id=com.supercell.brawlstars&hl=es&gl=MX",
+                "reason": "Sus partidas cortas permiten probar distintas estrategias en equipo. La descarga es gratuita y hay compras dentro del juego.",
+                "system": "Android",
+                "edition": "Juego para Android"
             }
         },
         {
@@ -199,6 +295,17 @@ const radarMexicoRotation = {
                 "image": "https://assets.nintendo.com/image/fetch/q_auto/f_auto/https://atum-img-lp1.cdn.nintendo.net/i/c/d1b8c834478f476f9ab7d74f30ae3588_1024",
                 "system": "Nintendo Switch",
                 "edition": "Juego base"
+            },
+            "android": {
+                "title": "VLC for Android",
+                "product": "org.videolan.vlc",
+                "search": "VLC for Android",
+                "store": "Google Play",
+                "image": "https://play-lh.googleusercontent.com/BG5YwziGHjh0wvWg6VO9c3iprYa3vFww1CnNqPvFszUVxcY4yB29dy7t2jsLwwI4jAqX08_--12FmMxgNG1JFg",
+                "url": "https://play.google.com/store/apps/details?id=org.videolan.vlc&hl=es&gl=MX",
+                "reason": "Abre vídeos y audio guardados en el teléfono. Es práctico si llevas una biblioteca de archivos propios.",
+                "system": "Android",
+                "edition": "Aplicación para Android"
             }
         },
         {
@@ -239,7 +346,20 @@ const radarMexicoRotation = {
                 "image": "https://assets.nintendo.com/image/fetch/q_auto/f_auto/https://atum-img-lp1.cdn.nintendo.net/i/c/517172da1a5c4996966c79e16009bb13_1024",
                 "system": "Nintendo Switch",
                 "edition": "Juego base"
+            },
+            "android": {
+                "title": "Adobe Lightroom",
+                "product": "com.adobe.lrmobile",
+                "search": "Adobe Lightroom",
+                "store": "Google Play",
+                "image": "https://play-lh.googleusercontent.com/ALv_YzwUQTXc17qvu2oy7JTl8Qn-zm22M4FoZKVv2Ru541nDa2EltKPSlv_KyQGacLdpHLotR9Z98bamyEd9rKc",
+                "url": "https://play.google.com/store/apps/details?id=com.adobe.lrmobile&hl=es&gl=MX",
+                "reason": "Ajusta luz y color desde el móvil. Consulta en Google Play qué funciones forman parte del plan de pago.",
+                "system": "Android",
+                "edition": "Aplicación para Android"
             }
         }
     ]
 };
+
+if (typeof module !== "undefined") module.exports = radarMexicoRotation;

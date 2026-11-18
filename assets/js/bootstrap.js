@@ -4,7 +4,11 @@
             updateDrawerLabels();
             updateWishlistCountersUI();
             updateExchangeBadge();
-            selectSmartChip('top');
+            const params = new URLSearchParams(location.search);
+            const query = shareText(params.get('buscar'), 100);
+            const platform = params.get('plataforma');
+            if (query && Object.hasOwn(sharedPlatforms, platform)) selectEcosystem(platform, query);
+            else selectSmartChip('top');
             // El catálogo no espera a servicios auxiliares.
             void loadExchangeRates();
             void loadStoresCatalog();
@@ -25,6 +29,7 @@
             updateExchangeBadge();
             updateDrawerLabels();
             updateAllPricesOnScreen();
+            if (!document.getElementById('wishlistDrawerModal').classList.contains('hidden-el')) renderWishlistPurchase();
         }
 
         async function loadStoresCatalog() {

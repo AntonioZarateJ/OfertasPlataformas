@@ -8,9 +8,10 @@ const parameters = {
     '/api/stores': [], '/api/exchange-rates': [], '/api/giveaways': [], '/api/auth-config': [],
     '/api/steam-prices': ['appids', 'region'],
     '/api/pc-editions': ['appid', 'region'],
+    '/api/recent-drops': ['platform', 'region'],
     '/api/deals-position': ['discount', 'desc', 'storeID', 'title', 'onSale', 'steamRating', 'AAA'],
     '/api/console-catalog': ['platform', 'region', 'q', 'sort', 'source', 'deals', 'cursor', 'discountMin', 'discountMax'],
-    '/api/console-comparison': ['platform', 'region', 'title', 'id', 'store']
+    '/api/console-comparison': ['platform', 'region', 'title', 'id', 'store', 'source']
 };
 function validInteger(value, min, max) {
     return /^(0|[1-9]\d*)$/.test(value) && Number.isSafeInteger(Number(value)) && Number(value) >= min && Number(value) <= max;

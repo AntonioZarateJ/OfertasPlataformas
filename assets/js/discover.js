@@ -1,4 +1,18 @@
 const collectionBudget = Number(document.querySelector('main').dataset.budget);
+const modeFilter = document.getElementById('discoverModeTools');
+if (modeFilter) {
+    modeFilter.hidden = false;
+    modeFilter.addEventListener('click', event => {
+        const chosen = event.target.closest('[data-play-filter]');
+        if (!chosen) return;
+        for (const button of modeFilter.querySelectorAll('[data-play-filter]')) button.setAttribute('aria-pressed', String(button === chosen));
+        const filter = chosen.dataset.playFilter;
+        const cards = [...document.querySelectorAll('[data-play-modes]')];
+        for (const card of cards) card.hidden = Boolean(filter) && !card.dataset.playModes.split(' ').includes(filter);
+        const shown = cards.filter(card => !card.hidden).length;
+        document.getElementById('discoverModeStatus').textContent = shown ? `${shown} de ${cards.length} juegos de la colección.` : 'Sin coincidencias en esta colección.';
+    });
+}
 
 for (const quoteBox of document.querySelectorAll('.discover-quote')) {
     const price = quoteBox.querySelector('[data-quote-price]');
@@ -11,6 +25,12 @@ for (const quoteBox of document.querySelectorAll('.discover-quote')) {
             return;
         }
         price.textContent = quote.price === 0 ? 'Gratis' : formatMxQuote(quote.price);
+        const report = document.querySelector('[data-discover-report]');
+        if (report) {
+            const url = new URL(report.href);
+            url.searchParams.set('price', price.textContent);
+            report.href = url.href;
+        }
         const fits = quote.price <= collectionBudget;
         quoteBox.dataset.status = fits ? 'within' : 'over';
         status.textContent = fits ? 'Dentro del presupuesto' : 'Supera el presupuesto';

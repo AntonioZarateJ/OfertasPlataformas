@@ -1,7 +1,7 @@
 const allowedHosts = new Set([
     'www.cheapshark.com', 'store.steampowered.com', 'open.er-api.com', 'www.gamerpower.com',
     'emerald.xboxservices.com', 'web.np.playstation.com', 'store.playstation.com',
-    'www.nintendo.com', 'www.eneba.com', 'u3b6gr4ua3-dsn.algolia.net', 'ihjzq5lw2r-dsn.algolia.net'
+    'www.nintendo.com', 'www.eneba.com', 'u3b6gr4ua3-dsn.algolia.net', 'ihjzq5lw2r-dsn.algolia.net', 'play.google.com'
 ]);
 function allowedURL(input) {
     const url = new URL(input);

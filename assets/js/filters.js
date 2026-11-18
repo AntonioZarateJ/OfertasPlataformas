@@ -25,6 +25,7 @@ function updateDiscountControls(prefix) {
 function updateScopeNote() {
     const offers=queryConfig.onSale==='1';
     document.getElementById('catalogScopeNote').textContent=offers?'Solo ofertas: juegos con descuento. Ajusta el porcentaje si quieres afinar los resultados.':'Catálogo completo: incluye juegos con y sin descuento. Los demás filtros se siguen aplicando.';
+    if (activeEcosystem === 'android') document.getElementById('catalogScopeNote').textContent = offers ? 'Rebajas verificadas en Google Play web. Las promociones de la app pueden variar.' : 'Precios públicos de descarga en Google Play web.';
     const filter=activeEcosystem==='pc'?queryConfig.discountFilter:getDiscountSettings('console');
     if(filter&&filter.mode!=='any')document.getElementById('catalogScopeNote').textContent+=' · '+discountDescription(filter)+'.';
     if(activeChip==='free')document.getElementById('catalogScopeNote').textContent='Gratis: promociones y directorios para reclamar juegos sin costo.';
@@ -59,8 +60,13 @@ function resetFineTuneFilters(){
 }
 function applyConsoleDiscount(){
     const filter=updateDiscountControls('console');if(!filter.valid)return;
+    if(activeEcosystem==='android' && consoleResult) {
+        updateScopeNote();
+        renderConsoleCatalog();
+        return;
+    }
     currentSearchQuery=expandGameAlias(predictiveSearchInput.value.trim());
     void loadConsoleCatalog();
 }
-function resetConsoleFilters(){document.getElementById('consoleSource').value='all';document.getElementById('consoleOrder').value='relevance';document.getElementById('consoleDiscountMode').value='any';document.getElementById('consoleDiscountValue').value=10;document.getElementById('consoleDiscountEnd').value=50;applyConsoleDiscount();}
+function resetConsoleFilters(){if(activeEcosystem==='android'){document.getElementById('androidType').value='all';document.getElementById('androidPrice').value='all';}document.getElementById('consoleSource').value='all';document.getElementById('consoleOrder').value='relevance';document.getElementById('consoleDiscountMode').value='any';document.getElementById('consoleDiscountValue').value=10;document.getElementById('consoleDiscountEnd').value=50;applyConsoleDiscount();}
 updateDiscountControls('console');

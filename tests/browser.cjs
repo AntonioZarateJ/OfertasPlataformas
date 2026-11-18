@@ -3,6 +3,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
+const {renderNewsPage} = require('../news.cjs');
 
 const root = path.resolve(__dirname, '..');
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -13,6 +14,11 @@ const game = (id = 1, title = `Juego ${id}`) => ({
 });
 const server = http.createServer((req, res) => {
     const name = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
+    if (name === '/lista-compartida') {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.end(renderNewsPage(name));
+        return;
+    }
     const file = path.resolve(root, '.' + (name === '/' ? '/index.html' : name));
     if (!file.startsWith(root + path.sep)) { res.writeHead(403).end(); return; }
     fs.readFile(file, (error, data) => {
@@ -298,6 +304,68 @@ const server = http.createServer((req, res) => {
             await expect(pc.locator('.wish-owned-button')).toHaveAttribute('aria-pressed','false');
             await expect(page.locator('#wishReachedCount')).toHaveText('1');
         });
+        await test('Lista de compra conserva la selección y calcula cada subtotal en una moneda', async () => {
+            await page.setViewportSize({width:390,height:844});
+            await page.evaluate(() => {
+                Object.assign(userWishlist.switch, {region:'US', currency:'USD', price:25, salePrice:'25'});
+                exchangeRates.MXN = 20;
+                persistWishlistState({sync:false});
+                renderWishlistDrawerItems();
+            });
+            for (const gameID of ['900', 'xbox', 'ps', 'switch']) {
+                await page.locator(`[data-wish-key="${gameID}"] .wish-plan-button`).click();
+            }
+            await page.locator('#wishPurchaseView').click();
+            await page.getByLabel('Moneda del total').selectOption('MXN');
+            await expect(page.locator('#wishPurchaseItems li')).toHaveCount(4);
+            await expect(page.locator('#wishPurchaseTotal')).toHaveText('$970.00 MXN');
+            await expect(page.locator('#wishPurchaseStatus')).toContainText('Subtotal de 3 de 4 juegos estimado');
+            await expect(page.locator('#wishPurchaseItems')).toContainText('Fuera del total');
+            await page.getByText('Comparar dos juegos', {exact:true}).click();
+            await page.getByLabel('Primer juego').selectOption('xbox');
+            await page.getByLabel('Segundo juego').selectOption('ps');
+            await expect(page.locator('#wishCompareResult')).toContainText('Diferencia de precio: $270.00 MXN');
+            await page.getByLabel('Segundo juego').selectOption('xbox');
+            await expect(page.locator('#wishCompareResult')).toContainText('Elige dos juegos distintos');
+            await page.getByLabel('Segundo juego').selectOption('switch');
+            await expect(page.locator('#wishCompareResult')).toContainText('monedas diferentes');
+            await page.getByLabel('Moneda del total').selectOption('USD');
+            await expect(page.locator('#wishPurchaseTotal')).toHaveText('$32.00 USD');
+            assert.equal(await page.evaluate(() => document.querySelector('#wishPurchasePanel').scrollWidth > document.querySelector('#wishPurchasePanel').clientWidth), false);
+            await page.setViewportSize({width:1440,height:1000});
+            await page.reload();
+            await page.locator('#wishlistButton').click();
+            await page.locator('#wishPurchaseView').click();
+            await expect(page.locator('#wishPurchaseItems li')).toHaveCount(4);
+            await page.getByText('Compartir lista de compra', {exact:true}).click();
+            await page.locator('#wishShareButton').click();
+            const shareLink = await page.locator('#wishShareLink').inputValue();
+            const payload = JSON.parse(Buffer.from(new URL(shareLink).hash.slice(7), 'base64url').toString('utf8'));
+            assert.equal(payload.length, 4);
+            assert(payload.every(item => Object.keys(item).sort().join(',') === 'edition,platform,title'));
+            const recipient = await browser.newPage({viewport:{width:390,height:844}});
+            try {
+                await recipient.goto(shareLink);
+                await expect(recipient.locator('#sharedItems li')).toHaveCount(4);
+                await expect(recipient.locator('#sharedItems')).toContainText('Revisión Xbox');
+                const searchLink = await recipient.locator('#sharedItems li').filter({hasText:'Revisión Xbox'}).getByRole('link').getAttribute('href');
+                assert.equal(new URL(searchLink, url).searchParams.get('plataforma'), 'xbox');
+                await recipient.route('**/api/**', route => {
+                    const request = new URL(route.request().url());
+                    return route.fulfill({json:request.pathname === '/api/console-catalog' ?
+                        {platform:'xbox',region:'MX',items:[],sources:[],scope:'Prueba'} : []});
+                });
+                const searchRequest = recipient.waitForRequest(request => new URL(request.url()).searchParams.get('q') === 'Revisión Xbox');
+                await recipient.locator('#sharedItems li').filter({hasText:'Revisión Xbox'}).getByRole('link').click();
+                await searchRequest;
+                await expect(recipient.locator('#predictiveSearchInput')).toHaveValue('Revisión Xbox');
+                await recipient.goto(url + '/lista-compartida#lista=incompleta');
+                await expect(recipient.locator('#sharedItems li')).toHaveCount(0);
+                await expect(recipient.locator('#sharedStatus')).toContainText('vacío o incompleto');
+            } finally { await recipient.close(); }
+            await page.getByRole('button', {name:'Quitar Revisión Xbox de la lista de compra'}).click();
+            await expect(page.locator('#wishPurchaseItems li')).toHaveCount(3);
+        });
         await test('Seleccionar tienda consulta y pagina ese catálogo y conserva el filtro al buscar', async () => {
             await reset();
             const before = calls.length;
@@ -318,7 +386,7 @@ const server = http.createServer((req, res) => {
         await test('Juegos gratis y cambio de plataforma funcionan sin romper la navegación', async () => {
             await page.locator('[data-chip="free"]').click();
             await expect(page.locator('#gamesGrid .free-card')).toHaveCount(4);
-            await expect(page.locator('[data-ecosystem]')).toHaveCount(4);
+            await expect(page.locator('[data-ecosystem]')).toHaveCount(5);
             await page.locator('[data-chip="top"]').click();
             await expect(cards).toHaveCount(60);
             await expect(cards.first().locator('a')).toHaveAttribute('href', /cheapshark.*redirect/);

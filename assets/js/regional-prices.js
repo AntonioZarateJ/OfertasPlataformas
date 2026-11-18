@@ -12,6 +12,7 @@ function updateLocaleFlags() {
 updateLocaleFlags();
 document.getElementById('regionSelect').addEventListener('change', e => {
     currentRegion = e.target.value;
+    void refreshRecentDrops();
     try { localStorage.setItem('purchaseRegion', currentRegion); } catch {}
     regionalPrices.clear();
     responseCache.clear();

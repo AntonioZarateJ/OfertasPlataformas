@@ -1,6 +1,8 @@
 function expandGameAlias(query) {
     const aliases = { 'gta v':'Grand Theft Auto V', 'gta 5':'Grand Theft Auto V', 'gta iv':'Grand Theft Auto IV', 'rdr2':'Red Dead Redemption 2', 'rdr 2':'Red Dead Redemption 2', 'cs2':'Counter-Strike 2', 'gow':'God of War', 'tlou':'The Last of Us', 're4':'Resident Evil 4' };
-    return aliases[query.trim().toLowerCase().replace(/\s+/g,' ')] || query.trim();
+    const text = query.trim();
+    const key = text.toLowerCase().replace(/\s+/g,' ');
+    return Object.hasOwn(aliases, key) ? aliases[key] : text;
 }
 let searchTimer = null;
 let searchController = null;
@@ -58,7 +60,7 @@ predictiveSearchInput.addEventListener('keydown',event=>{
 clearSearchBtn.addEventListener('click',()=>{
     cancelSuggestions();predictiveSearchInput.value='';currentSearchQuery='';
     clearSearchBtn.classList.add('hidden-el');
-    if(activeChip==='search')selectSmartChip('top');
+    if(activeChip==='search')selectSmartChip(activeEcosystem==='android'?'all':'top');
 });
 document.addEventListener('click',event=>{
     if(!searchDropdown.contains(event.target)&&event.target!==predictiveSearchInput)cancelSuggestions();
@@ -67,7 +69,7 @@ async function fetchLiveSuggestions(query) {
     const generation=searchGeneration,platform=activeEcosystem,region=currentRegion;
     searchController?.abort();const controller=new AbortController();searchController=controller;
     const current=()=>!controller.signal.aborted&&generation===searchGeneration&&platform===activeEcosystem&&region===currentRegion&&predictiveSearchInput.value.trim()===query;
-    suggestionsMessage('Buscando juegos y ediciones…');
+    suggestionsMessage(platform==='android'?'Buscando en Google Play…':'Buscando juegos y ediciones…');
     try {
         let list,partial=false,more=false;
         if(platform==='pc'){
@@ -79,7 +81,7 @@ async function fetchLiveSuggestions(query) {
             const params=new URLSearchParams({platform,region,q:expandGameAlias(query),source:'all',sort:'relevance',deals:'0',cursor:'{}'});
             const data=await requestJSON('/api/console-catalog?'+params,{signal:controller.signal,timeout:16000});
             if(data.platform!==platform||data.region!==region||!Array.isArray(data.items))throw Error('Respuesta de búsqueda inválida');
-            partial=data.sources?.some(source=>source.status==='unavailable')||false;more=!!data.next;
+            partial=!!data.partial||data.sources?.some(source=>source.status==='unavailable')||false;more=!!data.next;
             const seen=new Set();
             list=data.items.filter(item=>{
                 const key=item.store+':'+item.id;
@@ -91,7 +93,7 @@ async function fetchLiveSuggestions(query) {
         searchDropdownContent.replaceChildren();suggestionActions=[];selectedSuggestion=-1;
         if(!list.length){
             const status=document.createElement('p');status.className='suggestion-status';
-            status.textContent=partial?'La consulta está incompleta. Abre los resultados para reintentar.':more?'Hay más páginas por consultar. Abre los resultados para continuar.':'No hay coincidencias en esta consulta. Puedes abrir los resultados completos.';
+            status.textContent=partial?'La consulta está incompleta. Abre los resultados para reintentar.':more?'Hay más resultados por consultar. Abre el catálogo para continuar.':platform==='android'?'Sin coincidencias en los resultados consultados. Abre el catálogo para buscar en Google Play.':'No hay coincidencias en esta consulta. Puedes abrir los resultados completos.';
             searchDropdownContent.append(status);
         }
         for(const item of list){
@@ -114,7 +116,12 @@ async function fetchLiveSuggestions(query) {
     }
 }
 function handleSearchSubmit(event) {
-    event.preventDefault();const query=predictiveSearchInput.value.trim();if(!query)return;
+    event.preventDefault();
+    searchCatalog(predictiveSearchInput.value.trim());
+}
+
+function searchCatalog(query) {
+    if(!query)return;
     cancelSuggestions();activeChip='search';currentSearchQuery=expandGameAlias(query);
     if(activeEcosystem!=='pc'){
         queryConfig.onSale='0';updateScopeNote();sortContainer.classList.add('hidden-el');void loadConsoleCatalog();return;

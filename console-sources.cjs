@@ -72,7 +72,8 @@ function enebaData(data,platform,region){return Object.values(data).flatMap(p=>{
  const a=data[p.cheapestAuction?.__ref];if(!a?.isInStock||!a.isAddableToCart)return [];
  const q=a[`price({"currency":"${currencies[region]}"})`];if(!q||!Number.isFinite(q.amount))return [];
  const regular=a[`msrp({"currency":"${currencies[region]}"})`];
- return [{id:p.slug,title:p.name,price:q.amount/100,regular:regular?.amount/100||null,currency:q.currency,discount:regular?.amount>q.amount?Math.round((1-q.amount/regular.amount)*100):0,image:p['cover({"width":300})']?.src,url:'https://www.eneba.com/'+p.slug,edition:drm+' · '+p.regions.map(r=>r.name).join(', '),store:'Eneba',kind:'external',seller:a.merchant?.displayname}];
+ const activation={service:drm,regions:p.regions.map(r=>r.name).filter(name=>typeof name==='string').slice(0,12)};
+ return [{id:p.slug,title:p.name,price:q.amount/100,regular:regular?.amount/100||null,currency:q.currency,discount:regular?.amount>q.amount?Math.round((1-q.amount/regular.amount)*100):0,image:p['cover({"width":300})']?.src,url:'https://www.eneba.com/'+p.slug,edition:drm+' · '+activation.regions.join(', '),store:'Eneba',kind:'external',seller:a.merchant?.displayname,activation}];
 });}
 async function consoleCatalog(...args){ return require('./console-paged.cjs').catalog(...args); }
 module.exports={consoleCatalog,xboxData,nintendoData,nintendoSearchItems,playstationData,enebaData,embedded};

@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const {chromium, expect} = require('@playwright/test');
 const {createServer} = require('../server.cjs');
+const {renderNewsPage} = require('../news.cjs');
 
 test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizadas', async () => {
     const server = createServer();
@@ -25,7 +26,11 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         };
         await page.route('**/*', async route => {
             const u = new URL(route.request().url());
-            if(u.origin !== root)return route.fulfill({body:'',contentType:'text/css'});
+            if(u.origin !== root) {
+                if (route.request().resourceType() === 'image') return route.fulfill({contentType:'image/svg+xml',
+                    body:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2"><path fill="teal" d="M0 0h2v2H0z"/></svg>'});
+                return route.fulfill({body:'',contentType:'text/css'});
+            }
             if(!u.pathname.startsWith('/api/'))return route.continue();
             let data = {};
             if(u.pathname === '/api/stores')data = [{storeID:'1',storeName:'Steam'}];
@@ -40,7 +45,11 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
                         206190: {success:true, data:{price_overview:{currency:'MXN', final:2199, initial:10995, discount_percent:80}}}
                     };
                 }
+                if (u.searchParams.get('appids') === '620') {
+                    data = {620:{success:true,data:{price_overview:{currency:'MXN',final:2400,initial:12000,discount_percent:80}}}};
+                }
             }
+            if (u.pathname === '/api/pc-editions') data = {editions:[{id:'bundle:42',title:'Paquete de Portal',store:'Steam',kind:'official',currency:'MXN',price:59,url:'https://store.steampowered.com/bundle/42/'}]};
             if(u.pathname === '/api/deals'){
                 pcRequests++;
                 const offset = Number(u.searchParams.get('pageNumber')) || 0;
@@ -164,12 +173,12 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         await page.setViewportSize({width:390,height:844});
         await page.clock.setFixedTime(new Date('2026-11-16T05:59:59Z'));
         const discovery = page.getByRole('navigation', {name:'Descubre juegos'});
-        await expect(discovery.getByRole('link')).toHaveCount(2);
+        await expect(discovery.getByRole('link')).toHaveCount(3);
         await expect(page.locator('.mobile-catalog-info a')).toHaveCount(0);
-        assert.equal(await discovery.evaluate(nav => getComputedStyle(nav).gridTemplateColumns.split(' ').length), 2);
+        assert.equal(await discovery.evaluate(nav => getComputedStyle(nav).gridTemplateColumns.split(' ').length), 3);
         await discovery.getByRole('link', {name:/Radar de México/}).click();
         await expect(page.getByRole('heading', {name:'Radar de México'})).toBeVisible();
-        await expect(page.locator('.pick-platform strong')).toHaveText(['PC', 'Xbox', 'PlayStation', 'Nintendo Switch']);
+        await expect(page.locator('.pick-platform strong')).toHaveText(['PC', 'Xbox', 'PlayStation', 'Nintendo Switch', 'Android']);
         await expect(page.locator('[data-platform="pc"] .pick-price')).toContainText('−80%');
         await expect(page.locator('[data-platform="xbox"] .pick-price')).toContainText('$639.60 MXN');
         await expect(page.locator('[data-platform="xbox"] .pick-price')).toContainText('−60%');
@@ -183,11 +192,13 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
 
         await page.clock.setFixedTime(new Date('2026-11-16T06:00:00Z'));
         await page.reload();
-        await expect(page.locator('.edition-pick h2')).toHaveText(['Portal 2', 'Rocket League®', 'God of War Ragnarök', 'Mario Kart™ 8 Deluxe']);
+        await expect(page.locator('.edition-pick h2')).toHaveText(['Portal 2', 'Rocket League®', 'God of War Ragnarök', 'Mario Kart™ 8 Deluxe', 'Geometry Dash']);
         await expect(page.locator('.pick-reason').first()).toContainText('los niveles cooperativos');
         await expect(page.locator('#edition-date')).toContainText('16 de noviembre');
         await expect(page.locator('#edition-history-empty')).toBeVisible();
         await expect(page.locator('.edition-history details')).toHaveCount(0);
+        await page.locator('.edition-pick[data-platform="pc"] .pick-options summary').click();
+        await expect(page.locator('.edition-pick[data-platform="pc"] .pick-package-list')).toContainText('Paquete de Portal · $59.00 MXN');
 
         await page.clock.setFixedTime(new Date('2026-11-22T06:00:00Z'));
         await page.reload();
@@ -196,6 +207,9 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         await expect(page.locator('.edition-history summary').last()).toContainText('16 de noviembre');
         await page.locator('.edition-history summary').last().click();
         await expect(page.locator('.edition-history').getByRole('link', {name:'Portal 2'})).toBeVisible();
+        await expect(page.locator('.edition-history details[open] img')).toHaveCount(5);
+        await expect(page.locator('.edition-history details[open] li[data-platform="pc"] .pick-history-price')).toContainText('$24.00 MXN');
+        await expect(page.locator('.edition-history details[open] li[data-platform="pc"] .pick-deal')).toHaveText('−80%');
         await page.emulateMedia({reducedMotion:'no-preference'});
         assert.equal(await page.locator('.edition-pick').first().evaluate(card => getComputedStyle(card, '::after').animationIterationCount), 'infinite');
         await page.getByRole('button', {name:'Pausar animación de los bordes'}).click();
@@ -226,15 +240,69 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         await page.goto(root);
         await discovery.getByRole('link', {name:/Colección de juegos/}).click();
         await expect(page.getByRole('heading', {name:'Juegos hasta $300 MXN'})).toBeVisible();
-        await expect(page.locator('.discover-card')).toHaveCount(4);
+        await expect(page.locator('.discover-card')).toHaveCount(5);
         await expect(page.locator('.discover-quote[data-platform="pc"]')).toContainText('Dentro del presupuesto');
         await expect(page.locator('.discover-quote[data-platform="xbox"]')).toContainText('Supera el presupuesto');
         await expect(page.locator('.discover-quote[data-platform="ps"]')).toContainText('Gratis');
         await expect(page.locator('.discover-quote[data-platform="switch"]')).toContainText('Presupuesto por confirmar');
+        const playModes = page.getByRole('group', {name:'Forma de jugar'});
+        await playModes.getByRole('button', {name:'Cooperativo'}).click();
+        await expect(page.locator('.discover-card:visible h2')).toHaveText(['Rocket League','Stardew Valley']);
+        await playModes.getByRole('button', {name:'En línea'}).click();
+        await expect(page.locator('.discover-card:visible h2')).toHaveText(['Rocket League','Apex Legends','Stardew Valley']);
+        await playModes.getByRole('button', {name:'Un jugador'}).click();
+        await expect(page.locator('.discover-card:visible h2')).toHaveText(['Gunpoint','Stardew Valley','Monument Valley']);
         await page.getByRole('link', {name:'Ver ficha de Stardew Valley'}).click();
         await expect(page.getByRole('heading', {name:'Stardew Valley'})).toBeVisible();
         await page.getByRole('button', {name:'Copiar enlace'}).click();
         await expect(page.getByRole('textbox', {name:'Enlace público de la ficha'})).toHaveValue('https://salesplataforms.onrender.com/descubre/stardew-valley');
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        assert.deepEqual(errors, []);
+
+        await page.getByRole('link', {name:'Reportar precio'}).click();
+        await expect(page.getByRole('heading', {name:'Reportar un precio'})).toBeVisible();
+        await expect(page.locator('[data-report-label="Juego"]')).toHaveText('Stardew Valley');
+        await expect(page.locator('[data-report-label="Plataforma"]')).toHaveText('Nintendo Switch');
+        await expect(page.locator('[data-report-label="Edición"]')).toHaveText('Juego base');
+        await expect(page.locator('[data-report-label="Región"]')).toHaveText('México');
+        await page.evaluate(() => document.addEventListener('click', event => {
+            if (event.target.closest('a[href^="mailto:"]')) event.preventDefault();
+        }, true));
+        await page.getByLabel('¿Qué precio aparece en la tienda?').fill('$199 MXN');
+        await page.getByRole('button', {name:'Preparar correo'}).click();
+        const draft = await page.getByRole('link', {name:'Abrir borrador de correo'}).getAttribute('href');
+        assert.match(decodeURIComponent(draft), /Precio visto en la tienda: \$199 MXN/);
+        assert.match(decodeURIComponent(draft), /Tienda: Nintendo eShop/);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+
+        await page.route('**/api/giveaways', async route => {
+            const gift = {type:'Game',title:'Regalo disponible',end_date:'2026-11-24 12:00:00',open_giveaway_url:'https://store.epicgames.com/es-MX/p/example'};
+            await route.fulfill({json:[gift, {...gift,title:'Vencido',end_date:'2026-11-20'},
+                {...gift,title:'Sin fecha',end_date:'N/A'}, {...gift,title:'Sin tienda oficial',open_giveaway_url:'https://example.com/game'}]});
+        });
+        await page.route('**/novedades',route=>route.fulfill({contentType:'text/html',body:renderNewsPage('/novedades',new Date('2026-11-23T18:00:00Z'))}));
+        await page.goto(root);
+        await discovery.getByRole('link', {name:/Novedades/}).click();
+        await expect(page.getByRole('heading', {name:'Novedades de RadarPlay'})).toBeVisible();
+        await expect(page.locator('.news-featured img')).toHaveCount(5);
+        await expect(page.getByRole('link',{name:'Abrir RSS'})).toHaveCount(0);
+        await expect(page.locator('#calendario')).toBeHidden();
+        await page.getByRole('link', {name:'Calendario',exact:true}).click();
+        await expect(page.locator('#newsGifts li')).toHaveCount(1);
+        await expect(page.locator('#newsGifts')).toContainText('Regalo disponible');
+        await expect(page.locator('#newsMonthTitle')).toHaveText('noviembre de 2026');
+        await page.getByRole('button',{name:'Mes siguiente'}).click();
+        await expect(page.locator('#newsMonthTitle')).toHaveText('diciembre de 2026');
+        await page.getByRole('button',{name:/, 9 de diciembre de 2026/}).click();
+        await expect(page.locator('#newsDayEvents')).toContainText('Dispatch');
+        await expect(page.locator('#newsDayEvents img').first()).toBeVisible();
+        await page.locator('#newsCalendarPlatform').selectOption('android');
+        await expect(page.locator('#newsDayEvents .news-event')).toHaveCount(1);
+        await page.getByRole('link', {name:'Suscripciones',exact:true}).click();
+        await page.locator('#newsSubscriptionFilter').selectOption('switch');
+        await expect(page.locator('[data-subscription]:visible')).toHaveCount(1);
+        await expect(page.locator('[data-subscription]:visible')).toContainText('Nintendo Switch Online');
+        await expect(page.locator('[data-subscription]:visible')).toContainText('$1,029.00');
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
         assert.deepEqual(errors, []);
     } finally { await browser.close();await new Promise(resolve=>server.close(resolve)); }

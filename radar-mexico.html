@@ -4,12 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="google-adsense-account" content="ca-pub-3694361139232800">
-    <meta name="description" content="Cuatro recomendaciones de RadarPlay para México. Encuentra una para PC, Xbox, PlayStation y Nintendo Switch, con precios de tiendas oficiales en MXN.">
+    <meta name="description" content="Recomendaciones de RadarPlay para México en PC, Xbox, PlayStation, Nintendo Switch y Android, con precios de tiendas oficiales en MXN.">
     <title>Radar de México · RadarPlay</title>
     <link rel="icon" href="/assets/brand/radarplay.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/legal.css">
     <link rel="stylesheet" href="/assets/css/radar-mexico.css">
     <script src="/assets/js/radar-mexico-rotation.js" defer></script>
+    <script src="/assets/js/radar-calendar.js" defer></script>
     <script src="/assets/js/official-mx-quote.js" defer></script>
     <script src="/assets/js/radar-mexico.js" defer></script>
 </head>
@@ -22,7 +23,7 @@
         <div class="edition-intro">
             <p class="edition-region"><img src="/assets/flags/MX.svg" width="24" height="18" alt=""> Selección para México</p>
             <h1>Radar de México</h1>
-            <p>Descubre una recomendación diaria para PC, Xbox, PlayStation y Nintendo Switch. Elegimos juegos para distintos gustos y te contamos qué los hace interesantes. Los precios de las tiendas oficiales se consultan en pesos mexicanos.</p>
+            <p>Descubre una recomendación diaria para PC, Xbox, PlayStation, Nintendo Switch y Android. Consulta los precios de las tiendas oficiales en pesos mexicanos.</p>
             <p class="edition-date" id="edition-date" hidden></p>
             <p id="edition-price-status" class="edition-price-status" role="status">Consulta el precio de cada recomendación desde su enlace a la tienda.</p>
         </div>
@@ -72,16 +73,28 @@
                     <a class="pick-link" href="https://www.nintendo.com/es-mx/store/products/pico-park-2-switch/">Ver en Nintendo eShop <span aria-hidden="true">↗</span></a>
                 </div>
             </article>
+            <article class="edition-pick" data-platform="android" data-product="com.ustwo.monumentvalley" data-store="Google Play" data-search="Monument Valley">
+                <img class="pick-cover" src="https://play-lh.googleusercontent.com/PSOC0jku9VwvqwGYQvYGmh9BcsCkc-raSp94t1CzOHi6v7MtC-CgqY0MJckRXX2uNCJ7S4p1eWs1d9uACuPfjw" width="460" height="215" alt="" decoding="async">
+                <div class="pick-body">
+                    <p class="pick-platform"><strong>Android</strong> <span>Google Play</span></p>
+                    <h2>Monument Valley</h2>
+                    <p class="pick-reason">Gira edificios y conecta caminos imposibles. Sus puzles se prestan para jugar un par de niveles en ratos cortos.</p>
+                    <p class="pick-edition">Juego para Android</p>
+                    <div class="pick-price" aria-label="Precio de esta edición"><strong>Consulta el precio en la tienda</strong><span hidden></span></div>
+                    <a class="pick-link" href="https://play.google.com/store/apps/details?id=com.ustwo.monumentvalley&amp;hl=es&amp;gl=MX">Ver en Google Play <span aria-hidden="true">↗</span></a>
+                </div>
+            </article>
         </div>
         <section class="edition-history" aria-labelledby="history-title">
             <h2 id="history-title">Historial de esta semana</h2>
-            <p>Revisa las selecciones anteriores, del lunes al domingo. Empieza de nuevo cada lunes a medianoche, hora de Ciudad de México.</p>
+            <p>Selecciones de lunes a domingo. Al abrir un día verás el precio actual en México. La lista se reinicia cada lunes.</p>
             <p id="edition-history-empty">Cargando el historial…</p>
             <div id="edition-history-list"></div>
             <noscript><p>Activa JavaScript para consultar el historial.</p></noscript>
         </section>
     </main>
     <footer>
+        <a href="/novedades">Calendario y novedades</a>
         <a href="/como-comparamos">Cómo comparamos precios</a>
         <a href="/privacidad">Aviso de privacidad</a>
         <a href="/contacto">Contacto</a>
