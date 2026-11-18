@@ -47,6 +47,16 @@ async function openConsoleComparison(item,platform=activeEcosystem,region=curren
     : '<small>Región de activación por confirmar en la tienda.</small>';
    return `<article class="comparison-row ${q.kind==='official'?'comparison-official':''}"><div><strong><i class="fa-solid ${q.kind==='official'?'fa-store':'fa-key'}"></i> ${escapeHTML(q.store)}</strong><span>${q.kind==='official'?'Tienda oficial':'Mercado externo · revisar cargos finales'}</span><p>${escapeHTML(q.title)}</p><small>${escapeHTML(q.edition||'')}</small>${activation}<a class="price-report-link" href="${escapeHTML(report)}">Reportar precio</a></div><div class="comparison-cost"><strong>${escapeHTML(format(q))}</strong><a href="${escapeHTML(safeURL(q.url))}" target="_blank" rel="noopener noreferrer">Ir a la tienda ↗</a></div></article>`;
   };
+  if (platform === 'android') {
+   const quote = data.offers.find(q=>String(q.id)===String(item.id)&&q.store==='Google Play'&&q.currency===purchaseRegions[region][1]);
+   const scope = escapeHTML(purchaseRegions[region][0]);
+   content.innerHTML = `<p class="comparison-context">Google Play · ${scope}</p><p class="comparison-note">${escapeHTML(data.coverage)}</p>` +
+    (quote ? consolePriceDecision(quote,purchaseRegions[region][0]) + row(quote) + observedPriceHistory(quote,purchaseRegions[region][0]) +
+       bundlePriceComparison(quote.currency,purchaseRegions[region][0]) :
+      '<p class="comparison-state">Google Play no confirmó el precio para esta región.</p>');
+   if (quote) addConsoleSaveControls(content,{...item,...quote,checkedAt:data.checkedAt},platform,region);
+   return;
+  }
   const official=data.offers.filter(q=>q.kind==='official');
   const external=data.offers.filter(q=>q.kind==='external');
   let html=`<p class="comparison-context">${escapeHTML(ECOSYSTEM_META[data.platform].name)} · Región ${escapeHTML(purchaseRegions[data.region][0])} · Consulta ${escapeHTML(new Date(data.checkedAt).toLocaleTimeString('es-MX'))}</p>`;

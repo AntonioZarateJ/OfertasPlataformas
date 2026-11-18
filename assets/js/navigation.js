@@ -1,8 +1,9 @@
-        // --- 1.5 SELECTOR DE ECOSISTEMA / PLATAFORMA (FASE 2: PC, XBOX, PLAYSTATION, SWITCH) ---
-        function selectEcosystem(ecoKey) {
+        // --- SELECTOR DE PLATAFORMA ---
+        function selectEcosystem(ecoKey, query = '') {
             if (!ECOSYSTEM_META[ecoKey]) return;
             document.getElementById('platformPriceNotice').classList.toggle('hidden-el', ecoKey === 'pc');
             activeEcosystem = ecoKey;
+            document.getElementById('loadedCountLabel').textContent = ecoKey === 'android' ? 'Resultados:' : 'Juegos listados:';
             void refreshRecentDrops();
             document.getElementById('pcStoreBar').classList.toggle('hidden-el', ecoKey !== 'pc');
             document.documentElement.dataset.platform = ecoKey;
@@ -28,6 +29,7 @@
             currentSearchQuery = '';
             predictiveSearchInput.value='';clearSearchBtn.classList.add('hidden-el');
             gamesGrid.replaceChildren();
+            document.getElementById('androidEmptyState').classList.add('hidden-el');
             document.getElementById('platformPriceNotice').classList.add('hidden-el');
             document.getElementById('consoleTools').classList.toggle('hidden-el', ecoKey === 'pc');
             document.querySelectorAll('[data-chip]').forEach(button => {
@@ -35,7 +37,11 @@
             });
             document.getElementById('toggleFineTuneBtn').classList.toggle('hidden-el', ecoKey !== 'pc');
             fineTuneDrawer.classList.add('hidden-el');
-            selectSmartChip('top');
+            if (query) {
+                predictiveSearchInput.value = query;
+                clearSearchBtn.classList.remove('hidden-el');
+                searchCatalog(query);
+            } else selectSmartChip(ecoKey === 'android' ? 'all' : 'top');
         }
 
         // --- 2. NAVEGACIÓN POR PÍLDORAS INTELIGENTES (SMART CHIPS) ---

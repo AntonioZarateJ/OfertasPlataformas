@@ -4,13 +4,16 @@ function observedPriceHistory(quote, region) {
     const points = history.points.slice(-30);
     const ceiling = Math.max(1, ...points.map(point => point.max));
     const money = price => escapeHTML(nativeMoney(price, quote.currency));
-    const bars = points.map(point => `<span style="--price-height:${Math.max(2, (point.min / ceiling * 100)).toFixed(2)}%"></span>`).join('');
+    const bars = points.map((point,index) => `<span ${index === points.length - 1 ? 'class="history-bar-current"' : ''} style="--price-height:${Math.max(2, (point.min / ceiling * 100)).toFixed(2)}%"></span>`).join('');
     const table = points.map(point => `<tr><th scope="row">${escapeHTML(point.date)}</th><td>${money(point.min)}</td><td>${money(point.max)}</td></tr>`).join('');
+    const latest = points[points.length - 1];
     const drop = history.drop ? `<p class="observed-drop">Bajada observada de ${money(history.drop.from)} a ${money(quote.price)} en las últimas 24 horas.</p>` : '';
     return `<details class="price-insight"><summary>Historial de ${escapeHTML(quote.title)} · ${escapeHTML(quote.store)}</summary>
         <p>${escapeHTML(region)} · ${escapeHTML(quote.currency)} · ${escapeHTML(quote.edition || 'Producto consultado')}</p>
         ${drop}<p>${points.length} días observados. Cada barra muestra el mínimo que vimos ese día.</p>
         <div class="price-history-bars" aria-hidden="true">${bars}</div>
+        ${points.length > 1 ? `<label class="history-day-control">Explorar días <input type="range" min="0" max="${points.length - 1}" value="${points.length - 1}" aria-valuetext="${escapeHTML(latest.date)}" data-history-picker></label>` : ''}
+        <output class="history-day-price" aria-live="polite">${escapeHTML(latest.date)} · Mínimo ${money(latest.min)} · Máximo ${money(latest.max)}</output>
         <details class="price-history-table"><summary>Ver precios por día</summary><table><thead><tr><th>Fecha</th><th>Mínimo</th><th>Máximo</th></tr></thead><tbody>${table}</tbody></table></details>
         ${history.persistent === false ? '<small>Registro temporal de este servidor.</small>' : ''}
     </details>`;
@@ -54,6 +57,18 @@ function updateBundleComparison(container) {
 }
 
 document.addEventListener('input', event => {
+    if (event.target.matches('[data-history-picker]')) {
+        const chart = event.target.closest('.price-insight');
+        const index = event.target.valueAsNumber;
+        const row = chart.querySelectorAll('tbody tr')[index];
+        if (!row) return;
+        chart.querySelectorAll('.price-history-bars span').forEach((bar, position) => {
+            bar.classList.toggle('history-bar-current', position === index);
+        });
+        const [date, min, max] = [...row.cells].map(cell => cell.textContent);
+        chart.querySelector('.history-day-price').textContent = `${date} · Mínimo ${min} · Máximo ${max}`;
+        event.target.setAttribute('aria-valuetext', date);
+    }
     const container = event.target.closest('[data-bundle-currency]');
     if (container) updateBundleComparison(container);
 });

@@ -15,6 +15,7 @@ const uiActions = Object.freeze({
     'select-ecosystem-xbox': function(event) { selectEcosystem('xbox') },
     'select-ecosystem-ps': function(event) { selectEcosystem('ps') },
     'select-ecosystem-switch': function(event) { selectEcosystem('switch') },
+    'select-ecosystem-android': function() { selectEcosystem('android') },
     'handle-search-submit': function(event) { handleSearchSubmit(event) },
     'open-cloud-config-modal': function(event) { openCloudConfigModal() },
     'select-smart-chip-top': function(event) { selectSmartChip('top') },

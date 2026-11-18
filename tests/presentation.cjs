@@ -164,12 +164,12 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         await page.setViewportSize({width:390,height:844});
         await page.clock.setFixedTime(new Date('2026-11-16T05:59:59Z'));
         const discovery = page.getByRole('navigation', {name:'Descubre juegos'});
-        await expect(discovery.getByRole('link')).toHaveCount(2);
+        await expect(discovery.getByRole('link')).toHaveCount(3);
         await expect(page.locator('.mobile-catalog-info a')).toHaveCount(0);
-        assert.equal(await discovery.evaluate(nav => getComputedStyle(nav).gridTemplateColumns.split(' ').length), 2);
+        assert.equal(await discovery.evaluate(nav => getComputedStyle(nav).gridTemplateColumns.split(' ').length), 3);
         await discovery.getByRole('link', {name:/Radar de México/}).click();
         await expect(page.getByRole('heading', {name:'Radar de México'})).toBeVisible();
-        await expect(page.locator('.pick-platform strong')).toHaveText(['PC', 'Xbox', 'PlayStation', 'Nintendo Switch']);
+        await expect(page.locator('.pick-platform strong')).toHaveText(['PC', 'Xbox', 'PlayStation', 'Nintendo Switch', 'Android']);
         await expect(page.locator('[data-platform="pc"] .pick-price')).toContainText('−80%');
         await expect(page.locator('[data-platform="xbox"] .pick-price')).toContainText('$639.60 MXN');
         await expect(page.locator('[data-platform="xbox"] .pick-price')).toContainText('−60%');
@@ -183,7 +183,7 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
 
         await page.clock.setFixedTime(new Date('2026-11-16T06:00:00Z'));
         await page.reload();
-        await expect(page.locator('.edition-pick h2')).toHaveText(['Portal 2', 'Rocket League®', 'God of War Ragnarök', 'Mario Kart™ 8 Deluxe']);
+        await expect(page.locator('.edition-pick h2')).toHaveText(['Portal 2', 'Rocket League®', 'God of War Ragnarök', 'Mario Kart™ 8 Deluxe', 'Geometry Dash']);
         await expect(page.locator('.pick-reason').first()).toContainText('los niveles cooperativos');
         await expect(page.locator('#edition-date')).toContainText('16 de noviembre');
         await expect(page.locator('#edition-history-empty')).toBeVisible();
@@ -196,6 +196,7 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         await expect(page.locator('.edition-history summary').last()).toContainText('16 de noviembre');
         await page.locator('.edition-history summary').last().click();
         await expect(page.locator('.edition-history').getByRole('link', {name:'Portal 2'})).toBeVisible();
+        await expect(page.locator('.edition-history details[open] img')).toHaveCount(5);
         await page.emulateMedia({reducedMotion:'no-preference'});
         assert.equal(await page.locator('.edition-pick').first().evaluate(card => getComputedStyle(card, '::after').animationIterationCount), 'infinite');
         await page.getByRole('button', {name:'Pausar animación de los bordes'}).click();
@@ -226,17 +227,18 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         await page.goto(root);
         await discovery.getByRole('link', {name:/Colección de juegos/}).click();
         await expect(page.getByRole('heading', {name:'Juegos hasta $300 MXN'})).toBeVisible();
-        await expect(page.locator('.discover-card')).toHaveCount(4);
+        await expect(page.locator('.discover-card')).toHaveCount(5);
         await expect(page.locator('.discover-quote[data-platform="pc"]')).toContainText('Dentro del presupuesto');
         await expect(page.locator('.discover-quote[data-platform="xbox"]')).toContainText('Supera el presupuesto');
         await expect(page.locator('.discover-quote[data-platform="ps"]')).toContainText('Gratis');
         await expect(page.locator('.discover-quote[data-platform="switch"]')).toContainText('Presupuesto por confirmar');
-        await page.getByLabel('Forma de jugar').selectOption('coop');
+        const playModes = page.getByRole('group', {name:'Forma de jugar'});
+        await playModes.getByRole('button', {name:'Cooperativo'}).click();
         await expect(page.locator('.discover-card:visible h2')).toHaveText(['Rocket League','Stardew Valley']);
-        await page.getByLabel('Forma de jugar').selectOption('online');
+        await playModes.getByRole('button', {name:'En línea'}).click();
         await expect(page.locator('.discover-card:visible h2')).toHaveText(['Rocket League','Apex Legends','Stardew Valley']);
-        await page.getByLabel('Forma de jugar').selectOption('solo');
-        await expect(page.locator('.discover-card:visible h2')).toHaveText(['Gunpoint','Stardew Valley']);
+        await playModes.getByRole('button', {name:'Un jugador'}).click();
+        await expect(page.locator('.discover-card:visible h2')).toHaveText(['Gunpoint','Stardew Valley','Monument Valley']);
         await page.getByRole('link', {name:'Ver ficha de Stardew Valley'}).click();
         await expect(page.getByRole('heading', {name:'Stardew Valley'})).toBeVisible();
         await page.getByRole('button', {name:'Copiar enlace'}).click();
@@ -259,5 +261,25 @@ test('Preferencias alineadas, lista legible, carga visible y tarjetas reutilizad
         assert.match(decodeURIComponent(draft), /Precio visto en la tienda: \$199 MXN/);
         assert.match(decodeURIComponent(draft), /Tienda: Nintendo eShop/);
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+
+        await page.route('**/api/giveaways', async route => {
+            const gift = {type:'Game',title:'Regalo disponible',end_date:'2026-11-24 12:00:00',open_giveaway_url:'https://store.epicgames.com/es-MX/p/example'};
+            await route.fulfill({json:[gift, {...gift,title:'Vencido',end_date:'2026-11-20'},
+                {...gift,title:'Sin fecha',end_date:'N/A'}, {...gift,title:'Sin tienda oficial',open_giveaway_url:'https://example.com/game'}]});
+        });
+        await page.goto(root);
+        await discovery.getByRole('link', {name:/Novedades/}).click();
+        await expect(page.getByRole('heading', {name:'Novedades de RadarPlay'})).toBeVisible();
+        await expect(page.locator('.news-featured img')).toHaveCount(5);
+        await expect(page.locator('#calendario')).toBeHidden();
+        await page.getByRole('link', {name:'Calendario',exact:true}).click();
+        await expect(page.locator('#newsGifts li')).toHaveCount(1);
+        await expect(page.locator('#newsGifts')).toContainText('Regalo disponible');
+        await page.getByRole('link', {name:'Suscripciones',exact:true}).click();
+        await page.getByLabel('Plataforma', {exact:true}).selectOption('switch');
+        await expect(page.locator('[data-subscription]:visible')).toHaveCount(1);
+        await expect(page.locator('[data-subscription]:visible')).toContainText('Nintendo Switch Online');
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        assert.deepEqual(errors, []);
     } finally { await browser.close();await new Promise(resolve=>server.close(resolve)); }
 });

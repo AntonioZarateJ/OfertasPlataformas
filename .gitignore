@@ -1,6 +1,11 @@
 node_modules/
 test-results/
 playwright-report/
+/docs-local/
+*.log
+Thumbs.db
+Desktop.ini
+.DS_Store
 
 .data/
 

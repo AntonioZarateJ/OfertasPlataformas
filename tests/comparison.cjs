@@ -47,7 +47,7 @@ test('Comparador y móvil conservan accesos únicos y controles operativos',asyn
   const u=new URL(route.request().url());let data={};
   if(u.pathname==='/api/stores'||u.pathname==='/api/deals')data=[];
   if(u.pathname==='/api/console-catalog')data={platform:'xbox',region:'MX',checkedAt:Date.now(),sources:[],scope:'Prueba',items:[{id:'1',title:'Cyberpunk 2077',price:369,regular:1230,discount:70,currency:'MXN',kind:'official',store:'Xbox Store',url:'https://www.xbox.com',edition:'Xbox'}]};
-  if(u.pathname==='/api/console-comparison')data={platform:'xbox',region:'MX',title:'Cyberpunk 2077',checkedAt:Date.now(),coverage:'Fuentes consultadas',sources:[{name:'Xbox Store',status:'ok'},{name:'Eneba',status:'ok'}],searchLinks:[{name:'G2A',url:'https://www.g2a.com/search?query=cyberpunk'}],otherEditions:[],offers:[{id:'1',title:'Cyberpunk 2077',store:'Xbox Store',kind:'official',currency:'MXN',price:369,history:{days:1,since:'2026-10-29',points:[{date:'2026-10-29',min:369,max:420}]},url:'https://www.xbox.com'},{id:'2',title:'Cyberpunk 2077 Key',store:'Eneba',kind:'external',currency:'MXN',price:455.29,history:{days:1,since:'2026-10-29'},url:'https://www.eneba.com'}]};
+  if(u.pathname==='/api/console-comparison')data={platform:'xbox',region:'MX',title:'Cyberpunk 2077',checkedAt:Date.now(),coverage:'Fuentes consultadas',sources:[{name:'Xbox Store',status:'ok'},{name:'Eneba',status:'ok'}],searchLinks:[{name:'G2A',url:'https://www.g2a.com/search?query=cyberpunk'}],otherEditions:[],offers:[{id:'1',title:'Cyberpunk 2077',store:'Xbox Store',kind:'official',currency:'MXN',price:369,history:{days:2,since:'2026-10-29',points:[{date:'2026-10-29',min:369,max:420},{date:'2026-10-30',min:350,max:390}]},url:'https://www.xbox.com'},{id:'2',title:'Cyberpunk 2077 Key',store:'Eneba',kind:'external',currency:'MXN',price:455.29,history:{days:1,since:'2026-10-29'},url:'https://www.eneba.com'}]};
   if(u.pathname==='/api/recent-drops')data={platform:u.searchParams.get('platform'),region:'MX',items:[{title:'Oferta de prueba',store:'Xbox Store',currency:'MXN',previous:420,price:369,url:'https://www.xbox.com'}]};
   await route.fulfill({contentType:'application/json',body:JSON.stringify(data)});
  });
@@ -64,6 +64,9 @@ test('Comparador y móvil conservan accesos únicos y controles operativos',asyn
  await expect(page.locator('#consoleComparisonBody')).toContainText('Historial insuficiente');
  await expect(page.locator('#consoleComparisonBody')).toContainText('Región de activación por confirmar');
  await page.getByText('Historial de Cyberpunk 2077 · Xbox Store',{exact:true}).click();
+ await expect(page.locator('.history-day-price')).toContainText('$350.00 MXN');
+ await page.getByRole('slider',{name:'Explorar días'}).press('Home');
+ await expect(page.locator('.history-day-price')).toContainText('$369.00 MXN');
  await page.getByText('Ver precios por día',{exact:true}).click();
  await expect(page.locator('.price-history-table tbody')).toContainText('$369.00 MXN');
  await page.getByText('Comparar un paquete con compras separadas',{exact:true}).click();

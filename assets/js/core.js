@@ -114,6 +114,12 @@
                 colorClass: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
                 searchSuffix: 'PSN PlayStation'
             },
+            android: {
+                name: 'Android · Google Play',
+                shortBadge: 'Android',
+                icon: 'fa-brands fa-android',
+                colorClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+            },
             switch: {
                 name: 'Nintendo Switch',
                 shortBadge: 'Switch eShop',

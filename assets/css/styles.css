@@ -183,7 +183,7 @@
  .nav-brand{grid-area:brand;min-width:0!important;width:auto!important}.nav-brand>a{gap:8px}.nav-brand>a>div:first-child{width:32px;height:32px;border-radius:10px}.nav-brand .fa-steam{font-size:21px}.nav-brand .font-display{font-size:15px}.nav-brand p,.nav-brand .tracking-wider{display:none}
  .nav-actions{grid-area:actions;width:auto!important;gap:6px!important}.nav-actions>button{padding:8px!important;font-size:11px!important;border-radius:9px!important}.nav-actions>div:empty{display:none}.nav-actions #userAccountLabel{display:inline!important;font-size:10px}#wishlistButton>span.hidden{display:none!important}#navWishlistCount{font-size:9px;padding:2px 4px}#wishlistButton .fa-heart{font-size:12px}
  .nav-search{grid-area:search;min-width:0;grid-column:1/-1!important;grid-row:auto!important}.nav-search input{font-size:13px!important;padding-top:12px;padding-bottom:12px}
- .nav-platforms{grid-area:platforms;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));width:100%!important;gap:3px;padding:3px;border-radius:11px}.nav-platforms button{min-width:0;padding:9px 2px!important;font-size:10px!important;gap:4px}.nav-platforms i{display:none}
+ .nav-platforms{grid-area:platforms;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));width:100%!important;gap:3px;padding:3px;border-radius:11px}.nav-platforms button{min-width:0;padding:9px 2px!important;font-size:10px!important;gap:4px}.nav-platforms i{display:none}
  .desktop-label{display:none!important}.mobile-label{display:inline!important}
  #mobileFilterPanel{display:block;background:#101a2a;border-bottom:1px solid #26364b;padding:0 12px}#mobileFilterPanel>summary{display:flex;align-items:center;gap:10px;list-style:none;cursor:pointer;padding:13px 3px;color:#e2e8f0;font-size:12px;font-weight:700}#mobileFilterPanel>summary::-webkit-details-marker{display:none}#mobileRegionLabel{margin-left:auto;color:#7dd3fc;font-size:11px}#mobileFilterContent{padding:5px 0 14px;display:grid;gap:14px}#mobileFilterContent .region-control{font-size:11px}#mobileFilterContent select{width:100%;max-width:none}#mobileFilterContent #sortContainer{display:flex}#mobileFilterContent #sortContainer label{display:inline}#mobileFilterContent #fineTuneDrawer{margin:0;padding:0;border:0}#mobileFilterContent .console-tools{margin:0;padding:14px}#mobileFilterContent .console-filters{display:grid;gap:12px}#mobileFilterContent .console-filters label{display:grid;gap:7px}#mobileFilterContent .console-filters label:has(input[type=checkbox]){display:flex}
  body>section.bg-\[\#101726\]\/90>div{padding:10px 12px}body>section.bg-\[\#101726\]\/90 .smart-chip{font-size:11px;padding:9px 12px;flex-shrink:0}.smart-chip .animate-bounce{animation:none}.smart-chip>span.rounded-full{display:none}[data-chip=wishlist]{display:none!important}
@@ -207,6 +207,17 @@
 [data-platform=xbox]{--platform-accent:#67d96b;--platform-rgb:103,217,107}
 [data-platform=ps]{--platform-accent:#78a8ff;--platform-rgb:120,168,255}
 [data-platform=switch]{--platform-accent:#ff727c;--platform-rgb:255,114,124}
+[data-platform=android]{--platform-accent:#7ce7ba;--platform-rgb:124,231,186}
+.plat-pill.active-android { color:#cbffe9; border-color:#3cae82; background:linear-gradient(140deg,#19674c,#17394b); }
+.android-store-search { display:inline-block; margin-top:10px; color:#a3f5ce; font-size:.75rem; font-weight:750; }
+[data-platform=android] .console-art-cover { width:66%; height:82%; inset:9% 17%; }
+[data-platform=android] .smart-chip.active { border-color:#3cae82; background:linear-gradient(135deg,#1c7656,#14533e); }
+@media (min-width:1050px) {
+ #androidFilters { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ #androidFilters > label[for="androidPrice"] { grid-column:2; grid-row:1; }
+ #androidFilters > select { grid-row:2; }
+ [data-platform=android] .refined-filter-grid { grid-template-columns:1.3fr 1fr 1fr; }
+}
 body{background-image:radial-gradient(ellipse at 5% 25%,rgba(var(--platform-rgb),.065),transparent 55%)}
 main>div:first-child{border-color:rgba(var(--platform-rgb),.3);background:linear-gradient(110deg,rgba(var(--platform-rgb),.1),#101827 70%);position:relative;overflow:hidden}
 #modeIconBox{color:var(--platform-accent)!important;border-color:rgba(var(--platform-rgb),.4)!important;background:rgba(var(--platform-rgb),.12)!important}
@@ -257,6 +268,12 @@ main>div:first-child{border-color:rgba(var(--platform-rgb),.3);background:linear
 .wish-review .wish-stats strong { font-size: 16px; }
 #wishLowerCount, #wishReachedCount { color: #6ee7b7; }
 #wishHigherCount { color: #fcd58d; }
+.wish-review .wish-stats > .wish-stat-lower { background: #12342f; }
+.wish-review .wish-stats > .wish-stat-higher { background: #352b23; }
+.wish-review .wish-stats > .wish-stat-reached { background: #1b314b; }
+.wish-review .wish-stats i { float: right; font-size: .75rem; margin: 4px 0 0 4px; color: #93e8d2; }
+.wish-review .wish-stats .wish-stat-higher i { color: #fcd58d; }
+.wish-review .wish-stats .wish-stat-reached i { color: #badcff; }
 .wish-review > p { color: #acbbcf; font-size: 10px; }
 .wish-hide-owned { display: flex; align-items: center; gap: 7px; width: fit-content; padding-top: 8px; color: #bfd1e5; font-size: 11px; cursor: pointer; }
 .wish-hide-owned input { accent-color: #5bd7ff; }
@@ -281,16 +298,33 @@ main>div:first-child{border-color:rgba(var(--platform-rgb),.3);background:linear
 .wish-purchase-summary { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 12px; border: 1px solid #385671; border-radius: 10px; background: #14273b; }
 .wish-purchase-summary select { padding: 6px 8px; border: 1px solid #486781; border-radius: 7px; background: #0a1726; color: #e1f4ff; }
 .wish-purchase-summary output, .wish-purchase-summary p { grid-column: 1 / -1; }
+.wish-purchase-summary progress { grid-column: 1 / -1; width: 100%; height: 7px; accent-color: #75e5b9; }
 .wish-purchase-summary output { color: #9cf3d3; font-size: 1.4rem; font-weight: 800; overflow-wrap: anywhere; }
 #wishPurchaseItems li { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 8px; align-items: center; padding: 10px 0; border-bottom: 1px solid #30445d; }
 #wishPurchaseItems strong, #wishPurchaseItems b, .wish-pair-grid h4, .wish-pair-grid strong { color: #edf6ff; overflow-wrap: anywhere; }
 #wishPurchaseItems small, .wish-pair-grid small { display: block; color: #b1c8de; }
 #wishPurchaseItems button { min-width: 28px; min-height: 32px; color: #fda4af; }
 .wish-compare { margin: 12px 0 0; }
+.wish-share { margin: 12px 0 0; }
+.wish-share > button { margin-top: 7px; padding: 5px 8px; border: 1px solid #476781; border-radius: 7px; color: #aee6ff; }
+.wish-share > button:disabled { opacity: .55; }
+#wishShareLink { width: 100%; margin-top: 7px; padding: 6px; border: 1px solid #44607a; border-radius: 6px; background: #0d1927; color: #e0f2ff; }
+#wishShareLink[hidden], #wishShareStatus:empty { display: none; }
 .wish-compare .wish-selects label { min-width: 0; }
 #wishCompareResult { margin-top: 10px; overflow-wrap: anywhere; }
 .wish-pair-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-bottom: 8px; }
 .wish-pair-grid article { padding: 8px; border: 1px solid #364c65; border-radius: 8px; }
+[data-purchase-platform] { --purchase-accent: #82e6ff; }
+[data-purchase-platform="xbox"] { --purchase-accent: #a7ee9e; }
+[data-purchase-platform="ps"] { --purchase-accent: #a6bdff; }
+[data-purchase-platform="switch"] { --purchase-accent: #ffaab9; }
+[data-purchase-platform="android"] { --purchase-accent: #85efbe; }
+.wish-pair-grid article { border-top: 2px solid var(--purchase-accent); }
+.wish-pair-grid meter { width: 100%; height: 7px; display: block; margin: 5px 0; accent-color: var(--purchase-accent); }
+.wish-pair-grid meter::-webkit-meter-optimum-value { background: var(--purchase-accent); }
+.wish-pair-grid meter::-moz-meter-bar { background: var(--purchase-accent); }
+.wish-pair-lowest { display: inline-block; margin-bottom: 4px; padding: 1px 5px; border-radius: 5px; background: #173a35; color: #a3f3ca; font-size: .6875rem; }
+#wishPurchaseItems li strong { color: var(--purchase-accent); }
 @media (max-width: 520px) {
     .wish-discovery { padding: 10px 12px; }
     .wish-selects { grid-template-columns: repeat(2, minmax(0, 1fr)); }

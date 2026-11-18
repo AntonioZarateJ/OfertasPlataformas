@@ -1,7 +1,7 @@
 const site = 'https://salesplataforms.onrender.com';
 const collectionPath = '/descubre';
 const budget = 300;
-const platforms = {pc:'PC', xbox:'Xbox', ps:'PlayStation', switch:'Nintendo Switch'};
+const platforms = {pc:'PC', xbox:'Xbox', ps:'PlayStation', switch:'Nintendo Switch', android:'Android'};
 const playModes = {solo:'Un jugador', coop:'Cooperativo', local:'Multijugador local', online:'En línea'};
 const games = {
     gunpoint: {
@@ -35,6 +35,14 @@ const games = {
         summary:'Cultiva, pesca o explora las minas a tu ritmo en sesiones cortas.',
         reason:'Cada día del juego te deja elegir una meta pequeña. Puedes mejorar una parcela y cerrar la sesión, o dedicar más tiempo a descubrir qué hay fuera de la granja.',
         editionNote:'Esta ficha corresponde a Nintendo Switch. Si la tienda muestra una edición para Switch 2, revisa su precio y compatibilidad por separado.'
+    },
+    'monument-valley-android': {
+        title:'Monument Valley', platform:'android', product:'com.ustwo.monumentvalley', search:'Monument Valley', store:'Google Play', system:'Android', edition:'Juego para Android', genre:'Puzles', modes:['solo'],
+        image:'https://play-lh.googleusercontent.com/PSOC0jku9VwvqwGYQvYGmh9BcsCkc-raSp94t1CzOHi6v7MtC-CgqY0MJckRXX2uNCJ7S4p1eWs1d9uACuPfjw',
+        url:'https://play.google.com/store/apps/details?id=com.ustwo.monumentvalley&hl=es&gl=MX',
+        summary:'Mueve escaleras y edificios para recorrer caminos que parecen imposibles.',
+        reason:'Si te atoras, gira la estructura y observa dónde se juntan los caminos. Los niveles cortos funcionan bien para jugar en el móvil.',
+        editionNote:'El precio mostrado corresponde a la descarga inicial en Google Play México. Revisa los contenidos adicionales en la ficha.'
     }
 };
 
@@ -97,7 +105,7 @@ function page({pathname, title, description, image, body}) {
 
 function renderCollection() {
     const title = `Juegos hasta $${budget} MXN`;
-    const description = 'Una selección para PC, Xbox, PlayStation y Nintendo Switch. Consulta si cada juego entra en tu presupuesto con el precio de su tienda oficial en México.';
+    const description = 'Una selección para PC, Xbox, PlayStation, Nintendo Switch y Android. Consulta si cada juego entra en tu presupuesto con el precio de su tienda oficial en México.';
     const cards = Object.entries(games).map(([slug, game]) => `<article class="discover-card" data-play-modes="${game.modes.join(' ')}">
         ${gameCover(game)}
         <div class="discover-card-body">
@@ -113,8 +121,9 @@ function renderCollection() {
     return page({pathname:collectionPath, title, description, body:`
         <div class="discover-intro"><h1>${title}</h1><p>${description}</p></div>
         <div class="discover-filter" id="discoverModeTools" hidden>
-            <label for="discoverPlayMode">Forma de jugar</label>
-            <select id="discoverPlayMode"><option value="">Todas</option>${Object.entries(playModes).map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select>
+            <div class="discover-mode-buttons" role="group" aria-label="Forma de jugar">
+            <button type="button" data-play-filter="" aria-pressed="true">Todas</button>${Object.entries(playModes).map(([value,label])=>`<button type="button" data-play-filter="${value}" aria-pressed="false">${label}</button>`).join('')}
+            </div>
             <p id="discoverModeStatus" role="status"></p>
         </div>
         <div class="discover-grid">${cards}</div>

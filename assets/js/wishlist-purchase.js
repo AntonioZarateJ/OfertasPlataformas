@@ -64,16 +64,21 @@ function renderWishPair() {
     }
     const currency = wishPurchaseCurrency.value;
     const quotes = [first, second].map(item => wishPurchaseQuote(item, currency));
-    const display = (item, quote) => `<article>
+    const [a, b] = quotes;
+    const comparable = a.units !== null && b.units !== null;
+    const maximum = comparable ? Math.max(1, a.units, b.units) : 1;
+    const lowest = comparable && a.units !== b.units ? Math.min(a.units,b.units) : null;
+    const display = (item, quote) => `<article data-purchase-platform="${item.native ? item.platform : 'pc'}">
+        ${comparable && quote.units === lowest ? '<span class="wish-pair-lowest">Menor precio</span>' : ''}
         <h4>${escapeHTML(item.title)}</h4>
         <p>${escapeHTML(wishPurchasePlatform(item))} · ${escapeHTML(item.edition || 'Edición sin confirmar')}</p>
         <p>${escapeHTML(wishPurchaseContext(item))}</p>
         <strong>${escapeHTML(quote.units === null ? quote.original : formatWishPurchase(quote.units, currency))}</strong>
+        ${comparable ? `<meter min="0" max="${maximum}" value="${quote.units}" aria-hidden="true"></meter>` : ''}
         ${quote.estimated ? `<small>Referencia de PC · ${escapeHTML(quote.original)}</small>` : ''}
     </article>`;
-    const [a, b] = quotes;
     let summary = 'Los precios están en monedas diferentes. Elige una moneda compatible para ver la diferencia.';
-    if (a.units !== null && b.units !== null) {
+    if (comparable) {
         const difference = Math.abs(a.units - b.units);
         const label = quotes.some(quote => quote.estimated) ? 'Diferencia estimada' : 'Diferencia de precio';
         summary = `${label}: ${formatWishPurchase(difference, currency)}.`;
@@ -106,6 +111,7 @@ function renderWishlistPurchase(favorites = Object.values(userWishlist)) {
             estimates ||= quote.estimated;
         }
         const row = document.createElement('li');
+        row.dataset.purchasePlatform = item.native ? item.platform : 'pc';
         const price = quote.units === null ? quote.original : formatWishPurchase(quote.units, currency);
         const note = quote.units === null ? 'Fuera del total' : quote.estimated ? `Referencia de PC · ${escapeHTML(quote.original)}` : '';
         row.innerHTML = `<div><strong>${escapeHTML(item.title)}</strong><small>${escapeHTML(wishPurchasePlatform(item))} · ${escapeHTML(wishPurchaseContext(item))}</small></div>
@@ -115,7 +121,12 @@ function renderWishlistPurchase(favorites = Object.values(userWishlist)) {
         return row;
     });
     document.getElementById('wishPurchaseItems').replaceChildren(...rows);
+    updateWishShare(items);
     const totalFits = Number.isSafeInteger(total);
+    const coverage = document.getElementById('wishPurchaseCoverage');
+    coverage.hidden = !items.length || included === items.length || !totalFits;
+    coverage.max = Math.max(1,items.length);
+    coverage.value = included;
     document.getElementById('wishPurchaseTotal').textContent = included && totalFits ? formatWishPurchase(total, currency) : '—';
     const status = document.getElementById('wishPurchaseStatus');
     if (!items.length) status.textContent = 'Desde Favoritos, pulsa Añadir a compra en los juegos que tengas en mente.';

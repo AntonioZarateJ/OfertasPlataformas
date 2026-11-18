@@ -1,25 +1,4 @@
-const mexicoDate = new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Mexico_City', year: 'numeric', month: 'numeric', day: 'numeric'});
 const dayLabel = new Intl.DateTimeFormat('es-MX', {dateStyle: 'full', timeZone: 'UTC'});
-const dayMs = 86_400_000;
-
-function mexicoCalendarDate(now) {
-    const fields = Object.fromEntries(mexicoDate.formatToParts(now).map(({type, value}) => [type, Number(value)]));
-    return Date.UTC(fields.year, fields.month - 1, fields.day);
-}
-
-function readOriginalPick(card) {
-    const source = card.querySelector('.pick-platform span').textContent;
-    return {
-        product: card.dataset.product,
-        search: card.dataset.search,
-        system: source === card.dataset.store ? '' : source.split(' · ')[0],
-        title: card.querySelector('h2').textContent,
-        reason: card.querySelector('.pick-reason').textContent,
-        edition: card.querySelector('.pick-edition').textContent,
-        image: card.querySelector('.pick-cover').src,
-        url: card.querySelector('.pick-link').href
-    };
-}
 
 function showEditionPick(card, pick) {
     card.dataset.product = pick.product;
@@ -43,7 +22,7 @@ function showEditionHistory(cards, previousDays, today, picksAt) {
     const list = document.getElementById('edition-history-list');
     list.replaceChildren();
     for (let offset = 1; offset <= previousDays; offset++) {
-        const date = today - offset * dayMs;
+        const date = today - offset * radarDayMs;
         const picks = picksAt(date);
         const day = document.createElement('details');
         const summary = document.createElement('summary');
@@ -52,14 +31,24 @@ function showEditionHistory(cards, previousDays, today, picksAt) {
         for (const card of cards) {
             const pick = picks[card.dataset.platform];
             const game = document.createElement('li');
+            game.dataset.platform = card.dataset.platform;
             const platform = document.createElement('strong');
             platform.textContent = card.querySelector('.pick-platform strong').textContent;
             const link = document.createElement('a');
             link.href = pick.url;
-            link.textContent = pick.title;
+            const cover = document.createElement('img');
+            cover.src = pick.image;
+            cover.width = 460;
+            cover.height = 215;
+            cover.loading = 'lazy';
+            cover.decoding = 'async';
+            cover.alt = '';
+            const title = document.createElement('span');
+            title.textContent = pick.title;
+            link.append(cover, title);
             const reason = document.createElement('p');
             reason.textContent = pick.reason;
-            game.append(platform, link, reason);
+            game.append(link, platform, reason);
             games.append(game);
         }
         day.append(summary, games);
@@ -67,20 +56,13 @@ function showEditionHistory(cards, previousDays, today, picksAt) {
     }
 }
 
-function loadDailyEdition(cards, {startsOn, rotation, scheduled = {}}) {
-    const original = Object.fromEntries(cards.map(card => [card.dataset.platform, readOriginalPick(card)]));
-    const week = [original, ...rotation];
-    const start = Date.parse(startsOn);
-    const firstMonday = start + ((8 - new Date(start).getUTCDay()) % 7) * dayMs;
-    function picksAt(date) {
-        const dateKey = new Date(date).toISOString().slice(0, 10);
-        const weeksSinceStart = Math.max(0, Math.floor((date - firstMonday) / (7 * dayMs)));
-        return scheduled[dateKey] ?? week[((date - start) / dayMs + weeksSinceStart) % week.length];
-    }
+function loadDailyEdition(cards, schedule) {
+    const start = Date.parse(schedule.startsOn);
+    const picksAt = day => radarPicksAt(schedule, day);
     function updateDay() {
-        const today = mexicoCalendarDate(new Date());
+        const today = radarCalendarDay(new Date());
         if (today === displayedDay) return;
-        const elapsed = (today - start) / dayMs;
+        const elapsed = (today - start) / radarDayMs;
         if (elapsed < 0) {
             document.getElementById('edition-history-empty').textContent = 'El historial estará disponible cuando comience el calendario.';
             if (displayedDay === undefined) void loadEditionPrices(cards, today);
@@ -88,12 +70,12 @@ function loadDailyEdition(cards, {startsOn, rotation, scheduled = {}}) {
             return;
         }
         const picks = picksAt(today);
-        if (picks !== original || displayedDay !== undefined) cards.forEach(card => showEditionPick(card, picks[card.dataset.platform]));
+        if (picks !== schedule.original || displayedDay !== undefined) cards.forEach(card => showEditionPick(card, picks[card.dataset.platform]));
         displayedDay = today;
         const date = document.getElementById('edition-date');
         date.textContent = `Selección de hoy · ${dayLabel.format(today)}`;
         date.hidden = false;
-        const sinceMonday = (new Date(today).getUTCDay() + 6) % 7;
+        const sinceMonday = (today - radarWeekStart(today)) / radarDayMs;
         showEditionHistory(cards, Math.min(sinceMonday, elapsed), today, picksAt);
         void loadEditionPrices(cards, today);
     }

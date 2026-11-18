@@ -4,6 +4,10 @@
 .price-insight .observed-drop, .price-insight .bundle-result { color: #9bf1c7; }
 .price-history-bars { display: flex; align-items: end; gap: 3px; height: 90px; margin: 12px 0; padding: 0 2px; border-bottom: 1px solid #46617a; }
 .price-history-bars span { flex: 1; max-width: 32px; height: var(--price-height); background: linear-gradient(#70dcf4,#266483); border-radius: 3px 3px 0 0; }
+.price-history-bars .history-bar-current { background: linear-gradient(#a8f8cb,#38a779); }
+.history-day-control { display: grid; grid-template-columns: max-content minmax(0,1fr); gap: 8px; align-items: center; margin: 8px 0; font-size: .75rem; }
+.history-day-control input { width: 100%; accent-color: #a8f8cb; }
+.history-day-price { display: block; margin: 8px 0; color: #bcf5d8; font-size: .75rem; }
 .price-history-table table { width: 100%; margin: 8px 0; font-size: .75rem; }
 .price-history-table th, .price-history-table td { padding: 5px 4px; text-align: left; border-bottom: 1px solid #2e4356; }
 .bundle-price-inputs label { display: grid; gap: 4px; }

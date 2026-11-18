@@ -29,7 +29,7 @@
                 if(['__proto__','constructor','prototype'].includes(key)||key.length>600)continue;
                 if(!item||typeof item!=='object'||typeof item.title!=='string'||!money(item.salePrice))continue;
                 const native=item.native===true;
-                if(native&&(!['xbox','ps','switch'].includes(item.platform)||!purchaseRegions[item.region]||item.currency!==purchaseRegions[item.region][1]||!money(item.price)))continue;
+                if(native&&(!['xbox','ps','switch','android'].includes(item.platform)||!purchaseRegions[item.region]||item.currency!==purchaseRegions[item.region][1]||!money(item.price)))continue;
                 const clean={gameID:key,title:item.title.slice(0,240),salePrice:Number(item.salePrice).toFixed(2),normalPrice:money(item.normalPrice)?Number(item.normalPrice).toFixed(2):Number(item.salePrice).toFixed(2),savings:Math.max(0,Math.min(100,Number(item.savings)||0)),targetPriceUsd:!native&&money(item.targetPriceUsd)&&Number(item.targetPriceUsd)>0?Number(item.targetPriceUsd).toFixed(2):null,addedAt:validWishlistTimestamp(item.addedAt)?Number(item.addedAt):Date.now()};
                 for(const field of ['dealID','id','edition','store','seller','platform','region','currency'])if(typeof item[field]==='string'||typeof item[field]==='number')clean[field]=String(item[field]).slice(0,350);
                 for(const field of ['thumb','image','url','artwork'])if(typeof item[field]==='string')clean[field]=safeURL(item[field].slice(0,4096));
